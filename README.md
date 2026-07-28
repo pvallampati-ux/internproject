@@ -9,11 +9,11 @@ replicates a generic to-do list.
 | Tab | Route | What it does |
 |---|---|---|
 | Home | `/` | Dashboard: Today's Focus (Why Now-scored agenda), Needs a Touch, New Opportunities, Today's Work, Relationship Opportunity, Pipeline Snapshot |
-| Prospect Discovery | `/discovery` | News-based lead sourcing, filtering, and scoring |
-| Intelligence | `/intelligence` | Wealth/liquidity events, warm intros, a combined Prospect/Client/Lead map, and an industry-focus filter (Healthcare / Business Owners / anything you add) for Market Insights |
-| Engagement | `/engagement` | Meeting prep (+ optional AI Meeting Prep), outreach queue, follow-ups/cooling leads |
+| Discover | `/discover` | News-based lead sourcing, filtering, and triage — high-priority opportunities first |
+| Research | `/research` | Entity search (opens the Contact Drawer), wealth/liquidity events, warm intros, a combined Prospect/Client/Lead map, and an industry-focus filter for Market Insights |
+| Engage | `/engage` | Needs a Touch, Cooling Relationships, meeting prep, saved-lead follow-ups |
 | Pipeline | `/pipeline` | Prospect → Client Kanban/funnel (drag-and-drop or dropdown), deal value, referral source, filterable by industry/location/wealth/life stage |
-| COI / Network | `/coi` | Centers of Influence and a visual graph of referral/warm-intro connections, color-coded by stage |
+| Network | `/network` | Best introduction paths, Centers of Influence, and a visual graph of referral/warm-intro connections, color-coded by stage |
 | Calendar | `/calendar` | Prospecting events (tailgates, networking nights) — list or monthly grid view, search, CSV schedule upload, tag prospects |
 | Analytics | `/analytics` | Real KPIs computed live from current data — see below |
 
@@ -34,7 +34,7 @@ contacts.
 ### Home page (`/`)
 
 The landing page is a dashboard, not the news feed (that moved to
-`/discovery`). Always-visible sections:
+`/discover`). Always-visible sections:
 
 - **Today's Focus** — the top contacts scored by the Why Now engine, most
   urgent first, with the reasoning behind each score and a link to their
@@ -94,10 +94,10 @@ See "Known limitations" below for the full list of what's simulated vs. real.
    value, relationship health, notes) as an overlay, so a full board of
    contacts doesn't turn into a wall of scrolling. See "Pipeline board: hover
    for detail" below.
-7. The **Intelligence** page (`/intelligence`) surfaces liquidity-event
+7. The **Intelligence** page (`/research`) surfaces liquidity-event
    leads, the warm-intro finder, and a static regional map plotting leads by
    matched town — no live/interactive map, no map API, no cost.
-8. The **Engagement** page (`/engagement`) has a meeting-prep panel (pick a
+8. The **Engagement** page (`/engage`) has a meeting-prep panel (pick a
    contact, see their full note history plus any leads matching their tags),
    an outreach queue of overdue contacts, and follow-ups/cooling leads.
 9. `lib/dailyBrief.ts` combines everything into a "Today's Brief": contacts
@@ -345,7 +345,7 @@ teaser in the daily brief.
 
 ## COI / Network tab
 
-`/coi` is for Centers of Influence — attorneys, CPAs, and other referral
+`/network` is for Centers of Influence — attorneys, CPAs, and other referral
 sources — separate from where someone sits in the Prospect → Client
 pipeline (a COI can also be a client, or not be in the pipeline at all).
 Toggle a contact as a COI from their profile page or the quick checklist at
@@ -433,7 +433,7 @@ rather than reusing the RSS path.
 
 ## The regional map (Intelligence tab)
 
-`/intelligence` plots leads from the last 90 days using approximate
+`/research` plots leads from the last 90 days using approximate
 town-center coordinates for each suburb in `REGION_TERMS` (`lib/geo.ts`).
 It's a static SVG scatter plot, not a real interactive/tile-based map — no
 external map provider, no API key, no cost, works fully offline. Leads that
@@ -894,6 +894,71 @@ narrow centered column with dead space on both sides.
   containers everywhere; it did not restructure every page's internals
   into new multi-column grids (Home and the Prospect/Client map got that
   treatment — the rest are candidates for a follow-up if wanted).
+
+## Round 8: end-to-end workflow redesign
+
+A full navigation and page redesign around banker workflows instead of
+disconnected pages, per a detailed user spec. Each page now answers one
+question: Home ("what should I do today"), Discover ("who should I
+pursue"), Research ("why does this matter"), Engage ("who needs my
+attention"), Pipeline ("where does each relationship stand"), Network
+("who can help me reach them"), Calendar, Analytics.
+
+- **Removed the Tasks feature entirely** (`lib/taskTypes.ts`,
+  `lib/tasksStore.ts`, `/tasks`, `/api/tasks` — all deleted) — the user
+  tracks tasks in Outlook and didn't want this app replicating that.
+  Analytics' task KPI became "Needs outreach" instead.
+- **Renamed routes/nav**: Discovery→Discover, Intelligence→Research,
+  Engagement→Engage, COI/Network→Network.
+- **Universal Contact Drawer** (`components/ContactDrawer.tsx` +
+  `lib/contactDrawerContext.tsx`): a slide-over panel any component can
+  open via `useContactDrawer().openDrawer(id)` instead of navigating
+  away — identity, stage, Why Now, Prospect Score, recent notes/news,
+  next meeting, shared connections, affiliations, and quick actions
+  (Open Prep, Send Email, Add Note, Move Stage, Mark Contacted). Wired
+  into Pipeline cards, Network's intro paths and COI list, every
+  contact name on Home, and a new entity search on Research. The full
+  profile page is still there for a deeper dive — the drawer is the
+  quick-glance layer on top of it, not a replacement.
+- **Home**: Today's Focus capped at 3 items, Today's Work capped at 3,
+  Needs a Touch capped to a 5-item preview linking to the full list on
+  Engage (previews on the dashboard, full detail in the dedicated
+  page).
+- **Engage**: "Needs a Touch" (contacts overdue <45d) is the default
+  top section; a new "Cooling Relationships" section (45+ days
+  overdue) uses a meaningfully longer, distinct threshold instead of
+  duplicating the cadence reminder.
+- **Discover**: the always-visible 17-category filter chip matrix now
+  collapses behind a "Filters" toggle. New "High-Priority
+  Opportunities" section (wealth-event category + a name identified)
+  above the general feed, a 4-stat triage summary, and an
+  "+ Add Prospect" header action.
+- **Pipeline**: cards show a Why Now score badge + next recommended
+  action inline, a compact stat row above the funnel, and a
+  collapsible Cold/Not Converting section.
+- **Network**: new "Best Introduction Paths" section — the subset of
+  warm-intro matches where one side is already a Client/COI (a
+  plausible connector) and the other is still a prospect, ranked by
+  shared-term count, rendered as "Prospect via Connector."
+- **Research**: a "Research a person or company..." search at the top
+  opens the Contact Drawer instead of duplicating its content in a
+  second entity-summary view — the existing firm-wide sections (warm
+  intros, Prospect/Client/Lead map, wealth events, Watchlist) stay as
+  the market-intelligence browsing layer.
+- **Analytics**: KPIs regrouped into labeled sections (Activity this
+  month, Relationship cadence, Pipeline performance, Referral
+  performance). Added Calls/Emails this month (same computation as the
+  existing Meetings stat) and Cooling Relationships.
+
+**Deliberately not built**, and why: an "Introduction Workflow" status
+tracker (Suggested/Requested/Accepted/Completed) and an "Active
+Outreach" status pipeline (Drafting/Sent/Waiting/Replied) would each
+need a new persisted data model — real scope, not a styling change, so
+they're left as a follow-up rather than half-built. An "Efficiency"
+Analytics section (time saved, adoption rate) was skipped outright —
+there's no real baseline in a single-user app to measure either
+number against, so anything shown there would be invented, not
+measured.
 
 ## Calendar (prospecting events)
 
