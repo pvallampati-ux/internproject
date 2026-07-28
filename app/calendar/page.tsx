@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CalendarEvent } from "@/lib/eventsStore";
 import type { Contact } from "@/lib/contactTypes";
 import { suggestInvitees } from "@/lib/eventOptimizer";
+import { useContactDrawer } from "@/lib/contactDrawerContext";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -35,6 +36,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(dateKey(today));
 
   // Add-event form state
+  const { openDrawer } = useContactDrawer();
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
@@ -165,13 +167,13 @@ export default function CalendarPage() {
         {event.taggedContactIds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {event.taggedContactIds.map((id) => (
-              <a
+              <button
                 key={id}
-                href={`/contacts/${id}`}
+                onClick={() => openDrawer(id)}
                 className="rounded-full bg-charcoal-900 px-2 py-0.5 text-xs text-gold-400 hover:underline"
               >
                 {contactName(id)}
-              </a>
+              </button>
             ))}
           </div>
         )}
@@ -233,7 +235,7 @@ export default function CalendarPage() {
       <header className="mb-6">
         <p className="text-xs uppercase tracking-widest text-gold-500">Calendar</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          Prospecting Events
+          What is happening, and when?
         </h1>
         <p className="mt-1 text-sm text-gray-400">
           Social/sporting events for prospecting — tailgates, fundraisers, networking

@@ -27,6 +27,14 @@ export default function EmailAction({ contactId, email, onEmailSaved, compact }:
     onEmailSaved?.(emailDraft.trim());
   }
 
+  function setOutreachStatus(status: "Drafting" | "Sent") {
+    fetch(`/api/contacts/${contactId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outreachStatus: status }),
+    }).catch(() => {});
+  }
+
   async function generate() {
     setLoading(true);
     setError(null);
@@ -44,6 +52,7 @@ export default function EmailAction({ contactId, email, onEmailSaved, compact }:
         setTemplate(data);
         setSubjectDraft(data.subject);
         setBodyDraft(data.body);
+        setOutreachStatus("Drafting");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -128,6 +137,7 @@ export default function EmailAction({ contactId, email, onEmailSaved, compact }:
             href={`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
               subjectDraft
             )}&body=${encodeURIComponent(bodyDraft)}`}
+            onClick={() => setOutreachStatus("Sent")}
             className="inline-block rounded-md bg-gold-500 px-3 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
           >
             Open in email client to send

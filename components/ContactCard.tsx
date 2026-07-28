@@ -93,12 +93,13 @@ export default function ContactCard({ contact, whyNow, onStageChange, onMarkCont
           <p className="truncate font-serif text-base font-semibold text-gray-100">{contact.name}</p>
         </button>
         {overdue && (
-          <span
-            className="shrink-0 text-sm text-amber-400"
-            title={`Needs a touchpoint — ${daysSinceContact - contact.cadenceDays}d overdue`}
+          <button
+            onClick={() => onMarkContacted(contact.id)}
+            className="shrink-0 text-sm text-amber-400 hover:text-gold-400"
+            title={`${daysSinceContact - contact.cadenceDays}d overdue — click to mark contacted`}
           >
             ⚑
-          </span>
+          </button>
         )}
       </div>
       {contact.company && <p className="truncate text-sm text-gray-400">{contact.company}</p>}

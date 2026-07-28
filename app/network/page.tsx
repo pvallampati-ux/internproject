@@ -7,6 +7,7 @@ import type { NetworkEdge } from "@/lib/networkGraph";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
 import { INTRO_STATUSES, type IntroRequest, type IntroStatus } from "@/lib/introRequestTypes";
+import { buildIntroRequestMessage } from "@/lib/introMessage";
 
 const INTRO_STATUS_STYLES: Record<IntroStatus, string> = {
   Suggested: "border-charcoal-700 text-gray-400",
@@ -28,6 +29,107 @@ interface IntroPath {
   connector: Contact;
   prospect: Contact;
   match: WarmIntroMatch;
+}
+
+interface IntroPathRowProps {
+  connector: Contact;
+  prospect: Contact;
+  match: WarmIntroMatch;
+  status: IntroStatus;
+  onStatusChange: (status: IntroStatus) => void;
+  onOpenDrawer: (contactId: string) => void;
+}
+
+// Fixed-template draft (lib/introMessage.ts, no LLM call) for asking the
+// connector to make the intro — separate from the AI email generator used
+// for client/prospect outreach, so this doesn't quietly add new LLM cost.
+function IntroPathRow({ connector, prospect, match, status, onStatusChange, onOpenDrawer }: IntroPathRowProps) {
+  const [drafting, setDrafting] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+
+  function startDraft() {
+    const msg = buildIntroRequestMessage(connector, prospect, describeSharedTerms(match.sharedTerms));
+    setSubject(msg.subject);
+    setBody(msg.body);
+    setDrafting(true);
+  }
+
+  function markRequested() {
+    onStatusChange("Requested");
+  }
+
+  return (
+    <li className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm">
+            <button onClick={() => onOpenDrawer(prospect.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
+              {prospect.name}
+            </button>
+            <span className="text-gray-500"> via </span>
+            <button onClick={() => onOpenDrawer(connector.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
+              {connector.name}
+            </button>
+          </p>
+          <p className="mt-0.5 text-xs text-gray-500">Shared: {describeSharedTerms(match.sharedTerms)}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={() => (drafting ? setDrafting(false) : startDraft())}
+            className="rounded-md border border-charcoal-700 px-2 py-1 text-xs text-gray-300 hover:border-gold-500/50 hover:text-gold-400"
+          >
+            {drafting ? "Hide draft" : "Draft ask"}
+          </button>
+          <select
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value as IntroStatus)}
+            className={`rounded-full border px-2 py-1 text-xs font-medium focus:outline-none ${INTRO_STATUS_STYLES[status]}`}
+          >
+            {INTRO_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {drafting && (
+        <div className="mt-3 rounded-md border border-charcoal-700 bg-charcoal-900 p-3">
+          <p className="text-xs text-gray-500">
+            Fixed-template draft, not AI-generated — asking {connector.name} to introduce you to{" "}
+            {prospect.name}. Edit freely.
+          </p>
+          <input
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="mt-2 w-full rounded-md border border-charcoal-700 bg-charcoal-950 px-2 py-1 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+          />
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={5}
+            className="mt-2 w-full rounded-md border border-charcoal-700 bg-charcoal-950 px-2 py-1 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+          />
+          {connector.email ? (
+            <a
+              href={`mailto:${encodeURIComponent(connector.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}
+              onClick={markRequested}
+              className="mt-2 inline-block rounded-md bg-gold-500 px-3 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+            >
+              Open in email client to send
+            </a>
+          ) : (
+            <p className="mt-2 text-xs text-gray-600">
+              No email on file for {connector.name} — add one on their profile, or copy this text
+              manually.
+            </p>
+          )}
+        </div>
+      )}
+    </li>
+  );
 }
 
 function buildIntroPaths(matches: WarmIntroMatch[]): IntroPath[] {
@@ -147,41 +249,17 @@ export default function NetworkPage() {
               </p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {introPaths.slice(0, 6).map(({ connector, prospect, match }, i) => {
-                  const status = introStatusByKey.get(introKey(prospect.id, connector.id)) ?? "Suggested";
-                  return (
-                    <li
-                      key={i}
-                      className="flex items-center justify-between gap-3 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2.5"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm">
-                          <button onClick={() => openDrawer(prospect.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
-                            {prospect.name}
-                          </button>
-                          <span className="text-gray-500"> via </span>
-                          <button onClick={() => openDrawer(connector.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
-                            {connector.name}
-                          </button>
-                        </p>
-                        <p className="mt-0.5 text-xs text-gray-500">
-                          Shared: {describeSharedTerms(match.sharedTerms)}
-                        </p>
-                      </div>
-                      <select
-                        value={status}
-                        onChange={(e) => updateIntroStatus(prospect.id, connector.id, e.target.value as IntroStatus)}
-                        className={`shrink-0 rounded-full border px-2 py-1 text-xs font-medium focus:outline-none ${INTRO_STATUS_STYLES[status]}`}
-                      >
-                        {INTRO_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </li>
-                  );
-                })}
+                {introPaths.slice(0, 6).map(({ connector, prospect, match }, i) => (
+                  <IntroPathRow
+                    key={i}
+                    connector={connector}
+                    prospect={prospect}
+                    match={match}
+                    status={introStatusByKey.get(introKey(prospect.id, connector.id)) ?? "Suggested"}
+                    onStatusChange={(status) => updateIntroStatus(prospect.id, connector.id, status)}
+                    onOpenDrawer={openDrawer}
+                  />
+                ))}
               </ul>
             )}
           </section>

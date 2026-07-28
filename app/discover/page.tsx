@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import LeadCard from "@/components/LeadCard";
+import AddContactForm from "@/components/AddContactForm";
 import type { Lead } from "@/lib/store";
 import type { Contact } from "@/lib/contactTypes";
 import type { Category } from "@/lib/config";
@@ -64,6 +64,29 @@ export default function DiscoveryPage() {
     });
   }
 
+  async function handleAddContact(input: {
+    name: string;
+    title?: string;
+    company: string;
+    email?: string;
+    location?: string;
+    industry?: string;
+    tags: string[];
+    cadenceDays: number;
+    estimatedValue?: number;
+    currentWalletShare?: number;
+    referredBy?: string;
+    referredByContactId?: string;
+  }) {
+    const res = await fetch("/api/contacts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const created = await res.json();
+    setContacts((prev) => [...prev, created]);
+  }
+
   async function handleRefresh() {
     setRefreshing(true);
     setRefreshMessage(null);
@@ -119,26 +142,22 @@ export default function DiscoveryPage() {
             not an LLM model.
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <Link
-            href="/pipeline"
-            className="rounded-md border border-charcoal-700 px-3 py-1.5 text-sm text-gray-300 hover:border-gold-500/50 hover:text-gold-400"
-          >
-            + Add Prospect
-          </Link>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
-          >
-            {refreshing ? "Refreshing..." : "Refresh feeds"}
-          </button>
-        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="shrink-0 rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
+        >
+          {refreshing ? "Refreshing..." : "Refresh feeds"}
+        </button>
       </header>
 
       {refreshMessage && (
         <p className="mb-4 text-sm text-gray-400">{refreshMessage}</p>
       )}
+
+      <div className="mb-4">
+        <AddContactForm contacts={contacts} onAdd={handleAddContact} />
+      </div>
 
       <FilterBar
         activeCategory={category}
