@@ -11,6 +11,8 @@ interface Props {
 export default function EmailAction({ contactId, email, onEmailSaved, compact }: Props) {
   const [emailDraft, setEmailDraft] = useState("");
   const [template, setTemplate] = useState<EmailTemplate | null>(null);
+  const [subjectDraft, setSubjectDraft] = useState("");
+  const [bodyDraft, setBodyDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -40,6 +42,8 @@ export default function EmailAction({ contactId, email, onEmailSaved, compact }:
         setError(data.error ?? "Something went wrong.");
       } else {
         setTemplate(data);
+        setSubjectDraft(data.subject);
+        setBodyDraft(data.body);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -100,20 +104,30 @@ export default function EmailAction({ contactId, email, onEmailSaved, compact }:
       {template && (
         <div className="mt-2 space-y-2">
           <p className="text-xs text-gold-400">
-            ⚠ AI-generated draft, not sent automatically — review before sending.
+            ⚠ AI-generated draft, not sent automatically — edit freely, then review before
+            sending.
           </p>
           <div>
             <p className="text-xs text-gray-500">Subject</p>
-            <p className="text-sm text-gray-200">{template.subject}</p>
+            <input
+              value={subjectDraft}
+              onChange={(e) => setSubjectDraft(e.target.value)}
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-950 px-2 py-1 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+            />
           </div>
           <div>
             <p className="text-xs text-gray-500">Body</p>
-            <p className="whitespace-pre-wrap text-sm text-gray-200">{template.body}</p>
+            <textarea
+              value={bodyDraft}
+              onChange={(e) => setBodyDraft(e.target.value)}
+              rows={6}
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-950 px-2 py-1 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+            />
           </div>
           <a
             href={`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(
-              template.subject
-            )}&body=${encodeURIComponent(template.body)}`}
+              subjectDraft
+            )}&body=${encodeURIComponent(bodyDraft)}`}
             className="inline-block rounded-md bg-gold-500 px-3 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
           >
             Open in email client to send

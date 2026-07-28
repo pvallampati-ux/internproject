@@ -29,6 +29,7 @@ export default function ContactProfilePage() {
   const [cadenceDraft, setCadenceDraft] = useState("");
   const [valueDraft, setValueDraft] = useState("");
   const [referredByDraft, setReferredByDraft] = useState("");
+  const [nextMeetingDraft, setNextMeetingDraft] = useState("");
 
   async function loadContact() {
     const res = await fetch(`/api/contacts/${contactId}`);
@@ -44,6 +45,7 @@ export default function ContactProfilePage() {
     setCadenceDraft(String(data.cadenceDays));
     setValueDraft(data.estimatedValue !== undefined ? String(data.estimatedValue) : "");
     setReferredByDraft(data.referredBy ?? "");
+    setNextMeetingDraft(data.nextMeetingDate ? data.nextMeetingDate.slice(0, 10) : "");
 
     const leadsRes = await fetch("/api/leads?days=90");
     const leadsData = await leadsRes.json();
@@ -74,6 +76,10 @@ export default function ContactProfilePage() {
 
   async function handleMarkContacted() {
     await patch({ lastContactedAt: new Date().toISOString() });
+  }
+
+  async function handleToggleCOI() {
+    await patch({ isCOI: !contact?.isCOI });
   }
 
   async function submitNote() {
@@ -130,17 +136,29 @@ export default function ContactProfilePage() {
             className="mt-1 rounded-md border border-transparent bg-transparent px-0 py-0.5 text-sm text-gray-400 hover:border-charcoal-700 focus:border-gold-500 focus:bg-charcoal-900 focus:px-2 focus:outline-none"
           />
         </div>
-        <select
-          value={contact.stage}
-          onChange={(e) => handleStageChange(e.target.value as PipelineStage)}
-          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
-        >
-          {PIPELINE_STAGES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <select
+            value={contact.stage}
+            onChange={(e) => handleStageChange(e.target.value as PipelineStage)}
+            className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+          >
+            {PIPELINE_STAGES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleToggleCOI}
+            className={`rounded-md border px-2 py-1 text-xs ${
+              contact.isCOI
+                ? "border-gold-500 bg-gold-500/10 text-gold-400"
+                : "border-charcoal-700 text-gray-500 hover:border-gray-500"
+            }`}
+          >
+            {contact.isCOI ? "★ Center of Influence" : "☆ Mark as COI"}
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -214,6 +232,21 @@ export default function ContactProfilePage() {
           >
             Mark contacted
           </button>
+
+          <div className="mt-4">
+            <label className="text-xs text-gray-500">
+              Next meeting date — shows up in the daily brief that day
+            </label>
+            <input
+              type="date"
+              value={nextMeetingDraft}
+              onChange={(e) => setNextMeetingDraft(e.target.value)}
+              onBlur={() =>
+                patch({ nextMeetingDate: nextMeetingDraft ? new Date(nextMeetingDraft).toISOString() : null })
+              }
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+            />
+          </div>
 
           <div className="mt-4 border-t border-charcoal-700 pt-4">
             <EmailAction

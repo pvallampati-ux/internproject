@@ -18,6 +18,7 @@ export interface MarketEventMatch {
 }
 
 export interface DailyBrief {
+  meetingsToday: Contact[];
   overdueContacts: OverdueContact[];
   followUps: Lead[];
   coolingLeads: Lead[];
@@ -25,10 +26,17 @@ export interface DailyBrief {
   warmIntros: WarmIntroMatch[];
 }
 
+function isToday(isoDate: string): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  return isoDate.slice(0, 10) === today;
+}
+
 export function computeDailyBrief(): DailyBrief {
   const contacts = loadContacts();
   const leads = loadLeads();
   const now = Date.now();
+
+  const meetingsToday = contacts.filter((c) => c.nextMeetingDate && isToday(c.nextMeetingDate));
 
   // Cold contacts are deliberately off the active journey — don't nag to
   // reach out to someone who's gone quiet or isn't converting.
@@ -63,5 +71,5 @@ export function computeDailyBrief(): DailyBrief {
 
   const warmIntros = findWarmIntros().slice(0, WARM_INTRO_TEASER_LIMIT);
 
-  return { overdueContacts, followUps, coolingLeads, marketEvents, warmIntros };
+  return { meetingsToday, overdueContacts, followUps, coolingLeads, marketEvents, warmIntros };
 }

@@ -70,6 +70,7 @@
     "cadenceDays": 30,
     "stage": "Meeting",
     "estimatedValue": 3000000,
+    "isCOI": true,
     "noteLog": [
       {
         "date": "2026-06-20T14:00:00.000Z",
@@ -152,6 +153,44 @@
       {
         "date": "2026-04-30T14:00:00.000Z",
         "text": "Demo contact — edit or replace with a real contact. Went with a competitor's advisor, not interested for now."
+      }
+    ]
+  },
+  {
+    "id": "contact_demo_8",
+    "name": "Robert Chen",
+    "company": "Chen Wealth Advisory (CPA)",
+    "email": "robert.chen@example.com",
+    "tags": ["estate planning"],
+    "lastContactedAt": "2026-07-20T14:00:00.000Z",
+    "cadenceDays": 45,
+    "stage": "Client",
+    "isCOI": true,
+    "noteLog": [
+      {
+        "date": "2026-01-10T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real Center of Influence. Local CPA, sends referrals a couple times a year."
+      },
+      {
+        "date": "2026-07-20T14:00:00.000Z",
+        "text": "Demo contact. Caught up over lunch, he mentioned Elena Rodriguez as someone worth meeting."
+      }
+    ]
+  },
+  {
+    "id": "contact_demo_9",
+    "name": "Pooja Vallampati",
+    "company": "(you — for testing Send Email / AI Meeting Prep safely)",
+    "email": "pvallampati@gmail.com",
+    "tags": [],
+    "lastContactedAt": "2026-07-20T14:00:00.000Z",
+    "cadenceDays": 30,
+    "stage": "Prospect",
+    "nextMeetingDate": "2026-07-28T14:00:00.000Z",
+    "noteLog": [
+      {
+        "date": "2026-07-20T14:00:00.000Z",
+        "text": "Demo contact with your real name/email so you can safely test Send Email and AI Meeting Prep without emailing a stranger. Has a meeting scheduled today to demo that daily-brief feature too."
       }
     ]
   }

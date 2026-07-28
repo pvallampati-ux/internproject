@@ -16,3 +16,7 @@ data/market-insights.json
 # User-added Market Insights industries (personal configuration, not a
 # shipped default) — local-only.
 data/custom-industries.json
+
+# Real calendar/schedule stays local-only. data/events.sample.json (demo
+# OSU football prospecting events) is tracked and seeds this on first run.
+data/events.json

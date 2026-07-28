@@ -34,7 +34,9 @@ export interface Contact {
   stage: PipelineStage;
   noteLog: NoteEntry[];
   estimatedValue?: number; // rough opportunity size, e.g. estimated investable assets ($)
-  referredBy?: string; // free text: who/what referred this contact
+  referredBy?: string; // free text: who/what referred this contact — also used to draw referral edges on the Network graph when it matches another contact's name
+  nextMeetingDate?: string; // ISO date; surfaced in the daily brief so AI Meeting Prep is ready ahead of time
+  isCOI?: boolean; // Center of Influence — a referral source, tracked on the COI/Network tab
 }
 
 // "Touchpoints" is simply the number of logged notes — every meaningful

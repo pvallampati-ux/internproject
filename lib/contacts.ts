@@ -89,6 +89,8 @@ export function updateContact(
       | "lastContactedAt"
       | "estimatedValue"
       | "referredBy"
+      | "nextMeetingDate"
+      | "isCOI"
     >
   >
 ): Contact | null {

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "event_demo_1",
+    "title": "Ohio State vs. Michigan — Tailgate",
+    "date": "2026-11-28T16:00:00.000Z",
+    "location": "Ohio Stadium, Columbus",
+    "description": "Demo event — edit or replace. Client/prospect tailgate before the rivalry game, good venue for warm intros.",
+    "taggedContactIds": ["contact_demo_1", "contact_demo_2"]
+  },
+  {
+    "id": "event_demo_2",
+    "title": "Ohio State Football — Season Opener Watch Party",
+    "date": "2026-08-29T18:00:00.000Z",
+    "location": "Downtown Columbus",
+    "description": "Demo event — edit or replace. Casual watch party, invite a few prospects to meet informally.",
+    "taggedContactIds": ["contact_demo_3"]
+  },
+  {
+    "id": "event_demo_3",
+    "title": "Columbus Chamber of Commerce Networking Night",
+    "date": "2026-09-15T17:30:00.000Z",
+    "location": "Columbus Chamber of Commerce",
+    "description": "Demo event — edit or replace. Monthly networking event, good for COI relationship building.",
+    "taggedContactIds": ["contact_demo_8"]
+  }
+]

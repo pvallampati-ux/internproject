@@ -1,14 +1,16 @@
 # Private Client Prospecting Hub
 
-A Columbus / Central Ohio prospecting platform organized into five modules,
+A Columbus / Central Ohio prospecting platform organized into seven modules,
 navigable via the top nav bar:
 
 | Tab | Route | What it does |
 |---|---|---|
 | Prospect Discovery | `/` | News-based lead sourcing, filtering, and scoring |
-| Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map, and an industry-focus filter (Healthcare / Business Owners) for Market Insights |
+| Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map, and an industry-focus filter (Healthcare / Business Owners / anything you add) for Market Insights |
 | Engagement | `/engagement` | Meeting prep (+ optional AI Meeting Prep), outreach queue, follow-ups/cooling leads |
-| Pipeline | `/pipeline` | Prospect → Client Kanban/funnel, deal value, referral source |
+| Pipeline | `/pipeline` | Prospect → Client Kanban/funnel (drag-and-drop or dropdown), deal value, referral source |
+| COI / Network | `/coi` | Centers of Influence and a visual graph of referral/warm-intro connections |
+| Calendar | `/calendar` | Prospecting events (tailgates, networking nights), search, CSV schedule upload, tag prospects |
 | Analytics | `/analytics` | **Not built yet** — stub page, see below |
 
 Every contact also has a profile page at `/contacts/[id]` — click any name in
@@ -155,15 +157,19 @@ and meeting notes once you start using this for real. `data/contacts.sample.json
 is tracked and ships in the repo as the seed template `data/contacts.json`
 is created from on first run.
 
-It currently ships with **7 demo contacts** (`contact_demo_1` through
-`_7`) spanning every pipeline stage — so the funnel, touchpoints, deal
-value, and daily-brief "people to call" logic all have something to show
-before you've added anyone real. These are clearly fake: names like "Jane
-Whitfield," emails on `@example.com`, and every note explicitly says "Demo
-contact." There are no fake **news articles** anywhere (`data/leads.json`
+It currently ships with **9 demo contacts** spanning every pipeline stage —
+so the funnel, touchpoints, deal value, network graph, and daily-brief
+"people to call" logic all have something to show before you've added
+anyone real. Most are clearly fake: names like "Jane Whitfield," emails on
+`@example.com`, and every note explicitly says "Demo contact." One
+(`contact_demo_9`) is deliberately **your own real name and email** (from
+this session's context) with a meeting scheduled today — that one's meant
+for you to actually click "Generate email" / "Open in email client to
+send" and "AI Meeting Prep" against without emailing a stranger while
+testing. There are no fake **news articles** anywhere (`data/leads.json`
 and `data/market-insights.json` still start empty and only ever hold real
-fetched results) — only the contacts/pipeline side has placeholder data,
-and only because it was explicitly asked for to see the pipeline working
+fetched results) — only the contacts/pipeline/calendar side has placeholder
+data, and only because it was explicitly asked for to see things working
 end to end. Delete or edit `data/contacts.json` (or reset it to `[]`,
 delete it, and it reseeds from the sample) once you're ready to replace the
 demo contacts with real ones.
@@ -193,6 +199,13 @@ save on blur — no separate "edit mode" toggle.
 profile page, and the daily brief's outreach queue. It's derived, not a
 separate counter, so it can't drift out of sync with the note log.
 
+### Next meeting date → shows up in the daily brief
+
+Set a "Next meeting date" on a contact's profile page and it surfaces as a
+**Meetings today** section at the top of the daily brief on that date, with
+an "Open AI Meeting Prep →" link straight to their profile so you're not
+hunting for who you're meeting.
+
 ### Email actions (Send Email / Generate email template)
 
 Both the contact profile page and the daily brief have an **✉ Email**
@@ -200,11 +213,13 @@ button (`components/EmailAction.tsx`). If the contact has no email on file
 yet, it asks for one first. "Generate email" calls the same Perplexity API
 as AI Meeting Prep (same `PERPLEXITY_API_KEY` setup, same per-use cost, same
 grounding rules — only from that contact's notes and matched recent news,
-never inventing facts) to draft a short, specific outreach email. **This
-app never sends email itself** — "Open in email client to send" is a
-`mailto:` link that pre-fills the subject/body in your actual email client
-(Outlook, Gmail, whatever's set as default); you always hit send yourself,
-from your real firm email system, not from this tool.
+never inventing facts) to draft a short, specific outreach email — subject
+and body both land in **editable fields**, so you can tweak the AI draft
+before doing anything with it, on a case-by-case basis. **This app never
+sends email itself** — "Open in email client to send" is a `mailto:` link
+that pre-fills your (possibly-edited) subject/body in your actual email
+client (Outlook, Gmail, whatever's set as default); you always hit send
+yourself, from your real firm email system, not from this tool.
 
 ### Pipeline stages
 
@@ -233,6 +248,29 @@ mention "Ohio State University"). This is naive keyword overlap, not real
 NLP — expect false positives on generic terms, and treat every match as a
 prompt to double-check, not a confirmed connection. Results show up on the
 Pipeline page and as a short teaser in the daily brief.
+
+## COI / Network tab
+
+`/coi` is for Centers of Influence — attorneys, CPAs, and other referral
+sources — separate from where someone sits in the Prospect → Client
+pipeline (a COI can also be a client, or not be in the pipeline at all).
+Toggle a contact as a COI from their profile page or the quick checklist at
+the bottom of the COI tab.
+
+The **Network** graph (`components/NetworkGraph.tsx`) is a self-contained
+SVG visualization, not a real graph library — plain circular layout, no
+physics simulation. It draws two kinds of edges (`lib/networkGraph.ts`):
+
+- **Referral** (solid gold) — when a contact's free-text `referredBy` field
+  matches another contact's name exactly (case-insensitive). This is
+  string matching, not a structured link, so it only draws a line if you
+  typed the referrer's name the same way in both places.
+- **Possible warm intro** (dashed gray) — the same naive keyword-overlap
+  matches from the warm intro finder, deduped against referral edges so a
+  pair already linked one way doesn't also get a second line.
+
+COI contacts render as larger nodes with a gold ring; hover any node to
+highlight just its connections, click to open that contact's profile.
 
 ### Cooling leads
 
@@ -357,6 +395,23 @@ more precision — if you want that level of control for a new vertical,
 add it directly to `INDUSTRIES`/`INDUSTRY_TOPICS` in `lib/industries.ts`
 instead of through the UI.
 
+## Calendar (prospecting events)
+
+`/calendar` tracks social/sporting events used for prospecting — tailgates,
+fundraisers, networking nights — separate from `data/leads.json`. Add an
+event manually, search by title/location/description, and tag any number
+of contacts to it (shown as chips on the event, and on the contact if you
+look them up). Stored in `data/events.json` (git-ignored, your real
+schedule) seeded from `data/events.sample.json` (tracked — ships with three
+demo events, including an Ohio State football tailgate, as an example of
+the pattern rather than confidential data).
+
+**Upload schedule (CSV)** parses a simple CSV
+(`title,date,location,description` header, last two optional) and
+bulk-creates events — `lib/csvUtils.ts` is a minimal parser (basic quoted-
+field support, not full RFC 4180) good enough for a personal schedule
+export; reformat oddly-escaped rows by hand if a row gets skipped.
+
 ## Analytics (not built)
 
 `/analytics` is intentionally a stub page, not a fake dashboard. It would
@@ -387,9 +442,17 @@ in-app rather than populated with placeholder numbers.
   substring based, static coordinates) rather than real NLP or a mapping
   API — keeps the project free and self-contained, at the cost of precision.
   Treat both as a starting point to investigate, not a verified result.
-- AI Meeting Prep depends on an LLM's search and reasoning, which can still
-  miss context, misattribute information, or occasionally fail to return
-  valid JSON (the API surfaces a clear error rather than showing garbage in
-  that case). It's the one feature in this app that isn't free and isn't
-  deterministic — everything else you can trace back to an exact keyword
-  match; this one you can't.
+- AI Meeting Prep and email generation depend on an LLM's search and
+  reasoning, which can still miss context, misattribute information, or
+  occasionally fail to return valid JSON (the API surfaces a clear error
+  rather than showing garbage in that case). These are the only features in
+  this app that aren't free and aren't deterministic — everything else you
+  can trace back to an exact keyword match; these you can't.
+- The Network graph's referral edges only draw when `referredBy` is an
+  exact (case-insensitive) match to another contact's `name` — a typo, a
+  nickname, or "Dr. Chen" vs. "Robert Chen" won't link. It's also a plain
+  circular layout, not a force-directed graph, so it won't automatically
+  cluster related people together as the network grows.
+- The CSV schedule upload is a minimal parser, not a full CSV spec
+  implementation — stick to simple values (no embedded newlines) in each
+  cell for reliable results.

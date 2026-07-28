@@ -54,7 +54,10 @@ export default function Home() {
     (async () => {
       const data = await fetchBrief();
       const hasContent =
-        data.overdueContacts.length > 0 || data.followUps.length > 0 || data.marketEvents.length > 0;
+        data.meetingsToday.length > 0 ||
+        data.overdueContacts.length > 0 ||
+        data.followUps.length > 0 ||
+        data.marketEvents.length > 0;
       if (hasContent && localStorage.getItem(BRIEF_SHOWN_KEY) !== todayKey()) {
         setShowBrief(true);
         localStorage.setItem(BRIEF_SHOWN_KEY, todayKey());
