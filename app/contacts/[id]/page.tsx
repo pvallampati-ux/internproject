@@ -3,16 +3,38 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { PIPELINE_STAGES, touchpointCount, type Contact, type PipelineStage } from "@/lib/contactTypes";
+import {
+  PIPELINE_STAGES,
+  touchpointCount,
+  estimateWealthGap,
+  type Contact,
+  type PipelineStage,
+} from "@/lib/contactTypes";
 import type { Lead } from "@/lib/store";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
 import ContactPicker from "@/components/ContactPicker";
+import { assessRelationshipHealth, formatTenure } from "@/lib/relationshipHealth";
+import { detectLifeStage, LIFE_STAGE_TALKING_POINTS } from "@/lib/lifeStages";
+import { findRelationshipMemories, suggestedMemoryPrompt } from "@/lib/relationshipMemory";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
+    value
+  );
+}
+
+const HEALTH_STYLES: Record<string, string> = {
+  Strong: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+  Steady: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Declining: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+  "At Risk": "border-red-500/50 bg-red-500/10 text-red-400",
+};
 
 export default function ContactProfilePage() {
   const params = useParams<{ id: string }>();
@@ -30,6 +52,7 @@ export default function ContactProfilePage() {
   const [tagsDraft, setTagsDraft] = useState("");
   const [cadenceDraft, setCadenceDraft] = useState("");
   const [valueDraft, setValueDraft] = useState("");
+  const [walletShareDraft, setWalletShareDraft] = useState("");
   const [nextMeetingDraft, setNextMeetingDraft] = useState("");
 
   async function loadContact() {
@@ -45,6 +68,7 @@ export default function ContactProfilePage() {
     setTagsDraft(data.tags.join(", "));
     setCadenceDraft(String(data.cadenceDays));
     setValueDraft(data.estimatedValue !== undefined ? String(data.estimatedValue) : "");
+    setWalletShareDraft(data.currentWalletShare !== undefined ? String(data.currentWalletShare) : "");
     setNextMeetingDraft(data.nextMeetingDate ? data.nextMeetingDate.slice(0, 10) : "");
 
     const [leadsRes, contactsRes] = await Promise.all([
@@ -122,6 +146,10 @@ export default function ContactProfilePage() {
     (Date.now() - new Date(contact.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)
   );
   const overdue = daysSinceContact > contact.cadenceDays;
+  const relHealth = assessRelationshipHealth(contact);
+  const lifeStage = detectLifeStage(contact);
+  const memories = findRelationshipMemories(contact);
+  const memoryPrompt = suggestedMemoryPrompt(memories);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -132,7 +160,14 @@ export default function ContactProfilePage() {
       <header className="mt-2 mb-6 flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-gold-500">Contact Profile</p>
-          <h1 className="font-serif text-3xl font-semibold text-gray-100">{contact.name}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-serif text-3xl font-semibold text-gray-100">{contact.name}</h1>
+            {lifeStage && (
+              <span className="rounded-full border border-gold-500/50 bg-gold-500/10 px-2 py-0.5 text-xs font-medium text-gold-400">
+                {lifeStage}
+              </span>
+            )}
+          </div>
           <input
             value={companyDraft}
             onChange={(e) => setCompanyDraft(e.target.value)}
@@ -197,7 +232,7 @@ export default function ContactProfilePage() {
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500">Estimated opportunity value ($)</label>
+              <label className="text-xs text-gray-500">Estimated total wealth ($)</label>
               <input
                 type="number"
                 value={valueDraft}
@@ -207,6 +242,25 @@ export default function ContactProfilePage() {
                 }
                 className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 focus:border-gold-500 focus:outline-none"
               />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Current wallet share at the firm ($)</label>
+              <input
+                type="number"
+                value={walletShareDraft}
+                onChange={(e) => setWalletShareDraft(e.target.value)}
+                onBlur={() =>
+                  patch({ currentWalletShare: walletShareDraft ? Number(walletShareDraft) : undefined })
+                }
+                className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 focus:border-gold-500 focus:outline-none"
+              />
+              {estimateWealthGap(contact) !== null && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Wealth gap:{" "}
+                  <span className="text-gold-400">{formatCurrency(estimateWealthGap(contact)!)}</span>{" "}
+                  not yet captured
+                </p>
+              )}
             </div>
             <div>
               <label className="text-xs text-gray-500">Referred by</label>
@@ -224,15 +278,23 @@ export default function ContactProfilePage() {
         </section>
 
         <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Cadence &amp; Outreach
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Cadence &amp; Outreach
+            </h2>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${HEALTH_STYLES[relHealth.health]}`}
+              title={`Known ${formatTenure(relHealth.tenureDays)} · last contact ${relHealth.daysSinceLastContact}d ago`}
+            >
+              {relHealth.health}
+            </span>
+          </div>
           <p className={`mt-2 text-sm ${overdue ? "text-amber-400" : "text-gray-300"}`}>
             Last contact {formatDate(contact.lastContactedAt)} · every {contact.cadenceDays}d
             {overdue ? ` (${daysSinceContact - contact.cadenceDays}d overdue)` : ""}
           </p>
           <p className="mt-1 text-sm text-gray-300">
-            {touchpointCount(contact)} touchpoint(s) so far
+            {touchpointCount(contact)} touchpoint(s) so far · known {formatTenure(relHealth.tenureDays)}
           </p>
           <button
             onClick={handleMarkContacted}
@@ -266,6 +328,24 @@ export default function ContactProfilePage() {
         </section>
       </div>
 
+      {lifeStage && (
+        <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Life Stage: {lifeStage}
+          </h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Detected from tags, company, and notes — keyword-based, review before relying on it.
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {LIFE_STAGE_TALKING_POINTS[lifeStage].map((point, i) => (
+              <li key={i} className="text-sm text-gray-300">
+                • {point}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
           Conversations ({contact.noteLog.length})
@@ -298,6 +378,41 @@ export default function ContactProfilePage() {
           </button>
         </div>
       </section>
+
+      {memories.length > 0 && (
+        <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Relationship Memory
+          </h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Names that recur across years of notes — naive keyword matching over your own
+            conversation log, not real understanding of who these people are. Verify before
+            bringing anything up, and use discretion with personal details.
+          </p>
+          {memoryPrompt && (
+            <p className="mt-2 rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2 text-sm text-gold-400">
+              {memoryPrompt}
+            </p>
+          )}
+          <div className="mt-3 space-y-3">
+            {memories.map((memory) => (
+              <div key={memory.name} className="text-sm">
+                <p className="font-medium text-gray-100">{memory.name}</p>
+                <ul className="mt-1 space-y-0.5">
+                  {memory.mentions.map((mention, i) => (
+                    <li key={i} className="text-xs text-gray-500">
+                      {formatDate(mention.date)}
+                      {mention.eventLabels.length > 0 && (
+                        <span className="text-gold-400"> — {mention.eventLabels.join(", ")}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {relevantLeads.length > 0 && (
         <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">

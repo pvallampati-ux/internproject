@@ -53,6 +53,7 @@ export function createContact(input: {
   stage?: PipelineStage;
   initialNote?: string;
   estimatedValue?: number;
+  currentWalletShare?: number;
   referredBy?: string;
   referredByContactId?: string;
 }): Contact {
@@ -69,6 +70,7 @@ export function createContact(input: {
     stage: input.stage ?? "Prospect",
     noteLog: input.initialNote ? [{ date: now, text: input.initialNote }] : [],
     estimatedValue: input.estimatedValue,
+    currentWalletShare: input.currentWalletShare,
     referredBy: input.referredBy,
     referredByContactId: input.referredByContactId,
   };
@@ -90,6 +92,7 @@ export function updateContact(
       | "stage"
       | "lastContactedAt"
       | "estimatedValue"
+      | "currentWalletShare"
       | "referredBy"
       | "referredByContactId"
       | "nextMeetingDate"

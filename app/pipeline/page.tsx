@@ -76,6 +76,7 @@ export default function PipelinePage() {
     tags: string[];
     cadenceDays: number;
     estimatedValue?: number;
+    currentWalletShare?: number;
     referredBy?: string;
     referredByContactId?: string;
   }) {

@@ -18,7 +18,9 @@ function timeAgo(iso: string): string {
 
 export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
   const [emailOverrides, setEmailOverrides] = useState<Record<string, string>>({});
-  const { meetingsToday, overdueContacts, followUps, coolingLeads, marketEvents, warmIntros } = data;
+  const { meetingsToday, memoryReminders, overdueContacts, followUps, coolingLeads, marketEvents, warmIntros } =
+    data;
+  const memoryByContactId = new Map(memoryReminders.map((m) => [m.contact.id, m.prompt]));
   const isEmpty =
     meetingsToday.length === 0 &&
     overdueContacts.length === 0 &&
@@ -61,19 +63,27 @@ export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
             <h3 className="font-serif text-lg text-gray-100">Meetings today</h3>
             <ul className="mt-2 space-y-2">
               {meetingsToday.map((contact) => (
-                <li key={contact.id} className="flex items-center justify-between rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2">
-                  <div>
-                    <a href={`/contacts/${contact.id}`} className="text-sm font-medium text-gray-100 hover:underline">
-                      {contact.name}
+                <li key={contact.id} className="rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <a href={`/contacts/${contact.id}`} className="text-sm font-medium text-gray-100 hover:underline">
+                        {contact.name}
+                      </a>
+                      <p className="text-xs text-gray-500">{contact.company ?? "No company on file"}</p>
+                    </div>
+                    <a
+                      href={`/contacts/${contact.id}`}
+                      className="rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+                    >
+                      Open AI Meeting Prep →
                     </a>
-                    <p className="text-xs text-gray-500">{contact.company ?? "No company on file"}</p>
                   </div>
-                  <a
-                    href={`/contacts/${contact.id}`}
-                    className="rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
-                  >
-                    Open AI Meeting Prep →
-                  </a>
+                  {memoryByContactId.has(contact.id) && (
+                    <p className="mt-2 text-xs text-gray-400">
+                      <span className="text-gold-400">Relationship memory:</span>{" "}
+                      {memoryByContactId.get(contact.id)}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>

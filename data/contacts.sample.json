@@ -17,7 +17,7 @@
       },
       {
         "date": "2026-07-16T14:00:00.000Z",
-        "text": "Demo contact. Follow-up call — mentioned she's exploring liquidity options in the next couple years."
+        "text": "Demo contact. Follow-up call — mentioned she's preparing for exit and exploring liquidity options in the next couple years."
       }
     ]
   },
@@ -34,7 +34,7 @@
     "noteLog": [
       {
         "date": "2026-07-25T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real prospect. Intro call, third-generation family manufacturing business."
+        "text": "Demo contact — edit or replace with a real prospect. Intro call, third-generation founder growing the family manufacturing business."
       }
     ]
   },
@@ -57,7 +57,7 @@
       },
       {
         "date": "2026-07-18T14:00:00.000Z",
-        "text": "Demo contact. Sent intro email, she's open to a coffee meeting in August."
+        "text": "Demo contact. Sent intro email, she's open to a coffee meeting in August. Also mentioned she's exploring a family foundation for community health initiatives."
       }
     ]
   },
@@ -71,6 +71,7 @@
     "cadenceDays": 30,
     "stage": "Meeting",
     "estimatedValue": 3000000,
+    "currentWalletShare": 500000,
     "isCOI": true,
     "noteLog": [
       {
@@ -97,6 +98,7 @@
     "cadenceDays": 30,
     "stage": "Proposal",
     "estimatedValue": 5000000,
+    "currentWalletShare": 750000,
     "referredBy": "David Park",
     "referredByContactId": "contact_demo_4",
     "noteLog": [
@@ -128,6 +130,7 @@
     "cadenceDays": 45,
     "stage": "Client",
     "estimatedValue": 800000,
+    "currentWalletShare": 800000,
     "noteLog": [
       {
         "date": "2026-01-15T14:00:00.000Z",
@@ -190,6 +193,18 @@
     "stage": "Prospect",
     "nextMeetingDate": "2026-07-28T14:00:00.000Z",
     "noteLog": [
+      {
+        "date": "2019-03-15T14:00:00.000Z",
+        "text": "Demo contact. First meeting, she mentioned her daughter Emma just started high school."
+      },
+      {
+        "date": "2023-06-10T14:00:00.000Z",
+        "text": "Demo contact. Catching up, Emma graduated high school this spring and is headed to Ohio State in the fall."
+      },
+      {
+        "date": "2026-07-05T14:00:00.000Z",
+        "text": "Demo contact. She mentioned Emma got engaged over the holidays, wedding being planned for next year."
+      },
       {
         "date": "2026-07-20T14:00:00.000Z",
         "text": "Demo contact with your real name/email so you can safely test Send Email and AI Meeting Prep without emailing a stranger. Has a meeting scheduled today to demo that daily-brief feature too."

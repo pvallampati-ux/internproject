@@ -1,6 +1,21 @@
 import { useState } from "react";
 import Link from "next/link";
-import { PIPELINE_STAGES, touchpointCount, type Contact, type PipelineStage } from "@/lib/contactTypes";
+import {
+  PIPELINE_STAGES,
+  touchpointCount,
+  estimateWealthGap,
+  type Contact,
+  type PipelineStage,
+} from "@/lib/contactTypes";
+import { assessRelationshipHealth } from "@/lib/relationshipHealth";
+import { detectLifeStage } from "@/lib/lifeStages";
+
+const HEALTH_DOT: Record<string, string> = {
+  Strong: "bg-emerald-400",
+  Steady: "bg-sky-400",
+  Declining: "bg-amber-400",
+  "At Risk": "bg-red-400",
+};
 
 interface Props {
   contact: Contact;
@@ -33,6 +48,9 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
     (Date.now() - new Date(contact.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)
   );
   const overdue = daysSinceContact > contact.cadenceDays;
+  const health = assessRelationshipHealth(contact).health;
+  const lifeStage = detectLifeStage(contact);
+  const wealthGap = estimateWealthGap(contact);
 
   return (
     <div
@@ -43,10 +61,21 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
       }}
       className="cursor-grab rounded-lg border border-charcoal-700 bg-charcoal-800 p-4 active:cursor-grabbing"
     >
-      <Link href={`/contacts/${contact.id}`} className="block hover:underline">
-        <p className="font-serif text-base font-semibold text-gray-100">{contact.name}</p>
-      </Link>
+      <div className="flex items-start justify-between gap-2">
+        <Link href={`/contacts/${contact.id}`} className="block hover:underline">
+          <p className="font-serif text-base font-semibold text-gray-100">{contact.name}</p>
+        </Link>
+        <span
+          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${HEALTH_DOT[health]}`}
+          title={`Relationship health: ${health}`}
+        />
+      </div>
       {contact.company && <p className="text-sm text-gray-400">{contact.company}</p>}
+      {lifeStage && (
+        <span className="mt-1 inline-block rounded-full border border-gold-500/50 bg-gold-500/10 px-2 py-0.5 text-xs font-medium text-gold-400">
+          {lifeStage}
+        </span>
+      )}
 
       <select
         value={contact.stage}
@@ -73,7 +102,12 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
       {(contact.estimatedValue || contact.referredBy) && (
         <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-gray-500">
           {contact.estimatedValue !== undefined && (
-            <span className="text-gold-400">{formatCurrency(contact.estimatedValue)}</span>
+            <span className="text-gold-400">
+              {formatCurrency(contact.estimatedValue)}
+              {wealthGap !== null && wealthGap > 0 && (
+                <span className="text-gray-500"> ({formatCurrency(wealthGap)} gap)</span>
+              )}
+            </span>
           )}
           {contact.referredBy &&
             (contact.referredByContactId ? (

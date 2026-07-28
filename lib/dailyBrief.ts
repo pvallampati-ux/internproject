@@ -3,6 +3,7 @@ import { loadLeads, type Lead } from "./store";
 import { findWarmIntros, type WarmIntroMatch } from "./warmIntros";
 import { matchLeadsToContact } from "./relevantLeads";
 import { COOLING_THRESHOLD_DAYS } from "./config";
+import { findRelationshipMemories, suggestedMemoryPrompt } from "./relationshipMemory";
 
 const MARKET_EVENT_LOOKBACK_DAYS = 14;
 const WARM_INTRO_TEASER_LIMIT = 3;
@@ -17,8 +18,14 @@ export interface MarketEventMatch {
   affectedContacts: Contact[];
 }
 
+export interface MemoryReminder {
+  contact: Contact;
+  prompt: string;
+}
+
 export interface DailyBrief {
   meetingsToday: Contact[];
+  memoryReminders: MemoryReminder[];
   overdueContacts: OverdueContact[];
   followUps: Lead[];
   coolingLeads: Lead[];
@@ -37,6 +44,16 @@ export function computeDailyBrief(): DailyBrief {
   const now = Date.now();
 
   const meetingsToday = contacts.filter((c) => c.nextMeetingDate && isToday(c.nextMeetingDate));
+
+  // Relationship memory: for anyone you're meeting today, surface a
+  // reminder built from names/life events that recur across their note
+  // history — naive keyword matching, see lib/relationshipMemory.ts.
+  const memoryReminders: MemoryReminder[] = meetingsToday
+    .map((contact) => {
+      const prompt = suggestedMemoryPrompt(findRelationshipMemories(contact));
+      return prompt ? { contact, prompt } : null;
+    })
+    .filter((x): x is MemoryReminder => x !== null);
 
   // Cold contacts are deliberately off the active journey — don't nag to
   // reach out to someone who's gone quiet or isn't converting.
@@ -71,5 +88,13 @@ export function computeDailyBrief(): DailyBrief {
 
   const warmIntros = findWarmIntros().slice(0, WARM_INTRO_TEASER_LIMIT);
 
-  return { meetingsToday, overdueContacts, followUps, coolingLeads, marketEvents, warmIntros };
+  return {
+    meetingsToday,
+    memoryReminders,
+    overdueContacts,
+    followUps,
+    coolingLeads,
+    marketEvents,
+    warmIntros,
+  };
 }

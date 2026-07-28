@@ -33,7 +33,8 @@ export interface Contact {
   cadenceDays: number; // how often you want to be in touch
   stage: PipelineStage;
   noteLog: NoteEntry[];
-  estimatedValue?: number; // rough opportunity size, e.g. estimated investable assets ($)
+  estimatedValue?: number; // rough total estimated wealth/investable assets ($) — the "wealth gap estimator" ceiling
+  currentWalletShare?: number; // $ already captured at the firm (existing accounts/AUM) — gap = estimatedValue - currentWalletShare
   // Who referred this contact. If the referrer is a tracked contact,
   // referredByContactId is the real, reliable link (used for Network graph
   // edges and rendered as a clickable link everywhere). referredBy is free
@@ -50,4 +51,13 @@ export interface Contact {
 // separately-tracked counter that could drift out of sync.
 export function touchpointCount(contact: Contact): number {
   return contact.noteLog.length;
+}
+
+// Wealth Gap Estimator: the difference between a contact's total estimated
+// wealth and what's already captured at the firm — a rough read on
+// untapped wallet share. Returns null when there isn't enough data (no
+// estimated value on file) to estimate a gap at all.
+export function estimateWealthGap(contact: Contact): number | null {
+  if (contact.estimatedValue === undefined) return null;
+  return contact.estimatedValue - (contact.currentWalletShare ?? 0);
 }

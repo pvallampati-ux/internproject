@@ -25,6 +25,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       | "stage"
       | "lastContactedAt"
       | "estimatedValue"
+      | "currentWalletShare"
       | "referredBy"
       | "referredByContactId"
       | "nextMeetingDate"
@@ -39,6 +40,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (typeof body.cadenceDays === "number") patch.cadenceDays = body.cadenceDays;
   if (PIPELINE_STAGES.includes(body.stage)) patch.stage = body.stage;
   if (typeof body.estimatedValue === "number") patch.estimatedValue = body.estimatedValue;
+  if (typeof body.currentWalletShare === "number") patch.currentWalletShare = body.currentWalletShare;
   if (typeof body.referredBy === "string") patch.referredBy = body.referredBy;
   if (typeof body.referredByContactId === "string" || body.referredByContactId === null) {
     patch.referredByContactId = body.referredByContactId ?? undefined;

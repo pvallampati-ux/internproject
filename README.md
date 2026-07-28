@@ -392,6 +392,71 @@ displays, just without a link. Contact names shown elsewhere in the app
 "Affects: ..." on market events in the daily brief) are also clickable
 links to that contact's profile, not inert text.
 
+## Contact intelligence: Wealth Gap, Life Stage, Relationship Health, Relationship Memory
+
+Four rule-based panels on the contact profile page (`/contacts/[id]`), all
+derived from data you already have on file — no new data source, no LLM
+call, no cost.
+
+### Wealth Gap Estimator
+
+Contacts optionally carry `currentWalletShare` alongside `estimatedValue`
+(now read as "estimated total wealth," not just "opportunity size").
+`estimateWealthGap()` (`lib/contactTypes.ts`) is simply
+`estimatedValue - currentWalletShare` — the untapped portion of a
+contact's wealth not yet captured at the firm. Shown on the contact
+profile (editable field + computed gap) and, when positive, as a small
+"(gap)" annotation on Pipeline contact cards.
+
+### Client Life Stage Engine
+
+`lib/lifeStages.ts` classifies each contact into one of four stages by
+keyword match against their tags, company, and note text — same naive
+approach as lead classification, so review before trusting a label:
+
+- **Building Wealth** — founder, executive, growing/scaling business
+- **Liquidity** — preparing for exit, IPO, acquisition, merger
+- **Preserving Wealth** — estate planning, family office, trust
+- **Legacy** — philanthropy, succession, foundation, next generation
+
+A contact with no keyword match gets no stage badge rather than a guess.
+The detected stage shows as a badge on the profile header and Pipeline
+cards, plus a short list of rule-based (not AI-generated) talking points
+for that stage on the profile page.
+
+### Relationship Health
+
+`lib/relationshipHealth.ts` derives two numbers from data already on
+file — no new field needed: tenure (days since the earliest logged note,
+i.e. "how long you've known this person") and a health status
+(Strong/Steady/Declining/At Risk) based on how overdue the last contact is
+relative to that contact's own cadence. A long-tenured relationship with a
+stale last conversation reads as "Declining," matching the idea that
+outreach expectations scale with how well you know someone. Shown as a
+colored badge next to "Cadence & Outreach" on the profile page and a small
+dot on Pipeline contact cards.
+
+### Relationship Memory
+
+`lib/relationshipMemory.ts` scans a single contact's own note history over
+time for names that recur across two or more separate notes — reusing the
+same crude proper-noun extraction as the warm intro finder
+(`lib/warmIntros.ts`), just scoped to one person's notes instead of
+cross-contact. Notes are also scanned for a small set of life-event
+keywords (graduation, engagement, wedding, new baby, retirement,
+promotion, and a few others); when a recurring name's most recent mention
+carries one, the profile page surfaces a prompt like "Ask about Emma's
+engagement," and the same prompt appears under that contact's entry in the
+daily brief if you have a meeting with them today.
+
+This is naive keyword matching, not real relationship understanding — it
+can't tell a daughter from a colleague, doesn't know who "Emma" actually
+is, and can produce false positives (any capitalized phrase that happens
+to recur). Since it's reading years of private notes for personal details,
+treat every result as a prompt to verify before bringing it up, and use
+discretion — this is the most sensitive naive-matching feature in the app,
+alongside the Personal group in Wealth Event Detection above.
+
 ## Market Insights (Healthcare / Business Owners) — the Intelligence "Focus" filter
 
 Unlike the rest of the app, Market Insights is industry-scoped rather than
@@ -505,6 +570,12 @@ in-app rather than populated with placeholder numbers.
   category group (Divorce, Estate Filing) is inherently sensitive — treat
   every match as an unverified public-news mention to confirm, not a fact,
   and use discretion in how (and whether) you act on it.
+- Life Stage, Relationship Health, and Relationship Memory are all
+  keyword/date-math derivations, not AI/ML, despite Relationship Memory in
+  particular reading like something smarter than it is — it has no idea who
+  the people in your notes actually are, only that the same capitalized
+  phrase showed up more than once. Wealth Gap is only as accurate as the two
+  numbers you type in; nothing here is pulled from any real account data.
 - The CSV schedule upload is a minimal parser, not a full CSV spec
   implementation — stick to simple values (no embedded newlines) in each
   cell for reliable results.

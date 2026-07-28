@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     stage,
     initialNote: typeof body.initialNote === "string" ? body.initialNote : undefined,
     estimatedValue: typeof body.estimatedValue === "number" ? body.estimatedValue : undefined,
+    currentWalletShare: typeof body.currentWalletShare === "number" ? body.currentWalletShare : undefined,
     referredBy: typeof body.referredBy === "string" ? body.referredBy : undefined,
     referredByContactId: typeof body.referredByContactId === "string" ? body.referredByContactId : undefined,
   });
