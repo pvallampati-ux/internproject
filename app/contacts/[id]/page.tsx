@@ -7,10 +7,14 @@ import {
   PIPELINE_STAGES,
   touchpointCount,
   estimateWealthGap,
+  NOTE_TYPES,
   type Contact,
   type PipelineStage,
+  type NoteType,
 } from "@/lib/contactTypes";
 import type { Lead } from "@/lib/store";
+import type { Task } from "@/lib/taskTypes";
+import type { AuditEntry } from "@/lib/auditLog";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
@@ -18,6 +22,9 @@ import ContactPicker from "@/components/ContactPicker";
 import { assessRelationshipHealth, formatTenure } from "@/lib/relationshipHealth";
 import { detectLifeStage, LIFE_STAGE_TALKING_POINTS } from "@/lib/lifeStages";
 import { findRelationshipMemories, suggestedMemoryPrompt } from "@/lib/relationshipMemory";
+import { calculateProspectScore } from "@/lib/prospectScore";
+import { findSimilarProspects } from "@/lib/similarProspects";
+import { buildTimeline, type TimelineItemKind } from "@/lib/timeline";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -36,6 +43,30 @@ const HEALTH_STYLES: Record<string, string> = {
   "At Risk": "border-red-500/50 bg-red-500/10 text-red-400",
 };
 
+const SCORE_BAND_STYLES: Record<string, string> = {
+  "Very High": "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+  High: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Medium: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+  Low: "border-gray-500/50 bg-gray-500/10 text-gray-400",
+};
+
+const NOTE_TYPE_STYLES: Record<NoteType, string> = {
+  meeting: "bg-sky-900/50 text-sky-300",
+  call: "bg-purple-900/50 text-purple-300",
+  email: "bg-amber-900/50 text-amber-300",
+  note: "bg-charcoal-700 text-gray-400",
+};
+
+const TIMELINE_KIND_STYLES: Record<TimelineItemKind, string> = {
+  note: "bg-charcoal-700 text-gray-400",
+  news: "bg-emerald-900/50 text-emerald-300",
+  task: "bg-purple-900/50 text-purple-300",
+};
+
+function arrayFieldToText(v: string[] | undefined): string {
+  return (v ?? []).join(", ");
+}
+
 export default function ContactProfilePage() {
   const params = useParams<{ id: string }>();
   const contactId = params.id;
@@ -43,17 +74,48 @@ export default function ContactProfilePage() {
   const [contact, setContact] = useState<Contact | null>(null);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [relevantLeads, setRelevantLeads] = useState<Lead[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
+  const [noteTypeDraft, setNoteTypeDraft] = useState<NoteType>("note");
 
   // Field drafts for onBlur-save editing.
+  const [titleDraft, setTitleDraft] = useState("");
   const [companyDraft, setCompanyDraft] = useState("");
+  const [locationDraft, setLocationDraft] = useState("");
+  const [industryDraft, setIndustryDraft] = useState("");
+  const [businessOwnershipDraft, setBusinessOwnershipDraft] = useState("");
+  const [existingRelationshipsDraft, setExistingRelationshipsDraft] = useState("");
+  const [boardDraft, setBoardDraft] = useState("");
+  const [schoolsDraft, setSchoolsDraft] = useState("");
+  const [clubsDraft, setClubsDraft] = useState("");
   const [tagsDraft, setTagsDraft] = useState("");
   const [cadenceDraft, setCadenceDraft] = useState("");
   const [valueDraft, setValueDraft] = useState("");
   const [walletShareDraft, setWalletShareDraft] = useState("");
   const [nextMeetingDraft, setNextMeetingDraft] = useState("");
+
+  // Family member add-row.
+  const [familyNameDraft, setFamilyNameDraft] = useState("");
+  const [familyRelDraft, setFamilyRelDraft] = useState("");
+
+  // Task add-row.
+  const [taskTitleDraft, setTaskTitleDraft] = useState("");
+  const [taskDueDraft, setTaskDueDraft] = useState("");
+
+  async function loadTasksForContact() {
+    const res = await fetch(`/api/tasks?contactId=${contactId}`);
+    const data = await res.json();
+    setTasks(data.tasks ?? []);
+  }
+
+  async function loadAuditForContact() {
+    const res = await fetch(`/api/audit?contactId=${contactId}`);
+    const data = await res.json();
+    setAuditEntries(data.entries ?? []);
+  }
 
   async function loadContact() {
     const res = await fetch(`/api/contacts/${contactId}`);
@@ -64,7 +126,15 @@ export default function ContactProfilePage() {
     }
     const data: Contact = await res.json();
     setContact(data);
+    setTitleDraft(data.title ?? "");
     setCompanyDraft(data.company ?? "");
+    setLocationDraft(data.location ?? "");
+    setIndustryDraft(data.industry ?? "");
+    setBusinessOwnershipDraft(data.businessOwnership ?? "");
+    setExistingRelationshipsDraft(data.existingRelationships ?? "");
+    setBoardDraft(arrayFieldToText(data.boardMemberships));
+    setSchoolsDraft(arrayFieldToText(data.schools));
+    setClubsDraft(arrayFieldToText(data.clubs));
     setTagsDraft(data.tags.join(", "));
     setCadenceDraft(String(data.cadenceDays));
     setValueDraft(data.estimatedValue !== undefined ? String(data.estimatedValue) : "");
@@ -79,6 +149,7 @@ export default function ContactProfilePage() {
     setRelevantLeads(matchLeadsToContact(data, leadsData.leads ?? []));
     const contactsData = await contactsRes.json();
     setAllContacts(contactsData.contacts ?? []);
+    await Promise.all([loadTasksForContact(), loadAuditForContact()]);
     setLoading(false);
   }
 
@@ -96,6 +167,7 @@ export default function ContactProfilePage() {
     const updated: Contact = await res.json();
     setContact(updated);
     setRelevantLeads(matchLeadsToContact(updated, relevantLeads));
+    await loadAuditForContact();
     return updated;
   }
 
@@ -116,11 +188,51 @@ export default function ContactProfilePage() {
     const res = await fetch(`/api/contacts/${contactId}/notes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: noteDraft.trim() }),
+      body: JSON.stringify({ text: noteDraft.trim(), type: noteTypeDraft }),
     });
     const updated: Contact = await res.json();
     setContact(updated);
     setNoteDraft("");
+    await loadAuditForContact();
+  }
+
+  function addFamilyMember() {
+    if (!contact || !familyNameDraft.trim() || !familyRelDraft.trim()) return;
+    const next = [...(contact.familyMembers ?? []), { name: familyNameDraft.trim(), relationship: familyRelDraft.trim() }];
+    patch({ familyMembers: next });
+    setFamilyNameDraft("");
+    setFamilyRelDraft("");
+  }
+
+  function removeFamilyMember(idx: number) {
+    if (!contact) return;
+    const next = (contact.familyMembers ?? []).filter((_, i) => i !== idx);
+    patch({ familyMembers: next });
+  }
+
+  async function addTask() {
+    if (!taskTitleDraft.trim()) return;
+    await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: taskTitleDraft.trim(),
+        contactId,
+        dueDate: taskDueDraft ? new Date(taskDueDraft).toISOString() : undefined,
+      }),
+    });
+    setTaskTitleDraft("");
+    setTaskDueDraft("");
+    await loadTasksForContact();
+  }
+
+  async function toggleTaskDone(task: Task) {
+    await fetch(`/api/tasks/${task.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done: !task.done }),
+    });
+    await loadTasksForContact();
   }
 
   if (loading) {
@@ -150,6 +262,10 @@ export default function ContactProfilePage() {
   const lifeStage = detectLifeStage(contact);
   const memories = findRelationshipMemories(contact);
   const memoryPrompt = suggestedMemoryPrompt(memories);
+  const prospectScore = calculateProspectScore(contact);
+  const similar = findSimilarProspects(contact, allContacts);
+  const timelineItems = buildTimeline(contact.noteLog, relevantLeads, tasks);
+  const openTasks = tasks.filter((t) => !t.done);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -167,13 +283,26 @@ export default function ContactProfilePage() {
                 {lifeStage}
               </span>
             )}
+            <span
+              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[prospectScore.band]}`}
+              title={prospectScore.reasons.join("; ") || "Not enough data to explain the score yet."}
+            >
+              Prospect Score: {prospectScore.score} ({prospectScore.band})
+            </span>
           </div>
+          <input
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={() => titleDraft !== (contact.title ?? "") && patch({ title: titleDraft })}
+            placeholder="Title (e.g. Founder & CEO)"
+            className="mt-1 rounded-md border border-transparent bg-transparent px-0 py-0.5 text-sm text-gray-300 hover:border-charcoal-700 focus:border-gold-500 focus:bg-charcoal-900 focus:px-2 focus:outline-none"
+          />
           <input
             value={companyDraft}
             onChange={(e) => setCompanyDraft(e.target.value)}
             onBlur={() => companyDraft !== (contact.company ?? "") && patch({ company: companyDraft })}
             placeholder="Company"
-            className="mt-1 rounded-md border border-transparent bg-transparent px-0 py-0.5 text-sm text-gray-400 hover:border-charcoal-700 focus:border-gold-500 focus:bg-charcoal-900 focus:px-2 focus:outline-none"
+            className="block rounded-md border border-transparent bg-transparent px-0 py-0.5 text-sm text-gray-400 hover:border-charcoal-700 focus:border-gold-500 focus:bg-charcoal-900 focus:px-2 focus:outline-none"
           />
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
@@ -200,6 +329,24 @@ export default function ContactProfilePage() {
           </button>
         </div>
       </header>
+
+      <section className="mb-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Follow-up Summary</h2>
+        <p className="mt-2 text-sm text-gray-300">
+          Relationship health:{" "}
+          <span className={`rounded-full border px-2 py-0.5 text-xs ${HEALTH_STYLES[relHealth.health]}`}>
+            {relHealth.health}
+          </span>{" "}
+          · known {formatTenure(relHealth.tenureDays)} · last contact {relHealth.daysSinceLastContact}d ago
+          {openTasks.length > 0 ? ` · ${openTasks.length} open task(s)` : ""}.
+        </p>
+        {contact.noteLog.length > 0 && (
+          <p className="mt-1 text-sm text-gray-400">
+            Last note: &ldquo;{contact.noteLog[contact.noteLog.length - 1].text}&rdquo;
+          </p>
+        )}
+        {memoryPrompt && <p className="mt-1 text-sm text-gold-400">{memoryPrompt}</p>}
+      </section>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
@@ -328,6 +475,131 @@ export default function ContactProfilePage() {
         </section>
       </div>
 
+      <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Client 360</h2>
+        <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+          <div>
+            <label className="text-xs text-gray-500">Location</label>
+            <input
+              value={locationDraft}
+              onChange={(e) => setLocationDraft(e.target.value)}
+              onBlur={() => locationDraft !== (contact.location ?? "") && patch({ location: locationDraft })}
+              placeholder="e.g. Columbus, OH"
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500">Industry</label>
+            <input
+              value={industryDraft}
+              onChange={(e) => setIndustryDraft(e.target.value)}
+              onBlur={() => industryDraft !== (contact.industry ?? "") && patch({ industry: industryDraft })}
+              placeholder="e.g. Healthcare"
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500">Business ownership</label>
+            <input
+              value={businessOwnershipDraft}
+              onChange={(e) => setBusinessOwnershipDraft(e.target.value)}
+              onBlur={() =>
+                businessOwnershipDraft !== (contact.businessOwnership ?? "") &&
+                patch({ businessOwnership: businessOwnershipDraft })
+              }
+              placeholder="e.g. Founder, 100% owner"
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500">Existing firm relationships</label>
+            <input
+              value={existingRelationshipsDraft}
+              onChange={(e) => setExistingRelationshipsDraft(e.target.value)}
+              onBlur={() =>
+                existingRelationshipsDraft !== (contact.existingRelationships ?? "") &&
+                patch({ existingRelationships: existingRelationshipsDraft })
+              }
+              placeholder="e.g. None, or checking account only"
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500">Board memberships (comma separated)</label>
+            <input
+              value={boardDraft}
+              onChange={(e) => setBoardDraft(e.target.value)}
+              onBlur={() =>
+                patch({ boardMemberships: boardDraft.split(",").map((t) => t.trim()).filter(Boolean) })
+              }
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 focus:border-gold-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500">Schools (comma separated)</label>
+            <input
+              value={schoolsDraft}
+              onChange={(e) => setSchoolsDraft(e.target.value)}
+              onBlur={() => patch({ schools: schoolsDraft.split(",").map((t) => t.trim()).filter(Boolean) })}
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 focus:border-gold-500 focus:outline-none"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs text-gray-500">Clubs (comma separated)</label>
+            <input
+              value={clubsDraft}
+              onChange={(e) => setClubsDraft(e.target.value)}
+              onBlur={() => patch({ clubs: clubsDraft.split(",").map((t) => t.trim()).filter(Boolean) })}
+              className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 focus:border-gold-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-charcoal-700 pt-4">
+          <label className="text-xs text-gray-500">Family</label>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(contact.familyMembers ?? []).map((f, i) => (
+              <span
+                key={i}
+                className="flex items-center gap-1 rounded-full bg-charcoal-900 px-2 py-1 text-xs text-gray-300"
+              >
+                {f.name} ({f.relationship})
+                <button
+                  onClick={() => removeFamilyMember(i)}
+                  className="text-gray-500 hover:text-red-400"
+                  aria-label={`Remove ${f.name}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            {(contact.familyMembers ?? []).length === 0 && (
+              <p className="text-sm text-gray-600">No family members on file.</p>
+            )}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={familyNameDraft}
+              onChange={(e) => setFamilyNameDraft(e.target.value)}
+              placeholder="Name"
+              className="flex-1 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+            />
+            <input
+              value={familyRelDraft}
+              onChange={(e) => setFamilyRelDraft(e.target.value)}
+              placeholder="Relationship (e.g. Spouse)"
+              className="flex-1 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+            />
+            <button
+              onClick={addFamilyMember}
+              className="rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </section>
+
       {lifeStage && (
         <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -348,13 +620,105 @@ export default function ContactProfilePage() {
 
       <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Tasks / Action Items ({openTasks.length} open)
+        </h2>
+        <ul className="mt-3 space-y-1.5">
+          {tasks.map((t) => (
+            <li key={t.id} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={t.done}
+                onChange={() => toggleTaskDone(t)}
+                className="h-4 w-4 accent-gold-500"
+              />
+              <span className={t.done ? "text-gray-600 line-through" : "text-gray-200"}>{t.title}</span>
+              {t.dueDate && (
+                <span className="text-xs text-gray-500">— due {formatDate(t.dueDate)}</span>
+              )}
+            </li>
+          ))}
+          {tasks.length === 0 && <p className="text-sm text-gray-600">No tasks yet.</p>}
+        </ul>
+        <div className="mt-3 flex gap-2">
+          <input
+            type="text"
+            value={taskTitleDraft}
+            onChange={(e) => setTaskTitleDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTask()}
+            placeholder="New task (e.g. Call Friday, send article)..."
+            className="flex-1 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+          />
+          <input
+            type="date"
+            value={taskDueDraft}
+            onChange={(e) => setTaskDueDraft(e.target.value)}
+            className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+          />
+          <button
+            onClick={addTask}
+            className="rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400"
+          >
+            Add
+          </button>
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Timeline</h2>
+        <p className="mt-1 text-xs text-gray-500">
+          Every interaction, merged and sorted — notes, relevant news, and tasks.
+        </p>
+        <div className="mt-3 max-h-96 space-y-2 overflow-y-auto">
+          {timelineItems.slice(0, 40).map((item, i) => (
+            <div key={i} className="flex items-start gap-2 text-sm">
+              <span className="mt-0.5 w-16 shrink-0 text-xs text-gray-500">{formatDate(item.date)}</span>
+              <span
+                className={`mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] uppercase ${TIMELINE_KIND_STYLES[item.kind]}`}
+              >
+                {item.kind}
+              </span>
+              {item.href ? (
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-300 hover:text-gold-400 hover:underline"
+                >
+                  {item.title}
+                </a>
+              ) : (
+                <span className="text-gray-300">{item.title}</span>
+              )}
+            </div>
+          ))}
+          {timelineItems.length === 0 && <p className="text-sm text-gray-600">Nothing logged yet.</p>}
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
           Conversations ({contact.noteLog.length})
         </h2>
         <div className="mt-3 space-y-2">
           {[...contact.noteLog].reverse().map((entry, i) => (
             <div key={i} className="rounded-md bg-charcoal-900 px-3 py-2 text-sm">
               <span className="text-xs text-gray-500">{formatDate(entry.date)} — </span>
+              <span
+                className={`mr-1 rounded-full px-1.5 py-0.5 text-[10px] uppercase ${NOTE_TYPE_STYLES[entry.type ?? "note"]}`}
+              >
+                {entry.type ?? "note"}
+              </span>
               <span className="text-gray-300">{entry.text}</span>
+              {entry.fileUrl && (
+                <a
+                  href={entry.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 text-gold-400 hover:underline"
+                >
+                  [file]
+                </a>
+              )}
             </div>
           ))}
           {contact.noteLog.length === 0 && (
@@ -362,6 +726,17 @@ export default function ContactProfilePage() {
           )}
         </div>
         <div className="mt-3 flex gap-2">
+          <select
+            value={noteTypeDraft}
+            onChange={(e) => setNoteTypeDraft(e.target.value as NoteType)}
+            className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+          >
+            {NOTE_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             value={noteDraft}
@@ -414,6 +789,26 @@ export default function ContactProfilePage() {
         </section>
       )}
 
+      {similar.length > 0 && (
+        <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Similar Prospects</h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Rule-based similarity (shared tags, industry, life stage, wealth range) — not an
+            embedding/ML model.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {similar.map(({ contact: sc, reasons }) => (
+              <li key={sc.id} className="text-sm">
+                <Link href={`/contacts/${sc.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                  {sc.name}
+                </Link>
+                <span className="text-gray-500"> — {reasons.join("; ")}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {relevantLeads.length > 0 && (
         <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -438,6 +833,24 @@ export default function ContactProfilePage() {
       <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <AiMeetingPrep contactId={contact.id} />
       </section>
+
+      <details className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+        <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Recent changes ({auditEntries.length})
+        </summary>
+        <p className="mt-2 text-xs text-gray-600">
+          Single-user app — there&rsquo;s no login, so every entry is you. This tracks what
+          changed and when, not who (there&rsquo;s only ever one who).
+        </p>
+        <div className="mt-3 space-y-1.5">
+          {auditEntries.map((e) => (
+            <p key={e.id} className="text-xs text-gray-500">
+              {formatDate(e.date)} — {e.summary}
+            </p>
+          ))}
+          {auditEntries.length === 0 && <p className="text-xs text-gray-600">No changes logged yet.</p>}
+        </div>
+      </details>
     </main>
   );
 }

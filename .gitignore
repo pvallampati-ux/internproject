@@ -21,3 +21,10 @@ data/custom-industries.json
 # Real calendar/schedule stays local-only. data/events.sample.json (demo
 # OSU football prospecting events) is tracked and seeds this on first run.
 data/events.json
+
+# Audit log of real edits/notes — local-only, no sample seed (starts empty).
+data/auditLog.json
+
+# Real tasks stay local-only too. data/tasks.sample.json ships a couple of
+# demo tasks and seeds this on first run.
+data/tasks.json

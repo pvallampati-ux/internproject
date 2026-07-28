@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import ContactCard from "@/components/ContactCard";
 import AddContactForm from "@/components/AddContactForm";
 import PipelineFunnel from "@/components/PipelineFunnel";
+import ContactFilterBar from "@/components/ContactFilterBar";
 import { JOURNEY_STAGES, type Contact, type PipelineStage } from "@/lib/contactTypes";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
+import { EMPTY_CONTACT_FILTERS, applyContactFilters, isFiltersActive, type ContactFilters } from "@/lib/contactFilters";
 
 export default function PipelinePage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
+  const [filters, setFilters] = useState<ContactFilters>(EMPTY_CONTACT_FILTERS);
 
   function handleDrop(e: React.DragEvent, stage: PipelineStage) {
     e.preventDefault();
@@ -71,8 +74,11 @@ export default function PipelinePage() {
 
   async function handleAddContact(input: {
     name: string;
+    title?: string;
     company: string;
     email?: string;
+    location?: string;
+    industry?: string;
     tags: string[];
     cadenceDays: number;
     estimatedValue?: number;
@@ -89,19 +95,20 @@ export default function PipelinePage() {
     setContacts((prev) => [...prev, created]);
   }
 
-  const coldContacts = contacts.filter((c) => c.stage === "Cold");
+  const filteredContacts = applyContactFilters(contacts, filters);
+  const coldContacts = filteredContacts.filter((c) => c.stage === "Cold");
 
   const counts = Object.fromEntries(
     [...JOURNEY_STAGES, "Cold" as const].map((stage) => [
       stage,
-      contacts.filter((c) => c.stage === stage).length,
+      filteredContacts.filter((c) => c.stage === stage).length,
     ])
   ) as Record<PipelineStage, number>;
 
   const values = Object.fromEntries(
     [...JOURNEY_STAGES, "Cold" as const].map((stage) => [
       stage,
-      contacts
+      filteredContacts
         .filter((c) => c.stage === stage)
         .reduce((sum, c) => sum + (c.estimatedValue ?? 0), 0),
     ])
@@ -144,17 +151,27 @@ export default function PipelinePage() {
         <AddContactForm contacts={contacts} onAdd={handleAddContact} />
       </div>
 
+      <div className="mb-6">
+        <ContactFilterBar filters={filters} onChange={setFilters} />
+      </div>
+
       {loading ? (
         <p className="text-sm text-gray-500">Loading...</p>
       ) : (
         <>
+          {isFiltersActive(filters) && (
+            <p className="mb-3 text-xs text-gray-500">
+              Showing {filteredContacts.length} of {contacts.length} contacts matching the active filters.
+            </p>
+          )}
+
           <div className="mb-6">
             <PipelineFunnel counts={counts} values={values} />
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
             {JOURNEY_STAGES.map((stage, i) => {
-              const stageContacts = contacts.filter((c) => c.stage === stage);
+              const stageContacts = filteredContacts.filter((c) => c.stage === stage);
               return (
                 <div
                   key={stage}

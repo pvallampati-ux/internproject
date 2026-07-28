@@ -9,12 +9,20 @@ import {
 } from "@/lib/contactTypes";
 import { assessRelationshipHealth } from "@/lib/relationshipHealth";
 import { detectLifeStage } from "@/lib/lifeStages";
+import { calculateProspectScore } from "@/lib/prospectScore";
 
 const HEALTH_DOT: Record<string, string> = {
   Strong: "bg-emerald-400",
   Steady: "bg-sky-400",
   Declining: "bg-amber-400",
   "At Risk": "bg-red-400",
+};
+
+const SCORE_BAND_STYLES: Record<string, string> = {
+  "Very High": "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+  High: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Medium: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+  Low: "border-gray-500/50 bg-gray-500/10 text-gray-400",
 };
 
 interface Props {
@@ -51,6 +59,7 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
   const health = assessRelationshipHealth(contact).health;
   const lifeStage = detectLifeStage(contact);
   const wealthGap = estimateWealthGap(contact);
+  const prospectScore = calculateProspectScore(contact);
 
   return (
     <div
@@ -90,6 +99,12 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
               {lifeStage}
             </span>
           )}
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[prospectScore.band]}`}
+            title={prospectScore.reasons.join("; ") || "Not enough data yet to explain the score."}
+          >
+            Score: {prospectScore.score} ({prospectScore.band})
+          </span>
         </div>
 
         <select
@@ -115,12 +130,12 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
         )}
 
         {(contact.estimatedValue || contact.referredBy) && (
-          <div className="flex flex-wrap gap-x-3 text-xs text-gray-500">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
             {contact.estimatedValue !== undefined && (
-              <span className="text-gold-400">
-                {formatCurrency(contact.estimatedValue)}
+              <span>
+                Est. wealth: <span className="text-gold-400">{formatCurrency(contact.estimatedValue)}</span>
                 {wealthGap !== null && wealthGap > 0 && (
-                  <span className="text-gray-500"> ({formatCurrency(wealthGap)} gap)</span>
+                  <span className="text-gray-500"> · {formatCurrency(wealthGap)} not yet captured</span>
                 )}
               </span>
             )}

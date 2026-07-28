@@ -4,9 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { touchpointCount, type PipelineStage } from "@/lib/contactTypes";
 import type { DailyBrief as DailyBriefData, OverdueContact } from "@/lib/dailyBrief";
+import type { Task } from "@/lib/taskTypes";
 import DailyBrief from "@/components/DailyBrief";
 import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 const BRIEF_SHOWN_KEY = "dailyBriefShownDate";
 
@@ -31,6 +36,22 @@ export default function HomePage() {
   const [showBrief, setShowBrief] = useState(false);
   const [emailOverrides, setEmailOverrides] = useState<Record<string, string>>({});
   const [meetingPrepContactId, setMeetingPrepContactId] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  async function loadTasks() {
+    const res = await fetch("/api/tasks");
+    const data = await res.json();
+    setTasks(data.tasks ?? []);
+  }
+
+  async function toggleTaskDone(task: Task) {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)));
+    await fetch(`/api/tasks/${task.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done: !task.done }),
+    });
+  }
 
   async function fetchBrief(): Promise<DailyBriefData> {
     const res = await fetch("/api/daily-brief");
@@ -53,6 +74,7 @@ export default function HomePage() {
         localStorage.setItem(BRIEF_SHOWN_KEY, todayKey());
       }
     })();
+    loadTasks();
   }, []);
 
   async function handleMarkContacted(contactId: string) {
@@ -68,6 +90,16 @@ export default function HomePage() {
   const overdueContacts: OverdueContact[] = brief?.overdueContacts ?? [];
   const memoryByContactId = new Map((brief?.memoryReminders ?? []).map((m) => [m.contact.id, m.prompt]));
   const meetingPrepContact = meetingsToday.find((c) => c.id === meetingPrepContactId);
+
+  const now = Date.now();
+  const dueSoonCutoff = now + 7 * 24 * 60 * 60 * 1000;
+  const dueTasks = tasks
+    .filter((t) => !t.done && (!t.dueDate || new Date(t.dueDate).getTime() < dueSoonCutoff))
+    .sort((a, b) => {
+      const aTime = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+      const bTime = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+      return aTime - bTime;
+    });
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -155,6 +187,45 @@ export default function HomePage() {
                     )}
                   </li>
                 ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="mb-8">
+            <div className="flex items-center justify-between">
+              <h2 className="font-serif text-lg text-gray-100">Tasks due this week</h2>
+              <Link href="/tasks" className="text-xs text-gold-400 hover:underline">
+                View all tasks →
+              </Link>
+            </div>
+            {dueTasks.length === 0 ? (
+              <p className="mt-2 text-sm text-gray-600">Nothing due in the next 7 days.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {dueTasks.map((task) => {
+                  const isOverdue = task.dueDate && new Date(task.dueDate).getTime() < now;
+                  return (
+                    <li
+                      key={task.id}
+                      className="flex items-center gap-2 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={task.done}
+                        onChange={() => toggleTaskDone(task)}
+                        className="h-4 w-4 accent-gold-500"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-200">{task.title}</p>
+                        {task.dueDate && (
+                          <p className={`text-xs ${isOverdue ? "text-amber-400" : "text-gray-500"}`}>
+                            Due {formatDate(task.dueDate)}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

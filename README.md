@@ -1,23 +1,27 @@
 # Private Client Prospecting Hub
 
-A Columbus / Central Ohio prospecting platform organized into eight modules,
+A Columbus / Central Ohio prospecting platform organized into nine modules,
 navigable via the top nav bar:
 
 | Tab | Route | What it does |
 |---|---|---|
-| Home | `/` | Dashboard: today's meetings (AI Meeting Prep as a popup), and a persistent list of clients/prospects needing contact |
+| Home | `/` | Dashboard: today's meetings (AI Meeting Prep as a popup), tasks due this week, and a persistent list of clients/prospects needing contact |
 | Prospect Discovery | `/discovery` | News-based lead sourcing, filtering, and scoring |
 | Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map, and an industry-focus filter (Healthcare / Business Owners / anything you add) for Market Insights |
 | Engagement | `/engagement` | Meeting prep (+ optional AI Meeting Prep), outreach queue, follow-ups/cooling leads |
-| Pipeline | `/pipeline` | Prospect → Client Kanban/funnel (drag-and-drop or dropdown), deal value, referral source |
-| COI / Network | `/coi` | Centers of Influence and a visual graph of referral/warm-intro connections |
+| Pipeline | `/pipeline` | Prospect → Client Kanban/funnel (drag-and-drop or dropdown), deal value, referral source, filterable by industry/location/wealth/life stage |
+| Tasks | `/tasks` | Action items — optionally tied to a contact, with due dates |
+| COI / Network | `/coi` | Centers of Influence and a visual graph of referral/warm-intro connections, color-coded by stage |
 | Calendar | `/calendar` | Prospecting events (tailgates, networking nights) — list or monthly grid view, search, CSV schedule upload, tag prospects |
-| Analytics | `/analytics` | **Not built yet** — stub page, see below |
+| Analytics | `/analytics` | Real KPIs computed live from current data — see below |
 
 Every contact also has a profile page at `/contacts/[id]` — click any name in
-Pipeline or the daily brief to open it. That's the CRM-360 view: editable
-details, cadence/touchpoints, email actions, conversation log, and AI
-Meeting Prep in one place.
+Pipeline or the daily brief to open it. That's the Client 360 view: full
+identity/firmographic detail, cadence/touchpoints, wealth gap, prospect
+score, life stage, relationship memory, similar prospects, tasks, a unified
+timeline, email actions, a typed conversation log, an audit trail, and AI
+Meeting Prep — all in one place. See "Client 360 and beyond" below for the
+full rundown.
 
 The nav bar itself has a **contact search** (`components/GlobalSearch.tsx`)
 on every page — type a name, company, or tag and jump straight to that
@@ -28,16 +32,18 @@ contacts.
 ### Home page (`/`)
 
 The landing page is a dashboard, not the news feed (that moved to
-`/discovery`). Two always-visible sections, both sourced from
-`/api/daily-brief`:
+`/discovery`). Three always-visible sections:
 
-- **Meetings today** — anyone with a `nextMeetingDate` of today. "Open AI
-  Meeting Prep" opens the prep panel as a popup right on this page, instead
-  of navigating to their profile first.
-- **Clients & prospects needing contact** — everyone overdue relative to
-  their own cadence, with quick Mark Contacted / email actions. This is
-  permanent, not a once-a-day dismissable notice — it stays visible every
-  time you load the page.
+- **Meetings today** (from `/api/daily-brief`) — anyone with a
+  `nextMeetingDate` of today. "Open AI Meeting Prep" opens the prep panel as
+  a popup right on this page, instead of navigating to their profile first.
+- **Tasks due this week** (from `/api/tasks`) — open tasks with no due date
+  or due within 7 days, checkable right from the dashboard. Links to the
+  full `/tasks` page for everything else.
+- **Clients & prospects needing contact** (from `/api/daily-brief`) —
+  everyone overdue relative to their own cadence, with a stage badge, quick
+  Mark Contacted, and email actions. This is permanent, not a once-a-day
+  dismissable notice — it stays visible every time you load the page.
 
 The "Today's Brief" popup (`components/DailyBrief.tsx`) still auto-opens
 once per day here (tracked via `localStorage`, same as before), but now
@@ -109,11 +115,17 @@ See "Known limitations" below for the full list of what's simulated vs. real.
 ⚑ touchpoint-needed flag if the contact is overdue relative to their own
 cadence) so a full board of contacts is scannable without scrolling through
 every field on every card. Hovering a card reveals everything else —
-relationship health, life stage, pipeline stage dropdown, tags, deal value
-and wealth gap, referral source, last-contact info, Mark Contacted, and the
-note log — as an overlay positioned below the card. It's a CSS overlay
-(`position: absolute`), not a layout push, so hovering doesn't shift
-neighboring cards around; it disappears the moment your cursor leaves.
+relationship health, life stage, **Prospect Score**, pipeline stage
+dropdown, tags, deal value ("Est. wealth: $X · $Y not yet captured" — both
+numbers labeled, not just bare figures) and referral source, last-contact
+info, Mark Contacted, and the note log — as an overlay positioned below the
+card. It's a CSS overlay (`position: absolute`), not a layout push, so
+hovering doesn't shift neighboring cards around; it disappears the moment
+your cursor leaves.
+
+Above the board, `components/ContactFilterBar.tsx` narrows what's shown by
+industry, location, minimum wealth, life stage, keyword, COI-only, and "no
+existing relationship" — see "Client 360 and beyond" below for detail.
 
 No sample/demo data ships in this repo — `data/leads.json` and
 `data/contacts.json` both start empty and are git-ignored (local-only).
@@ -518,7 +530,97 @@ treat every result as a prompt to verify before bringing it up, and use
 discretion — this is the most sensitive naive-matching feature in the app,
 alongside the Personal group in Wealth Event Detection above.
 
-## Market Insights (Healthcare / Business Owners) — the Intelligence "Focus" filter
+## Client 360 and beyond
+
+This section covers everything added to round the contact profile out into
+a full "Client 360" record, plus the productivity/intelligence features
+layered on top. All of it is free and rule-based (no new LLM calls) except
+where noted.
+
+### Client 360 fields
+
+`Contact` (`lib/contactTypes.ts`) now carries, beyond the original
+name/company/email/tags: **Title**, **Location**, **Industry**, **Business
+ownership**, **Existing firm relationships** (what they already have, if
+anything — distinct from `currentWalletShare`'s dollar figure), **Family**
+(structured `{ name, relationship }` list, editable from the profile),
+**Board memberships**, **Schools**, and **Clubs** (comma-separated on the
+profile page). All optional — nothing forces you to fill these in, but
+Prospect Score, Similar Prospects, Filters, and Search all get better with
+them populated.
+
+### Search and filters
+
+**Contact search** (nav bar, every page) now matches name, title, company,
+industry, location, business ownership, existing relationships, tags,
+board memberships, schools, clubs, family member names/relationships, and
+**note text** — a match found only in notes is labeled "(matched in
+notes)" so you know why a result showed up.
+
+**Contact filters** (`components/ContactFilterBar.tsx`, on the Pipeline
+page) let you narrow the board by industry, location, minimum estimated
+wealth, life stage, a keyword (matched against tags and notes — covers
+things like "founder," "PE-backed," "succession"), COI-only, and "no
+existing relationship." The Pipeline funnel and stage counts update to
+reflect the active filter.
+
+### Note types and Timeline
+
+Notes (`NoteEntry` in `lib/contactTypes.ts`) now carry an optional `type`:
+**meeting**, **call**, **email**, or **note** (the default), selectable
+from a dropdown when you log one, shown as a small colored badge on each
+entry. A note can also carry a `fileUrl` — a link to an external doc
+(Drive/SharePoint/etc), since this app doesn't host file uploads itself.
+
+The **Timeline** section on the profile page (`lib/timeline.ts`) merges
+notes, relevant news, and tasks into one chronological feed — "every
+interaction," as close as a notes-based system gets without a real email/
+calendar integration.
+
+### Tasks
+
+A real task entity (`lib/taskTypes.ts`, `lib/tasksStore.ts`,
+`/api/tasks`), independent of the single `nextMeetingDate` field that
+existed before: title, optional due date, optional linked contact,
+done/not-done. Manage them from a dedicated `/tasks` page (grouped into
+Overdue / Open / Completed), from a contact's profile (scoped to that
+contact), or from the Home page's "Tasks due this week" widget.
+
+### Audit trail
+
+Every field change and note addition is logged (`lib/auditLog.ts`,
+`data/auditLog.json`, `/api/audit`) with a human-readable diff (e.g.
+`industry: Technology → Enterprise Software`) and a timestamp, visible in
+a "Recent changes" panel at the bottom of each contact's profile. Honest
+caveat: this is a single-user app with no login, so the "actor" field is
+always "You" — this tracks *what* changed and *when*, not *who*, because
+there's only ever one who. A real multi-user audit trail would need actual
+authentication, which this app doesn't have (see "Known limitations").
+
+### Follow-up summary
+
+A compact card at the top of each profile combining relationship health,
+tenure, open-task count, the last logged note, and the Relationship Memory
+prompt (if any) into one "catch me up" glance before a call — rule-based,
+assembled from data already computed elsewhere on the page, no new query.
+
+### AI Prospect Score (rule-based, not ML)
+
+`lib/prospectScore.ts` computes a 0–100 score from a fixed set of weighted
+rules — estimated wealth, wealth-gap size, life stage (Liquidity scores
+highest), relationship health, referral warmth (a tracked
+`referredByContactId` scores higher than free-text `referredBy`), and
+whether there's an existing firm relationship on file. Every point traces
+back to a specific, visible reason (hover the badge) — this is not a
+machine-learning model and doesn't pretend to be one. Shown as a badge on
+the contact profile and on Pipeline cards (in the hover panel).
+
+### Similar Prospects (rule-based, not ML)
+
+`lib/similarProspects.ts` ranks other contacts by shared tags, matching
+industry, matching life stage, matching location, and estimated-wealth
+proximity (within 2x–0.5x of the target). No embeddings, no LLM call — a
+weighted overlap score with visible reasons, shown on the profile page.
 
 Unlike the rest of the app, Market Insights is industry-scoped rather than
 region-scoped, sourced separately (`lib/industries.ts`,
@@ -603,14 +705,25 @@ bulk-creates events — `lib/csvUtils.ts` is a minimal parser (basic quoted-
 field support, not full RFC 4180) good enough for a personal schedule
 export; reformat oddly-escaped rows by hand if a row gets skipped.
 
-## Analytics (not built)
+## Analytics
 
-`/analytics` is intentionally a stub page, not a fake dashboard. It would
-need historical snapshots — everything today reflects only current state,
-nothing tracks change over time — plus real usage data (and now that Market
-Insights and Pipeline deal-value tracking exist, more of the raw material
-it would report on) before it could show anything real. Flagged honestly
-in-app rather than populated with placeholder numbers.
+`/analytics` is a real dashboard now (`lib/analytics.ts`, `/api/analytics`),
+computed live from current data on every load:
+
+- Prospects & clients (total count), pipeline by stage (count + $ value bar
+  chart), industry breakdown
+- Meetings this month (counted from notes logged with `type: "meeting"`)
+- Pipeline value, wealth gap (untapped opportunity), captured wallet share
+- Open/overdue tasks
+- Referral count and how many are warm (linked via `referredByContactId`
+  vs. free text)
+- Client conversion rate (Client ÷ (Client + Cold), as a proxy "win rate")
+
+What's honestly still not here: anything **trend-over-time** (this app
+takes no historical snapshots — every number is current-state only, so
+there's no "conversion rate this quarter vs. last") and anything **by
+banker or by office** (this is a single-user, single-office app — there's
+only one of each).
 
 ## Known limitations (prototype scope)
 
@@ -660,3 +773,20 @@ in-app rather than populated with placeholder numbers.
 - The CSV schedule upload is a minimal parser, not a full CSV spec
   implementation — stick to simple values (no embedded newlines) in each
   cell for reliable results.
+- Prospect Score and Similar Prospects are both fixed weighted-rule systems
+  (see "Client 360 and beyond"), not trained models — the weights are
+  hand-picked, not learned from outcomes, so treat the score as a
+  structured way to organize attention, not a validated prediction.
+- The audit trail records what changed and when, not who, because there's
+  no login — every entry says "You." It's also an unbounded-growth-capped
+  rolling log (`lib/auditLog.ts`, most recent 2000 entries), not a
+  permanent compliance-grade record; a real one needs retention policy and
+  a real database, not a flat JSON file.
+- **Permissions and everything in Administration (Roles, Teams, Regions,
+  API management, Feature flags, Logging/Monitoring) are deliberately not
+  built.** This app has no authentication and no concept of a second user —
+  building a permissions *UI* on top of that would only look like access
+  control without actually restricting anyone from seeing anything, which
+  is worse than not having it (it would look secure while being fake).
+  Real permissions require real auth and a real backend; that's a
+  different, larger project than this one, not a checkbox to fake.

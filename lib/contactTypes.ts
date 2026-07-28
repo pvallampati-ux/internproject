@@ -16,16 +16,37 @@ export const JOURNEY_STAGES: PipelineStage[] = [
 // contacts who've gone quiet or aren't going to convert.
 export const PIPELINE_STAGES: PipelineStage[] = [...JOURNEY_STAGES, "Cold"];
 
+// What kind of interaction a note captures. Defaults to "note" for anything
+// logged before this field existed or not explicitly categorized.
+export type NoteType = "meeting" | "call" | "email" | "note";
+export const NOTE_TYPES: NoteType[] = ["meeting", "call", "email", "note"];
+
 export interface NoteEntry {
   date: string; // ISO
   text: string;
+  type?: NoteType;
+  fileUrl?: string; // link to an external doc (Drive/SharePoint/etc) — this app doesn't host file uploads itself
+}
+
+export interface FamilyMember {
+  name: string;
+  relationship: string; // free text: "Spouse", "Daughter", "Son", etc.
 }
 
 export interface Contact {
   id: string;
   name: string;
+  title?: string; // job title, e.g. "Founder & CEO"
   company?: string;
   email?: string;
+  location?: string; // free text, e.g. "Columbus, OH"
+  industry?: string; // free text, e.g. "Healthcare", "Manufacturing"
+  businessOwnership?: string; // free text, e.g. "Founder, 100% owner"
+  existingRelationships?: string; // what they already have with the firm, if anything — distinct from currentWalletShare's dollar figure
+  familyMembers?: FamilyMember[];
+  boardMemberships?: string[];
+  schools?: string[];
+  clubs?: string[];
   // Keywords matched (case-insensitive substring) against lead title/snippet
   // to decide whether a news item is relevant to this contact.
   tags: string[];

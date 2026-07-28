@@ -6,8 +6,11 @@ interface Props {
   contacts: Contact[];
   onAdd: (input: {
     name: string;
+    title?: string;
     company: string;
     email?: string;
+    location?: string;
+    industry?: string;
     tags: string[];
     cadenceDays: number;
     estimatedValue?: number;
@@ -19,8 +22,11 @@ interface Props {
 
 export default function AddContactForm({ contacts, onAdd }: Props) {
   const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
+  const [location, setLocation] = useState("");
+  const [industry, setIndustry] = useState("");
   const [tags, setTags] = useState("");
   const [cadenceDays, setCadenceDays] = useState(10);
   const [estimatedValue, setEstimatedValue] = useState("");
@@ -33,8 +39,11 @@ export default function AddContactForm({ contacts, onAdd }: Props) {
     if (!name.trim()) return;
     onAdd({
       name: name.trim(),
+      title: title.trim() || undefined,
       company: company.trim(),
       email: email.trim() || undefined,
+      location: location.trim() || undefined,
+      industry: industry.trim() || undefined,
       tags: tags
         .split(",")
         .map((t) => t.trim())
@@ -46,8 +55,11 @@ export default function AddContactForm({ contacts, onAdd }: Props) {
       referredByContactId,
     });
     setName("");
+    setTitle("");
     setCompany("");
     setEmail("");
+    setLocation("");
+    setIndustry("");
     setTags("");
     setCadenceDays(10);
     setEstimatedValue("");
@@ -78,6 +90,12 @@ export default function AddContactForm({ contacts, onAdd }: Props) {
           className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
         />
         <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title (optional)"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+        />
+        <input
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           placeholder="Company (optional)"
@@ -88,6 +106,18 @@ export default function AddContactForm({ contacts, onAdd }: Props) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email (optional)"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+        />
+        <input
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Location (optional)"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+        />
+        <input
+          value={industry}
+          onChange={(e) => setIndustry(e.target.value)}
+          placeholder="Industry (optional)"
           className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
         />
         <input

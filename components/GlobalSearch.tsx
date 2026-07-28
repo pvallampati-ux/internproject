@@ -32,14 +32,36 @@ export default function GlobalSearch() {
   }, []);
 
   const q = query.trim().toLowerCase();
+
+  function matches_(c: Contact): { match: boolean; inNotes: boolean } {
+    const simpleFields = [
+      c.name,
+      c.title,
+      c.company,
+      c.industry,
+      c.location,
+      c.businessOwnership,
+      c.existingRelationships,
+    ];
+    const arrayFields = [c.tags, c.boardMemberships, c.schools, c.clubs].filter(
+      (a): a is string[] => Array.isArray(a)
+    );
+    const familyNames = (c.familyMembers ?? []).flatMap((f) => [f.name, f.relationship]);
+
+    const inStructuredFields =
+      simpleFields.some((f) => (f ?? "").toLowerCase().includes(q)) ||
+      arrayFields.some((arr) => arr.some((v) => v.toLowerCase().includes(q))) ||
+      familyNames.some((v) => v.toLowerCase().includes(q));
+
+    const inNotes = c.noteLog.some((n) => n.text.toLowerCase().includes(q));
+
+    return { match: inStructuredFields || inNotes, inNotes: inNotes && !inStructuredFields };
+  }
+
   const matches = q
     ? contacts
-        .filter(
-          (c) =>
-            c.name.toLowerCase().includes(q) ||
-            (c.company ?? "").toLowerCase().includes(q) ||
-            c.tags.some((t) => t.toLowerCase().includes(q))
-        )
+        .map((c) => ({ contact: c, ...matches_(c) }))
+        .filter((x) => x.match)
         .slice(0, 8)
     : [];
 
@@ -51,7 +73,7 @@ export default function GlobalSearch() {
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && matches.length > 0) {
-      goToContact(matches[0].id);
+      goToContact(matches[0].contact.id);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
@@ -68,7 +90,7 @@ export default function GlobalSearch() {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
-        placeholder="Search contacts..."
+        placeholder="Search contacts, notes, industry, schools..."
         className="w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
       />
       {open && q && (
@@ -76,17 +98,18 @@ export default function GlobalSearch() {
           {matches.length === 0 ? (
             <p className="px-3 py-2 text-sm text-gray-500">No contacts match &ldquo;{query}&rdquo;.</p>
           ) : (
-            matches.map((c) => (
+            matches.map(({ contact, inNotes }) => (
               <button
-                key={c.id}
+                key={contact.id}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  goToContact(c.id);
+                  goToContact(contact.id);
                 }}
                 className="block w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-charcoal-800"
               >
-                {c.name}
-                {c.company && <span className="text-gray-500"> — {c.company}</span>}
+                {contact.name}
+                {contact.company && <span className="text-gray-500"> — {contact.company}</span>}
+                {inNotes && <span className="text-gray-600"> (matched in notes)</span>}
               </button>
             ))
           )}

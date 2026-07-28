@@ -2,9 +2,29 @@
   {
     "id": "contact_demo_1",
     "name": "Jane Whitfield",
+    "title": "Founder & CEO",
     "company": "Whitfield Software Partners",
     "email": "jane.whitfield@example.com",
-    "tags": ["software firm", "software company"],
+    "location": "Columbus, OH",
+    "industry": "Technology",
+    "businessOwnership": "Founder, majority owner",
+    "existingRelationships": "None",
+    "familyMembers": [
+      {
+        "name": "Mark Whitfield",
+        "relationship": "Spouse"
+      }
+    ],
+    "schools": [
+      "Ohio State University"
+    ],
+    "clubs": [
+      "Columbus Chamber of Commerce"
+    ],
+    "tags": [
+      "software firm",
+      "software company"
+    ],
     "lastContactedAt": "2026-07-16T14:00:00.000Z",
     "cadenceDays": 10,
     "stage": "Prospect",
@@ -13,24 +33,36 @@
     "noteLog": [
       {
         "date": "2026-07-10T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real prospect. Met at a Chamber of Commerce event, runs a growing software firm."
+        "text": "Demo contact \u2014 edit or replace with a real prospect. Met at a Chamber of Commerce event, runs a growing software firm.",
+        "type": "meeting"
       },
       {
         "date": "2026-07-16T14:00:00.000Z",
-        "text": "Demo contact. Follow-up call — mentioned she's preparing for exit and exploring liquidity options in the next couple years."
+        "text": "Demo contact. Follow-up call \u2014 mentioned she's preparing for exit and exploring liquidity options in the next couple years.",
+        "type": "call"
       },
       {
         "date": "2026-07-27T14:00:00.000Z",
-        "text": "Tagged to prospecting event: \"Ohio State vs. Michigan — Tailgate\" — Nov 28, 2026 at Ohio Stadium, Columbus."
+        "text": "Tagged to prospecting event: \"Ohio State vs. Michigan \u2014 Tailgate\" \u2014 Nov 28, 2026 at Ohio Stadium, Columbus."
       }
     ]
   },
   {
     "id": "contact_demo_2",
     "name": "Marcus Bell",
+    "title": "President",
     "company": "Bell Manufacturing Co.",
     "email": "marcus.bell@example.com",
-    "tags": ["manufacturing"],
+    "location": "Columbus, OH",
+    "industry": "Manufacturing",
+    "businessOwnership": "Third-generation owner",
+    "existingRelationships": "None",
+    "boardMemberships": [
+      "Ohio Manufacturers' Association"
+    ],
+    "tags": [
+      "manufacturing"
+    ],
     "lastContactedAt": "2026-07-25T14:00:00.000Z",
     "cadenceDays": 10,
     "stage": "Prospect",
@@ -38,20 +70,35 @@
     "noteLog": [
       {
         "date": "2026-07-25T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real prospect. Intro call, third-generation founder growing the family manufacturing business."
+        "text": "Demo contact \u2014 edit or replace with a real prospect. Intro call, third-generation founder growing the family manufacturing business.",
+        "type": "call"
       },
       {
         "date": "2026-07-27T14:00:00.000Z",
-        "text": "Tagged to prospecting event: \"Ohio State vs. Michigan — Tailgate\" — Nov 28, 2026 at Ohio Stadium, Columbus."
+        "text": "Tagged to prospecting event: \"Ohio State vs. Michigan \u2014 Tailgate\" \u2014 Nov 28, 2026 at Ohio Stadium, Columbus."
       }
     ]
   },
   {
     "id": "contact_demo_3",
     "name": "Elena Rodriguez",
+    "title": "Owner & Practice Director",
     "company": "Rodriguez Dental Group",
     "email": "elena.rodriguez@example.com",
-    "tags": ["dental", "healthcare"],
+    "location": "Dublin, OH",
+    "industry": "Healthcare",
+    "businessOwnership": "Owner, multi-location practice",
+    "existingRelationships": "None",
+    "familyMembers": [
+      {
+        "name": "Carlos Rodriguez",
+        "relationship": "Spouse"
+      }
+    ],
+    "tags": [
+      "dental",
+      "healthcare"
+    ],
     "lastContactedAt": "2026-07-18T14:00:00.000Z",
     "cadenceDays": 30,
     "stage": "Contacted",
@@ -61,24 +108,35 @@
     "noteLog": [
       {
         "date": "2026-07-05T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real prospect. Referred by an existing client, owns a multi-location dental practice."
+        "text": "Demo contact \u2014 edit or replace with a real prospect. Referred by an existing client, owns a multi-location dental practice."
       },
       {
         "date": "2026-07-18T14:00:00.000Z",
-        "text": "Demo contact. Sent intro email, she's open to a coffee meeting in August. Also mentioned she's exploring a family foundation for community health initiatives."
+        "text": "Demo contact. Sent intro email, she's open to a coffee meeting in August. Also mentioned she's exploring a family foundation for community health initiatives.",
+        "type": "email"
       },
       {
         "date": "2026-07-27T14:00:00.000Z",
-        "text": "Tagged to prospecting event: \"Ohio State Football — Season Opener Watch Party\" — Aug 29, 2026 at Downtown Columbus."
+        "text": "Tagged to prospecting event: \"Ohio State Football \u2014 Season Opener Watch Party\" \u2014 Aug 29, 2026 at Downtown Columbus."
       }
     ]
   },
   {
     "id": "contact_demo_4",
     "name": "David Park",
+    "title": "CEO",
     "company": "Park Logistics",
     "email": "david.park@example.com",
-    "tags": ["logistics"],
+    "location": "Westerville, OH",
+    "industry": "Logistics",
+    "businessOwnership": "Founder",
+    "existingRelationships": "Checking account only",
+    "boardMemberships": [
+      "Columbus Chamber of Commerce"
+    ],
+    "tags": [
+      "logistics"
+    ],
     "lastContactedAt": "2026-07-23T14:00:00.000Z",
     "cadenceDays": 30,
     "stage": "Meeting",
@@ -88,24 +146,44 @@
     "noteLog": [
       {
         "date": "2026-06-20T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real prospect. First meeting, discussed his logistics company's growth."
+        "text": "Demo contact \u2014 edit or replace with a real prospect. First meeting, discussed his logistics company's growth.",
+        "type": "meeting"
       },
       {
         "date": "2026-07-05T14:00:00.000Z",
-        "text": "Demo contact. Follow-up meeting, walked through wealth planning basics."
+        "text": "Demo contact. Follow-up meeting, walked through wealth planning basics.",
+        "type": "meeting"
       },
       {
         "date": "2026-07-23T14:00:00.000Z",
-        "text": "Demo contact. Third meeting scheduled for next month, bringing his business partner."
+        "text": "Demo contact. Third meeting scheduled for next month, bringing his business partner.",
+        "type": "meeting"
       }
     ]
   },
   {
     "id": "contact_demo_5",
     "name": "Amanda Foster",
+    "title": "CEO",
     "company": "Foster Retail Holdings",
     "email": "amanda.foster@example.com",
-    "tags": ["retail"],
+    "location": "New Albany, OH",
+    "industry": "Retail",
+    "businessOwnership": "Owner",
+    "existingRelationships": "None",
+    "familyMembers": [
+      {
+        "name": "James Foster",
+        "relationship": "Spouse"
+      },
+      {
+        "name": "Lily Foster",
+        "relationship": "Daughter"
+      }
+    ],
+    "tags": [
+      "retail"
+    ],
     "lastContactedAt": "2026-07-26T14:00:00.000Z",
     "cadenceDays": 30,
     "stage": "Proposal",
@@ -116,15 +194,17 @@
     "noteLog": [
       {
         "date": "2026-05-15T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real prospect. Referred by David Park, owns a regional retail chain."
+        "text": "Demo contact \u2014 edit or replace with a real prospect. Referred by David Park, owns a regional retail chain."
       },
       {
         "date": "2026-06-10T14:00:00.000Z",
-        "text": "Demo contact. Discussed goals in depth, very interested in estate planning."
+        "text": "Demo contact. Discussed goals in depth, very interested in estate planning.",
+        "type": "meeting"
       },
       {
         "date": "2026-07-10T14:00:00.000Z",
-        "text": "Demo contact. Sent formal proposal for review."
+        "text": "Demo contact. Sent formal proposal for review.",
+        "type": "email"
       },
       {
         "date": "2026-07-26T14:00:00.000Z",
@@ -135,9 +215,20 @@
   {
     "id": "contact_demo_6",
     "name": "Tom Whitmore",
+    "title": "President",
     "company": "Whitmore Insurance",
     "email": "tom.whitmore@example.com",
-    "tags": ["insurance firm", "new albany"],
+    "location": "New Albany, OH",
+    "industry": "Insurance",
+    "businessOwnership": "Owner",
+    "existingRelationships": "Full relationship \u2014 checking, trust, and investment accounts",
+    "clubs": [
+      "New Albany Country Club"
+    ],
+    "tags": [
+      "insurance firm",
+      "new albany"
+    ],
     "lastContactedAt": "2026-07-08T14:00:00.000Z",
     "cadenceDays": 45,
     "stage": "Client",
@@ -146,39 +237,60 @@
     "noteLog": [
       {
         "date": "2026-01-15T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real client. Onboarded as a client."
+        "text": "Demo contact \u2014 edit or replace with a real client. Onboarded as a client."
       },
       {
         "date": "2026-04-20T14:00:00.000Z",
-        "text": "Demo contact. Quarterly review, portfolio performing well."
+        "text": "Demo contact. Quarterly review, portfolio performing well.",
+        "type": "meeting"
       },
       {
         "date": "2026-07-08T14:00:00.000Z",
-        "text": "Demo contact. Q3 review, discussed adding a trust structure."
+        "text": "Demo contact. Q3 review, discussed adding a trust structure.",
+        "type": "meeting"
       }
     ]
   },
   {
     "id": "contact_demo_7",
     "name": "Sam Delgado",
+    "title": "Owner",
     "company": "Delgado Retail Group",
-    "tags": ["retail"],
+    "location": "Columbus, OH",
+    "industry": "Retail",
+    "existingRelationships": "Works with a competitor's advisor",
+    "tags": [
+      "retail"
+    ],
     "lastContactedAt": "2026-04-30T14:00:00.000Z",
     "cadenceDays": 30,
     "stage": "Cold",
     "noteLog": [
       {
         "date": "2026-04-30T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real contact. Went with a competitor's advisor, not interested for now."
+        "text": "Demo contact \u2014 edit or replace with a real contact. Went with a competitor's advisor, not interested for now."
       }
     ]
   },
   {
     "id": "contact_demo_8",
     "name": "Robert Chen",
+    "title": "CPA, Principal",
     "company": "Chen Wealth Advisory (CPA)",
     "email": "robert.chen@example.com",
-    "tags": ["estate planning"],
+    "location": "Columbus, OH",
+    "industry": "Financial Services",
+    "businessOwnership": "Owner",
+    "existingRelationships": "Full relationship",
+    "boardMemberships": [
+      "Columbus Chamber of Commerce"
+    ],
+    "schools": [
+      "Ohio State University"
+    ],
+    "tags": [
+      "estate planning"
+    ],
     "lastContactedAt": "2026-07-20T14:00:00.000Z",
     "cadenceDays": 45,
     "stage": "Client",
@@ -186,23 +298,25 @@
     "noteLog": [
       {
         "date": "2026-01-10T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real Center of Influence. Local CPA, sends referrals a couple times a year."
+        "text": "Demo contact \u2014 edit or replace with a real Center of Influence. Local CPA, sends referrals a couple times a year."
       },
       {
         "date": "2026-07-20T14:00:00.000Z",
-        "text": "Demo contact. Caught up over lunch, he mentioned Elena Rodriguez as someone worth meeting."
+        "text": "Demo contact. Caught up over lunch, he mentioned Elena Rodriguez as someone worth meeting.",
+        "type": "meeting"
       },
       {
         "date": "2026-07-27T14:00:00.000Z",
-        "text": "Tagged to prospecting event: \"Columbus Chamber of Commerce Networking Night\" — Sep 15, 2026 at Columbus Chamber of Commerce."
+        "text": "Tagged to prospecting event: \"Columbus Chamber of Commerce Networking Night\" \u2014 Sep 15, 2026 at Columbus Chamber of Commerce."
       }
     ]
   },
   {
     "id": "contact_demo_9",
     "name": "Pooja Vallampati",
-    "company": "(you — for testing Send Email / AI Meeting Prep safely)",
+    "company": "(you \u2014 for testing Send Email / AI Meeting Prep safely)",
     "email": "pvallampati@gmail.com",
+    "location": "Columbus, OH",
     "tags": [],
     "lastContactedAt": "2026-07-20T14:00:00.000Z",
     "cadenceDays": 30,

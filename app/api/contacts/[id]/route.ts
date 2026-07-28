@@ -1,5 +1,19 @@
 import { NextResponse } from "next/server";
 import { getContact, updateContact, PIPELINE_STAGES, type Contact } from "@/lib/contacts";
+import type { FamilyMember } from "@/lib/contactTypes";
+
+function parseStringArray(v: unknown): string[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  return v.filter((x): x is string => typeof x === "string");
+}
+
+function parseFamilyMembers(v: unknown): FamilyMember[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  return v.filter(
+    (x): x is FamilyMember =>
+      typeof x === "object" && x !== null && typeof x.name === "string" && typeof x.relationship === "string"
+  );
+}
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
@@ -18,8 +32,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     Pick<
       Contact,
       | "name"
+      | "title"
       | "company"
       | "email"
+      | "location"
+      | "industry"
+      | "businessOwnership"
+      | "existingRelationships"
+      | "familyMembers"
+      | "boardMemberships"
+      | "schools"
+      | "clubs"
       | "tags"
       | "cadenceDays"
       | "stage"
@@ -34,8 +57,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   > = {};
   if (typeof body.lastContactedAt === "string") patch.lastContactedAt = body.lastContactedAt;
   if (typeof body.name === "string") patch.name = body.name;
+  if (typeof body.title === "string") patch.title = body.title;
   if (typeof body.company === "string") patch.company = body.company;
   if (typeof body.email === "string") patch.email = body.email;
+  if (typeof body.location === "string") patch.location = body.location;
+  if (typeof body.industry === "string") patch.industry = body.industry;
+  if (typeof body.businessOwnership === "string") patch.businessOwnership = body.businessOwnership;
+  if (typeof body.existingRelationships === "string") patch.existingRelationships = body.existingRelationships;
+  if (Array.isArray(body.familyMembers)) patch.familyMembers = parseFamilyMembers(body.familyMembers);
+  if (Array.isArray(body.boardMemberships)) patch.boardMemberships = parseStringArray(body.boardMemberships);
+  if (Array.isArray(body.schools)) patch.schools = parseStringArray(body.schools);
+  if (Array.isArray(body.clubs)) patch.clubs = parseStringArray(body.clubs);
   if (Array.isArray(body.tags)) patch.tags = body.tags;
   if (typeof body.cadenceDays === "number") patch.cadenceDays = body.cadenceDays;
   if (PIPELINE_STAGES.includes(body.stage)) patch.stage = body.stage;
