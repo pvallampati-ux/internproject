@@ -1,10 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
-import type { Industry } from "./industries";
 
 export interface MarketInsight {
   id: string;
-  industry: Industry;
+  // Built-in Industry name or a custom industry's name/id — kept as a plain
+  // string since custom industries aren't part of a fixed union.
+  industry: string;
   topicId: string;
   topicLabel: string;
   title: string;

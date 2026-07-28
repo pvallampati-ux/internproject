@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { loadMarketInsights } from "@/lib/marketInsightsStore";
-import type { Industry } from "@/lib/industries";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const industry = searchParams.get("industry") as Industry | null;
+  const industry = searchParams.get("industry");
   const days = searchParams.get("days");
 
   let items = loadMarketInsights();

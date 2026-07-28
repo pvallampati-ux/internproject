@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import LeadCard from "@/components/LeadCard";
 import RegionMap from "@/components/RegionMap";
+import AddIndustryForm from "@/components/AddIndustryForm";
 import type { Lead } from "@/lib/store";
 import { pickMapPoint } from "@/lib/geo";
 import type { WarmIntroMatch } from "@/lib/warmIntros";
-import { INDUSTRIES, INDUSTRY_TOPICS, type Industry } from "@/lib/industries";
+import { INDUSTRIES, INDUSTRY_TOPICS } from "@/lib/industries";
+import type { CustomIndustry } from "@/lib/customIndustriesStore";
 import type { MarketInsight } from "@/lib/marketInsightsStore";
 
-type FocusFilter = "All" | Industry;
+interface DisplayTopic {
+  id: string;
+  label: string;
+  regionScoped: boolean;
+}
 
 function timeAgo(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
@@ -22,11 +28,18 @@ export default function IntelligencePage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
   const [loading, setLoading] = useState(true);
-  const [focus, setFocus] = useState<FocusFilter>("All");
+  const [focus, setFocus] = useState<string>("All");
+  const [customIndustries, setCustomIndustries] = useState<CustomIndustry[]>([]);
   const [insights, setInsights] = useState<MarketInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
+
+  async function loadCustomIndustries() {
+    const res = await fetch("/api/custom-industries");
+    const data = await res.json();
+    setCustomIndustries(data.industries ?? []);
+  }
 
   useEffect(() => {
     (async () => {
@@ -40,18 +53,22 @@ export default function IntelligencePage() {
       setLeads(leadsData.leads ?? []);
       setWarmIntros(introsData.matches ?? []);
       setLoading(false);
+      await loadCustomIndustries();
     })();
   }, []);
 
+  async function loadInsightsFor(industryName: string) {
+    setInsightsLoading(true);
+    const res = await fetch(`/api/market-insights?industry=${encodeURIComponent(industryName)}&days=30`);
+    const data = await res.json();
+    setInsights(data.items ?? []);
+    setInsightsLoading(false);
+  }
+
   useEffect(() => {
     if (focus === "All") return;
-    (async () => {
-      setInsightsLoading(true);
-      const res = await fetch(`/api/market-insights?industry=${encodeURIComponent(focus)}&days=30`);
-      const data = await res.json();
-      setInsights(data.items ?? []);
-      setInsightsLoading(false);
-    })();
+    loadInsightsFor(focus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus]);
 
   async function handleToggleSave(id: string, saved: boolean) {
@@ -72,6 +89,21 @@ export default function IntelligencePage() {
     });
   }
 
+  async function handleAddIndustry(input: {
+    name: string;
+    topics: { label: string; keywords: string[]; regionScoped: boolean }[];
+  }) {
+    const res = await fetch("/api/custom-industries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Failed to add industry");
+    await loadCustomIndustries();
+    setFocus(input.name);
+  }
+
   async function handleRefreshInsights() {
     setRefreshing(true);
     setRefreshMessage(null);
@@ -84,11 +116,7 @@ export default function IntelligencePage() {
         setRefreshMessage(
           `Checked ${summary.topicsChecked} topics, found ${summary.itemsKept} relevant items (${summary.added} new).`
         );
-        if (focus !== "All") {
-          const res2 = await fetch(`/api/market-insights?industry=${encodeURIComponent(focus)}&days=30`);
-          const data2 = await res2.json();
-          setInsights(data2.items ?? []);
-        }
+        if (focus !== "All") await loadInsightsFor(focus);
       }
     } catch (err) {
       setRefreshMessage(err instanceof Error ? err.message : String(err));
@@ -106,6 +134,18 @@ export default function IntelligencePage() {
     })
     .filter((x): x is { lead: Lead; point: { lat: number; lng: number } } => x !== null);
   const unmapped = leads.length - plotted.length;
+
+  // Resolve the currently-selected focus's topic list, whether it's one of
+  // the two built-in industries or a user-added custom one.
+  let currentTopics: DisplayTopic[] = [];
+  if (focus !== "All") {
+    if ((INDUSTRIES as string[]).includes(focus)) {
+      currentTopics = INDUSTRY_TOPICS[focus as (typeof INDUSTRIES)[number]];
+    } else {
+      const custom = customIndustries.find((c) => c.name === focus);
+      currentTopics = custom?.topics ?? [];
+    }
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -145,6 +185,20 @@ export default function IntelligencePage() {
             {ind}
           </button>
         ))}
+        {customIndustries.map((ind) => (
+          <button
+            key={ind.id}
+            onClick={() => setFocus(ind.name)}
+            className={`rounded-full border px-3 py-1.5 text-sm ${
+              focus === ind.name
+                ? "border-gold-500 bg-gold-500/10 text-gold-400"
+                : "border-charcoal-700 text-gray-400 hover:border-gray-500"
+            }`}
+          >
+            {ind.name}
+          </button>
+        ))}
+        <AddIndustryForm onAdd={handleAddIndustry} />
       </div>
 
       {loading ? (
@@ -242,7 +296,7 @@ export default function IntelligencePage() {
                 <p className="text-sm text-gray-500">Loading...</p>
               ) : (
                 <div className="space-y-6">
-                  {INDUSTRY_TOPICS[focus].map((topic) => {
+                  {currentTopics.map((topic) => {
                     const topicItems = insights.filter((i) => i.topicId === topic.id);
                     return (
                       <div key={topic.id}>

@@ -336,8 +336,26 @@ regional transactions. Policy/regulatory topics are deliberately left
 national — almost no article about a federal reimbursement rule or a tax
 law change will mention "Columbus," and region-restricting those would
 just make the section permanently empty even though the news still matters
-to your clients. Add a vertical by adding an entry to `INDUSTRIES` and
-`INDUSTRY_TOPICS` in `lib/industries.ts` — no other code changes needed.
+to your clients.
+
+### Adding your own industry vertical
+
+Click **+ Add industry** next to the Focus filter to add a new vertical
+without touching code — give it a name, and one or more topics (a topic
+name, comma-separated keywords, and whether it should be Ohio-scoped).
+Behind the scenes this builds a simple OR'd-keyword Google News query per
+topic (`lib/industries.ts`'s `buildQueryFromKeywords`) and saves it to
+`data/custom-industries.json` (git-ignored — personal configuration, not a
+shipped default, same pattern as contacts/leads). Custom industries show up
+as their own Focus tab immediately and get picked up by "Refresh feeds"
+alongside the two built-ins.
+
+Custom topics use a simpler single-list-of-keywords query than the
+built-in Healthcare/Business Owners topics, which hand-tune a two-part
+AND query (e.g. "(DSO-related terms) AND (acquisition-related terms)") for
+more precision — if you want that level of control for a new vertical,
+add it directly to `INDUSTRIES`/`INDUSTRY_TOPICS` in `lib/industries.ts`
+instead of through the UI.
 
 ## Analytics (not built)
 

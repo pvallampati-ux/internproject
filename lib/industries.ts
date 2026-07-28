@@ -14,6 +14,15 @@ export const INDUSTRIES: Industry[] = ["Healthcare", "Business Owners"];
 
 const OHIO_SCOPE = `("Ohio" OR "Columbus")`;
 
+// Builds a Google News query from a flat, OR'd keyword list — the simpler
+// query shape used for user-added custom industries (lib/customIndustriesStore.ts),
+// as opposed to the hand-tuned two-part AND queries below for the built-ins.
+export function buildQueryFromKeywords(keywords: string[], regionScoped: boolean): string {
+  const quoted = keywords.map((k) => (k.includes(" ") ? `"${k}"` : k));
+  const keywordClause = `(${quoted.join(" OR ")})`;
+  return regionScoped ? `${OHIO_SCOPE} ${keywordClause}` : keywordClause;
+}
+
 export interface Topic {
   id: string;
   label: string;

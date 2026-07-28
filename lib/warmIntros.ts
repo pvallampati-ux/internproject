@@ -4,7 +4,9 @@ import { loadContacts, type Contact } from "./contacts";
 const STOPWORDS = new Set([
   "the", "this", "that", "these", "those", "sample", "demo", "contact",
   "edit", "replace", "real", "client", "also", "met", "she", "her", "his",
-  "he", "they", "them", "existing", "referred", "sent",
+  "he", "they", "them", "existing", "referred", "sent", "follow-up",
+  "followup", "follow", "meeting", "call", "email", "notes", "note",
+  "discussed", "scheduled", "review", "reviewing",
 ]);
 
 // Crude proper-noun extraction: sequences of capitalized words. No real NLP,

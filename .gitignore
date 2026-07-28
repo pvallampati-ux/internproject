@@ -12,3 +12,7 @@ data/contacts.json
 # in the repo. Starts empty and is populated entirely by real refreshes.
 data/leads.json
 data/market-insights.json
+
+# User-added Market Insights industries (personal configuration, not a
+# shipped default) — local-only.
+data/custom-industries.json
