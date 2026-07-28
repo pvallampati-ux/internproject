@@ -42,10 +42,11 @@ data-handling and compliance policies before using it beyond a personal demo.
    warm intros. It pops up once per day (tracked via `localStorage`, so it's
    per-browser) and can be reopened anytime with the "Today's Brief" button.
 
-`data/leads.json` ships with a handful of sample leads, and
-`data/contacts.sample.json` with a handful of sample contacts, so the
-dashboard, pipeline, map, and daily brief all have something to show before
-you run a real refresh or add real contacts.
+No sample/demo data ships in this repo — `data/leads.json` and
+`data/contacts.json` both start empty and are git-ignored (local-only).
+The dashboard, pipeline, map, and daily brief show nothing until you run a
+real refresh (`npm run refresh` or the "Refresh feeds" button) and add real
+contacts on the Pipeline page.
 
 ## Running it
 
@@ -66,6 +67,10 @@ npm run refresh
 > environment with a restrictive network policy, refresh will fail there —
 > run it locally or in a deployment environment (e.g. Vercel) with normal
 > internet access instead.
+
+`data/leads.json` is git-ignored — your fetched leads live only on your own
+machine and are never pushed to GitHub. That also means a fresh clone (or
+switching machines) starts with zero leads until you run a refresh there too.
 
 ## Scheduling automatic updates
 
@@ -114,12 +119,12 @@ snippet for the daily brief's "market events" section — keep them specific
 enough to avoid false matches (e.g. a tag like "logistics" alone will match
 every logistics story, not just ones about that client).
 
-**`data/contacts.json` is git-ignored on purpose** — it holds real
-names and meeting notes once you start using this for real, and
-`data/contacts.sample.json` (tracked, placeholder data only) is what ships
-in the repo and seeds `data/contacts.json` on first run. If you ever want to
-reset back to sample data, just delete `data/contacts.json` and it
-reseeds from the sample on next load.
+**`data/contacts.json` is git-ignored on purpose** — it holds real names
+and meeting notes once you start using this for real. `data/contacts.sample.json`
+is tracked and ships in the repo, but it's an empty array (`[]`) on purpose —
+no placeholder people. It exists only as the seed template `data/contacts.json`
+is created from on first run (still empty), so there's nowhere for fake data
+to sneak back in.
 
 ### Adding a lead straight into the pipeline
 

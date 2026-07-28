@@ -4,5 +4,9 @@ node_modules/
 *.log
 
 # Real contact/meeting-note data stays local-only. data/contacts.sample.json
-# (placeholder data) is still tracked and ships in the repo.
+# (empty by default) is still tracked and ships in the repo.
 data/contacts.json
+
+# Real fetched news leads stay local-only too — no sample/demo data ships
+# in the repo. Starts empty and is populated entirely by real refreshes.
+data/leads.json
