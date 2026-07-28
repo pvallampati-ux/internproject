@@ -811,6 +811,39 @@ starting with the `Tagged to prospecting event:` prefix from proper-noun
 extraction entirely, since it's synthetic boilerplate duplicated across
 attendees rather than organic note content.
 
+## Round 5: contact profile tabs, and de-duplicating warm intros
+
+### Contact profile page: tabs
+
+`app/contacts/[id]/page.tsx` had grown to ~12 stacked sections (Follow-up
+Summary, Details, Cadence & Outreach, Client 360, Relationship DNA, Life
+Stage, Tasks, Timeline, Conversations, Relationship Memory, Similar
+Prospects, Relevant News, AI Meeting Prep, Audit Trail) requiring a lot of
+scrolling. It's now organized into six tabs: **Overview** (Follow-up
+Summary/Why Now, Details, Cadence & Outreach), **Profile** (Client 360,
+Relationship DNA, Life Stage), **Activity** (Timeline, Conversations,
+Relationship Memory), **Tasks**, **Insights** (Similar Prospects, Relevant
+News, AI Meeting Prep), and **History** (Audit Trail). The identity header
+(name, badges, stage selector, COI toggle) stays visible above the tabs.
+
+### De-duplicated warm intros
+
+The same warm-intro match list (`findWarmIntros()` in `lib/warmIntros.ts`)
+was rendered in full, with its own explanatory blurb, in three separate
+places: the Pipeline page ("Possible warm intros"), the Intelligence page
+("Relationship Mapping"), and the once-a-day Daily Brief popup. That's the
+same data three times under two different names — confusing and wordy.
+Now there's one canonical full list, on the Intelligence page (renamed
+"Warm Intros" for consistency). The Pipeline page no longer renders the
+list at all — just a short link over to Intelligence. The Daily Brief
+popup shows a one-line teaser ("3 possible matches found, e.g. X & Y")
+with a link, instead of re-rendering the whole list. Several other
+explanatory captions on the Intelligence page (Wealth Events, Wealth
+Creation Watchlist, White Space Analysis, Regional Map, Contact Heat Map)
+were also trimmed from multi-sentence paragraphs down to one short line
+each, keeping the material honesty disclosures (e.g. "not a predictive
+model") but cutting the rest.
+
 ## Calendar (prospecting events)
 
 `/calendar` tracks social/sporting events used for prospecting — tailgates,

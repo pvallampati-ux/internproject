@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import ContactCard from "@/components/ContactCard";
 import AddContactForm from "@/components/AddContactForm";
 import PipelineFunnel from "@/components/PipelineFunnel";
 import ContactFilterBar from "@/components/ContactFilterBar";
 import { JOURNEY_STAGES, type Contact, type PipelineStage } from "@/lib/contactTypes";
-import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { EMPTY_CONTACT_FILTERS, applyContactFilters, isFiltersActive, type ContactFilters } from "@/lib/contactFilters";
 
 export default function PipelinePage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
   const [filters, setFilters] = useState<ContactFilters>(EMPTY_CONTACT_FILTERS);
@@ -25,14 +24,9 @@ export default function PipelinePage() {
 
   async function loadAll() {
     setLoading(true);
-    const [contactsRes, introsRes] = await Promise.all([
-      fetch("/api/contacts"),
-      fetch("/api/warm-intros"),
-    ]);
+    const contactsRes = await fetch("/api/contacts");
     const contactsData = await contactsRes.json();
-    const introsData = await introsRes.json();
     setContacts(contactsData.contacts ?? []);
-    setWarmIntros(introsData.matches ?? []);
     setLoading(false);
   }
 
@@ -67,9 +61,6 @@ export default function PipelinePage() {
     });
     const updated = await res.json();
     setContacts((prev) => prev.map((c) => (c.id === id ? updated : c)));
-    const introsRes = await fetch("/api/warm-intros");
-    const introsData = await introsRes.json();
-    setWarmIntros(introsData.matches ?? []);
   }
 
   async function handleAddContact(input: {
@@ -120,32 +111,12 @@ export default function PipelinePage() {
         <p className="text-xs uppercase tracking-widest text-gold-500">Client Pipeline</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">Prospect to Client</h1>
         <p className="mt-1 text-sm text-gray-400">
-          Track relationships through each stage, log meeting notes, and spot warm intros.
+          Track relationships through each stage and log meeting notes. Warm intros:{" "}
+          <Link href="/intelligence" className="text-gold-400 hover:underline">
+            Intelligence →
+          </Link>
         </p>
       </header>
-
-      {warmIntros.length > 0 && (
-        <section className="mb-6 rounded-lg border border-gold-500/30 bg-gold-500/5 p-4">
-          <h2 className="font-serif text-lg text-gray-100">Possible warm intros</h2>
-          <p className="mt-1 text-xs text-gray-500">
-            Naive keyword overlap in notes/tags — review before acting, may include false positives.
-          </p>
-          <ul className="mt-2 space-y-1">
-            {warmIntros.map((m, i) => (
-              <li key={i} className="text-sm text-gray-300">
-                <a href={`/contacts/${m.contactA.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
-                  {m.contactA.name}
-                </a>{" "}
-                &amp;{" "}
-                <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
-                  {m.contactB.name}
-                </a>{" "}
-                — <span className="text-gold-400">{describeSharedTerms(m.sharedTerms)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <div className="mb-4">
         <AddContactForm contacts={contacts} onAdd={handleAddContact} />

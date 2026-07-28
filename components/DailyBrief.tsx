@@ -1,5 +1,4 @@
 import type { DailyBrief as DailyBriefData } from "@/lib/dailyBrief";
-import { describeSharedTerms } from "@/lib/warmIntroTypes";
 
 interface Props {
   data: DailyBriefData;
@@ -99,23 +98,20 @@ export default function DailyBrief({ data, onClose }: Props) {
 
         {warmIntros.length > 0 && (
           <section className="mt-6">
-            <h3 className="font-serif text-lg text-gray-100">Possible warm intros</h3>
-            <ul className="mt-2 space-y-2">
-              {warmIntros.map((m, i) => (
-                <li key={i} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2 text-sm text-gray-300">
-                  <a href={`/contacts/${m.contactA.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
-                    {m.contactA.name}
-                  </a>{" "}
-                  &amp;{" "}
-                  <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
-                    {m.contactB.name}
-                  </a>{" "}
-                  — <span className="text-gold-400">{describeSharedTerms(m.sharedTerms)}</span>
-                </li>
-              ))}
-            </ul>
-            <a href="/pipeline" className="mt-2 inline-block text-xs text-gold-400 hover:underline">
-              See full pipeline →
+            <h3 className="font-serif text-lg text-gray-100">Warm intros</h3>
+            <p className="mt-1 text-sm text-gray-400">
+              {warmIntros.length} possible match{warmIntros.length === 1 ? "" : "es"} found, e.g.{" "}
+              <a href={`/contacts/${warmIntros[0].contactA.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                {warmIntros[0].contactA.name}
+              </a>{" "}
+              &amp;{" "}
+              <a href={`/contacts/${warmIntros[0].contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                {warmIntros[0].contactB.name}
+              </a>
+              .
+            </p>
+            <a href="/intelligence" className="mt-2 inline-block text-xs text-gold-400 hover:underline">
+              See all warm intros →
             </a>
           </section>
         )}

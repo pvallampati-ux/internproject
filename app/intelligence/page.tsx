@@ -180,12 +180,9 @@ export default function IntelligencePage() {
       <header className="mb-6">
         <p className="text-xs uppercase tracking-widest text-gold-500">Intelligence</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          News, Wealth Events &amp; Relationship Mapping
+          News, Wealth Events &amp; Warm Intros
         </h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Cross-referencing recent liquidity events, contact relationship overlap, and
-          geography — last 90 days.
-        </p>
+        <p className="mt-1 text-sm text-gray-400">Last 90 days.</p>
       </header>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
@@ -234,9 +231,10 @@ export default function IntelligencePage() {
       ) : (
         <>
           <section className="mb-10">
-            <h2 className="font-serif text-lg text-gray-100">Relationship Mapping</h2>
+            <h2 className="font-serif text-lg text-gray-100">Warm Intros</h2>
             <p className="mt-1 text-xs text-gray-500">
-              Naive keyword overlap in contact notes/tags — review before acting.
+              Contacts who share a tag, board, school, or note mention — keyword-based, verify
+              before acting.
             </p>
             {warmIntros.length === 0 ? (
               <p className="mt-3 text-sm text-gray-600">
@@ -266,9 +264,7 @@ export default function IntelligencePage() {
 
           <section className="mb-10">
             <h2 className="font-serif text-lg text-gray-100">Regional Map</h2>
-            <p className="mt-1 text-xs text-gray-500">
-              Static, self-contained plot by matched town — not a live/interactive map.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">Where matched news leads are located.</p>
             {plotted.length === 0 ? (
               <p className="mt-3 text-sm text-gray-600">No mappable leads in this window yet.</p>
             ) : (
@@ -286,10 +282,7 @@ export default function IntelligencePage() {
 
           <section className="mb-10">
             <h2 className="font-serif text-lg text-gray-100">Contact Heat Map</h2>
-            <p className="mt-1 text-xs text-gray-500">
-              Where your book of business actually is, plotted from each contact&rsquo;s
-              Location field (Client 360). Same static-plot approach as the Regional Map above.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">Where your book of business actually is.</p>
             {contactsPlotted.length === 0 ? (
               <p className="mt-3 text-sm text-gray-600">
                 No contacts with a mappable Location yet — add one on a contact&rsquo;s profile.
@@ -310,9 +303,7 @@ export default function IntelligencePage() {
           <section className="mb-10">
             <h2 className="font-serif text-lg text-gray-100">White Space Analysis</h2>
             <p className="mt-1 text-xs text-gray-500">
-              Contacts with a real wealth gap on file, ranked by size — where the biggest
-              &ldquo;we don&rsquo;t have this relationship yet&rdquo; opportunity sits. Only as
-              accurate as the numbers typed in on each profile.
+              Biggest untapped wealth gaps, ranked by size.
             </p>
             {whiteSpace.length === 0 ? (
               <p className="mt-3 text-sm text-gray-600">
@@ -349,10 +340,8 @@ export default function IntelligencePage() {
                 Wealth Events ({wealthEvents.length})
               </h2>
               <p className="mt-1 text-xs text-gray-500">
-                Business, personal, and corporate wealth-triggering events detected from public
-                news — IPOs, M&amp;A, founder exits, divorces, estate filings, charitable gifts,
-                and more. Naive keyword matching; review before acting, and handle the Personal
-                group with discretion.
+                Liquidity, executive, and life events from public news. Keyword-matched — verify
+                before acting, and use discretion with personal events.
               </p>
               {wealthEvents.length === 0 ? (
                 <p className="mt-3 text-sm text-gray-600">None in the last 90 days.</p>
@@ -374,16 +363,9 @@ export default function IntelligencePage() {
                   Wealth Creation Watchlist ({watchlist.length})
                 </h2>
                 <p className="mt-1 text-xs text-gray-500">
-                  Names mentioned in Business wealth-event headlines (founder exits, IPOs, PE
-                  investment, M&amp;A, executive moves) who aren&rsquo;t a tracked contact yet.
-                  This is <strong>not a predictive model</strong> — there&rsquo;s no wealth
-                  forecast, no confidence score, and no way to catch the harder signals (equity
-                  quietly vesting pre-liquidity, emerging fund managers, employees at fast-growing
-                  private companies) since none of that is in free public news; a real version of
-                  that would need licensed data (Crunchbase/PitchBook) or SEC filings, which this
-                  app doesn&rsquo;t have. What&rsquo;s here is exactly one fact: this name showed
-                  up in a wealth-event headline. Expect noise (place names, product names) — treat
-                  every entry as a lead to verify, not a qualified prospect.
+                  Names from wealth-event headlines who aren&rsquo;t a tracked contact yet.{" "}
+                  <strong>Not a predictive model</strong> — one fact per entry (showed up in a
+                  headline), not a qualified prospect. Expect noise; verify each one.
                 </p>
                 {watchlist.length === 0 ? (
                   <p className="mt-3 text-sm text-gray-600">

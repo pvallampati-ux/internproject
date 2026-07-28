@@ -89,6 +89,9 @@ function arrayFieldToText(v: string[] | undefined): string {
   return (v ?? []).join(", ");
 }
 
+const TABS = ["Overview", "Profile", "Activity", "Tasks", "Insights", "History"] as const;
+type ProfileTab = (typeof TABS)[number];
+
 export default function ContactProfilePage() {
   const params = useParams<{ id: string }>();
   const contactId = params.id;
@@ -100,6 +103,7 @@ export default function ContactProfilePage() {
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>("Overview");
   const [noteDraft, setNoteDraft] = useState("");
   const [noteTypeDraft, setNoteTypeDraft] = useState<NoteType>("note");
 
@@ -368,6 +372,25 @@ export default function ContactProfilePage() {
         </div>
       </header>
 
+      <div className="mb-6 flex flex-wrap gap-2 border-b border-charcoal-700 pb-3">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`rounded-full border px-3 py-1 text-sm ${
+              activeTab === tab
+                ? "border-gold-500 bg-gold-500/10 text-gold-400"
+                : "border-charcoal-700 text-gray-400 hover:border-gray-500"
+            }`}
+          >
+            {tab}
+            {tab === "Tasks" && openTasks.length > 0 ? ` (${openTasks.length})` : ""}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "Overview" && (
+      <>
       <section className="mb-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Follow-up Summary</h2>
         <p className="mt-2 text-sm text-gray-300">
@@ -533,8 +556,12 @@ export default function ContactProfilePage() {
           </div>
         </section>
       </div>
+      </>
+      )}
 
-      <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+      {activeTab === "Profile" && (
+      <>
+      <section className="mt-0 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Client 360</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
@@ -732,8 +759,11 @@ export default function ContactProfilePage() {
           </ul>
         </section>
       )}
+      </>
+      )}
 
-      <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+      {activeTab === "Tasks" && (
+      <section className="mt-0 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
           Tasks / Action Items ({openTasks.length} open)
         </h2>
@@ -777,8 +807,11 @@ export default function ContactProfilePage() {
           </button>
         </div>
       </section>
+      )}
 
-      <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+      {activeTab === "Activity" && (
+      <>
+      <section className="mt-0 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Timeline</h2>
         <p className="mt-1 text-xs text-gray-500">
           Every interaction, merged and sorted — notes, relevant news, and tasks.
@@ -903,9 +936,13 @@ export default function ContactProfilePage() {
           </div>
         </section>
       )}
+      </>
+      )}
 
+      {activeTab === "Insights" && (
+      <>
       {similar.length > 0 && (
-        <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+        <section className="mt-0 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Similar Prospects</h2>
           <p className="mt-1 text-xs text-gray-500">
             Rule-based similarity (shared tags, industry, life stage, wealth range) — not an
@@ -948,8 +985,11 @@ export default function ContactProfilePage() {
       <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <AiMeetingPrep contactId={contact.id} />
       </section>
+      </>
+      )}
 
-      <details className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+      {activeTab === "History" && (
+      <details open className="mt-0 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-gray-500">
           Recent changes ({auditEntries.length})
         </summary>
@@ -966,6 +1006,7 @@ export default function ContactProfilePage() {
           {auditEntries.length === 0 && <p className="text-xs text-gray-600">No changes logged yet.</p>}
         </div>
       </details>
+      )}
     </main>
   );
 }
