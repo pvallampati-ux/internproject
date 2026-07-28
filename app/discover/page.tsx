@@ -86,14 +86,13 @@ export default function DiscoveryPage() {
     <main className="mx-auto max-w-[1600px] px-6 py-8">
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-widest text-gold-500">Prospect Discovery</p>
+          <p className="text-xs uppercase tracking-widest text-gold-500">Discover</p>
           <h1 className="font-serif text-3xl font-semibold text-gray-100">
-            Sourcing, Filtering &amp; Ranking
+            Who should I pursue?
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            Auto-tracked signals: liquidity events, executive changes, M&amp;A / buyouts, and
-            new-firm expansions in the region — rule-based sourcing and relevance scoring, not
-            an LLM-driven model.
+            Liquidity events, executive changes, M&amp;A, and expansions — rule-based sourcing,
+            not an LLM model.
           </p>
         </div>
         <button

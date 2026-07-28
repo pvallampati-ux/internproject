@@ -328,7 +328,7 @@ export default function HomePage() {
             <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
               <div className="flex items-center justify-between">
                 <h2 className="font-serif text-lg text-gray-100">New Opportunities</h2>
-                <Link href="/discovery" className="text-xs text-gold-400 hover:underline">
+                <Link href="/discover" className="text-xs text-gold-400 hover:underline">
                   View all →
                 </Link>
               </div>
@@ -425,7 +425,7 @@ export default function HomePage() {
               <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
                 <div className="flex items-center justify-between">
                   <h2 className="font-serif text-lg text-gray-100">Relationship Opportunity</h2>
-                  <Link href="/intelligence" className="text-xs text-gold-400 hover:underline">
+                  <Link href="/research" className="text-xs text-gold-400 hover:underline">
                     View all →
                   </Link>
                 </div>

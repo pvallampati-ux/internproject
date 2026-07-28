@@ -110,7 +110,7 @@ export default function DailyBrief({ data, onClose }: Props) {
               </a>
               .
             </p>
-            <a href="/intelligence" className="mt-2 inline-block text-xs text-gold-400 hover:underline">
+            <a href="/research" className="mt-2 inline-block text-xs text-gold-400 hover:underline">
               See all warm intros →
             </a>
           </section>

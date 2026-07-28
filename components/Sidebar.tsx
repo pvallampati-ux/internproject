@@ -20,11 +20,11 @@ import {
 
 const LINKS = [
   { href: "/", label: "Home", icon: HomeIcon },
-  { href: "/discovery", label: "Prospect Discovery", icon: SearchIcon },
-  { href: "/intelligence", label: "Intelligence", icon: BulbIcon },
-  { href: "/engagement", label: "Engagement", icon: PeopleIcon },
+  { href: "/discover", label: "Discover", icon: SearchIcon },
+  { href: "/research", label: "Research", icon: BulbIcon },
+  { href: "/engage", label: "Engage", icon: PeopleIcon },
   { href: "/pipeline", label: "Pipeline", icon: FunnelIcon },
-  { href: "/coi", label: "COI / Network", icon: ShareIcon },
+  { href: "/network", label: "Network", icon: ShareIcon },
   { href: "/calendar", label: "Calendar", icon: CalendarIcon },
   { href: "/analytics", label: "Analytics", icon: ChartIcon },
 ];

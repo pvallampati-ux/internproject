@@ -112,7 +112,7 @@ export default function PipelinePage() {
         <h1 className="font-serif text-3xl font-semibold text-gray-100">Prospect to Client</h1>
         <p className="mt-1 text-sm text-gray-400">
           Track relationships through each stage and log meeting notes. Warm intros:{" "}
-          <Link href="/intelligence" className="text-gold-400 hover:underline">
+          <Link href="/research" className="text-gold-400 hover:underline">
             Intelligence →
           </Link>
         </p>

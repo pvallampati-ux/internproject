@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Contact } from "@/lib/contactTypes";
 import type { Lead } from "@/lib/store";
 import type { DailyBrief } from "@/lib/dailyBrief";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
+
+const COOLING_THRESHOLD_DAYS = 45;
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -17,6 +19,12 @@ export default function EngagementPage() {
   const [brief, setBrief] = useState<DailyBrief | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const prepRef = useRef<HTMLDivElement>(null);
+
+  function openPrepFor(contactId: string) {
+    setSelectedContactId(contactId);
+    prepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   useEffect(() => {
     (async () => {
@@ -44,15 +52,19 @@ export default function EngagementPage() {
     return matchLeadsToContact(selectedContact, leads);
   }, [selectedContact, leads]);
 
+  const overdueContacts = brief?.overdueContacts ?? [];
+  const needsATouch = overdueContacts.filter((x) => x.daysOverdue < COOLING_THRESHOLD_DAYS);
+  const coolingRelationships = overdueContacts.filter((x) => x.daysOverdue >= COOLING_THRESHOLD_DAYS);
+
   return (
     <main className="mx-auto max-w-[1600px] px-6 py-8">
       <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gold-500">Engagement</p>
+        <p className="text-xs uppercase tracking-widest text-gold-500">Engage</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          Meeting Prep, Outreach &amp; Follow-ups
+          Who needs my attention?
         </h1>
         <p className="mt-1 text-sm text-gray-400">
-          Prep before a call, work your outreach queue, and keep track of what needs a touch.
+          Overdue outreach, meeting prep, and relationships gone quiet.
         </p>
       </header>
 
@@ -60,7 +72,69 @@ export default function EngagementPage() {
         <p className="text-sm text-gray-500">Loading...</p>
       ) : (
         <>
-          <section className="mb-10 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+          <section className="mb-10">
+            <h2 className="font-serif text-lg text-gray-100">
+              Needs a Touch ({needsATouch.length})
+            </h2>
+            <p className="mt-1 text-xs text-gray-500">Overdue on their own contact cadence.</p>
+            {needsATouch.length === 0 ? (
+              <p className="mt-2 text-sm text-gray-600">Nobody overdue right now.</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {needsATouch.map(({ contact, daysOverdue }) => (
+                  <li
+                    key={contact.id}
+                    className="flex items-center justify-between rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2 text-sm"
+                  >
+                    <div>
+                      <button
+                        onClick={() => openPrepFor(contact.id)}
+                        className="text-gray-100 hover:text-gold-400 hover:underline"
+                      >
+                        {contact.name}
+                      </button>{" "}
+                      <span className="text-amber-400">— {daysOverdue}d overdue</span>
+                    </div>
+                    <button
+                      onClick={() => openPrepFor(contact.id)}
+                      className="shrink-0 rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                    >
+                      Open Prep ↓
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {coolingRelationships.length > 0 && (
+            <section className="mb-10">
+              <h2 className="font-serif text-lg text-gray-100">
+                Cooling Relationships ({coolingRelationships.length})
+              </h2>
+              <p className="mt-1 text-xs text-gray-500">
+                45+ days overdue — meaningfully longer than a normal cadence reminder.
+              </p>
+              <ul className="mt-2 space-y-2">
+                {coolingRelationships.map(({ contact, daysOverdue }) => (
+                  <li
+                    key={contact.id}
+                    className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm"
+                  >
+                    <button
+                      onClick={() => openPrepFor(contact.id)}
+                      className="text-gray-100 hover:text-gold-400 hover:underline"
+                    >
+                      {contact.name}
+                    </button>{" "}
+                    <span className="text-red-400">— {daysOverdue}d overdue</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <section ref={prepRef} className="mb-10 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
             <h2 className="font-serif text-lg text-gray-100">Meeting Prep</h2>
             {contacts.length === 0 ? (
               <p className="mt-2 text-sm text-gray-600">
@@ -132,30 +206,9 @@ export default function EngagementPage() {
             )}
           </section>
 
-          <section className="mb-10">
-            <h2 className="font-serif text-lg text-gray-100">
-              Outreach Queue ({brief?.overdueContacts.length ?? 0})
-            </h2>
-            {(brief?.overdueContacts.length ?? 0) === 0 ? (
-              <p className="mt-2 text-sm text-gray-600">Nobody overdue right now.</p>
-            ) : (
-              <ul className="mt-2 space-y-2">
-                {brief!.overdueContacts.map(({ contact, daysOverdue }) => (
-                  <li
-                    key={contact.id}
-                    className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2 text-sm"
-                  >
-                    <span className="text-gray-100">{contact.name}</span>{" "}
-                    <span className="text-amber-400">— {daysOverdue}d overdue</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
           <section>
             <h2 className="font-serif text-lg text-gray-100">
-              Follow-ups &amp; Cooling Leads ({(brief?.followUps.length ?? 0) + (brief?.coolingLeads.length ?? 0)})
+              Saved Leads Follow-up ({(brief?.followUps.length ?? 0) + (brief?.coolingLeads.length ?? 0)})
             </h2>
             {(brief?.followUps.length ?? 0) === 0 && (brief?.coolingLeads.length ?? 0) === 0 ? (
               <p className="mt-2 text-sm text-gray-600">Nothing pending.</p>

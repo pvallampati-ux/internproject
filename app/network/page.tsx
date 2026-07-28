@@ -4,24 +4,60 @@ import { useEffect, useMemo, useState } from "react";
 import NetworkGraph from "@/components/NetworkGraph";
 import type { Contact } from "@/lib/contactTypes";
 import type { NetworkEdge } from "@/lib/networkGraph";
+import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 
-export default function CoiPage() {
+// A "path" is a warm-intro match where one side is already a Client/COI
+// (someone who could plausibly make the intro) and the other is still a
+// prospect (someone worth reaching) — the subset of all warm-intro matches
+// that's actually actionable as an introduction, ranked by how many things
+// they share.
+interface IntroPath {
+  connector: Contact;
+  prospect: Contact;
+  match: WarmIntroMatch;
+}
+
+function buildIntroPaths(matches: WarmIntroMatch[]): IntroPath[] {
+  const paths: IntroPath[] = [];
+  for (const match of matches) {
+    const aIsConnector = match.contactA.stage === "Client" || match.contactA.isCOI;
+    const bIsConnector = match.contactB.stage === "Client" || match.contactB.isCOI;
+    const aIsProspect = match.contactA.stage !== "Client" && match.contactA.stage !== "Cold";
+    const bIsProspect = match.contactB.stage !== "Client" && match.contactB.stage !== "Cold";
+    if (aIsConnector && bIsProspect) {
+      paths.push({ connector: match.contactA, prospect: match.contactB, match });
+    } else if (bIsConnector && aIsProspect) {
+      paths.push({ connector: match.contactB, prospect: match.contactA, match });
+    }
+  }
+  return paths.sort((a, b) => b.match.sharedTerms.length - a.match.sharedTerms.length);
+}
+
+export default function NetworkPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [edges, setEdges] = useState<NetworkEdge[]>([]);
+  const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/network");
-    const data = await res.json();
+    const [networkRes, introsRes] = await Promise.all([
+      fetch("/api/network"),
+      fetch("/api/warm-intros"),
+    ]);
+    const data = await networkRes.json();
+    const introsData = await introsRes.json();
     setContacts(data.contacts ?? []);
     setEdges(data.edges ?? []);
+    setWarmIntros(introsData.matches ?? []);
     setLoading(false);
   }
 
   useEffect(() => {
     load();
   }, []);
+
+  const introPaths = useMemo(() => buildIntroPaths(warmIntros), [warmIntros]);
 
   async function toggleCOI(id: string, isCOI: boolean) {
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, isCOI } : c)));
@@ -46,16 +82,12 @@ export default function CoiPage() {
   return (
     <main className="mx-auto max-w-[1600px] px-6 py-8">
       <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gold-500">
-          Centers of Influence
-        </p>
+        <p className="text-xs uppercase tracking-widest text-gold-500">Network</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          COI &amp; Network
+          Who can help me reach them?
         </h1>
         <p className="mt-1 text-sm text-gray-400">
-          Referral sources and how your contacts connect to each other. Referral lines come
-          from the "Referred by" field matching another contact's name; dashed lines are the
-          same naive warm-intro keyword overlap used elsewhere — review before acting.
+          Warm introduction paths, Centers of Influence, and how your contacts connect.
         </p>
       </header>
 
@@ -64,7 +96,52 @@ export default function CoiPage() {
       ) : (
         <>
           <section className="mb-10">
-            <h2 className="font-serif text-lg text-gray-100">Network</h2>
+            <h2 className="font-serif text-lg text-gray-100">
+              Best Introduction Paths ({introPaths.length})
+            </h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Warm-intro matches where one side is already a Client/COI and the other is still a
+              prospect — keyword-matched, verify before acting.
+            </p>
+            {introPaths.length === 0 ? (
+              <p className="mt-3 text-sm text-gray-600">
+                No connector-to-prospect matches yet.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {introPaths.slice(0, 6).map(({ connector, prospect, match }, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-3 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm">
+                        <a href={`/contacts/${prospect.id}`} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
+                          {prospect.name}
+                        </a>
+                        <span className="text-gray-500"> via </span>
+                        <a href={`/contacts/${connector.id}`} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
+                          {connector.name}
+                        </a>
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Shared: {describeSharedTerms(match.sharedTerms)}
+                      </p>
+                    </div>
+                    <a
+                      href={`/contacts/${connector.id}`}
+                      className="shrink-0 rounded-md border border-gold-500/50 px-2.5 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                    >
+                      View path →
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="mb-10">
+            <h2 className="font-serif text-lg text-gray-100">Network Graph</h2>
             {contacts.length === 0 ? (
               <p className="mt-2 text-sm text-gray-600">No contacts yet.</p>
             ) : (

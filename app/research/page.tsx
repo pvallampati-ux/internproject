@@ -185,11 +185,11 @@ export default function IntelligencePage() {
   return (
     <main className="mx-auto max-w-[1600px] px-6 py-8">
       <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gold-500">Intelligence</p>
+        <p className="text-xs uppercase tracking-widest text-gold-500">Research</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          News, Wealth Events &amp; Warm Intros
+          Why does this matter?
         </h1>
-        <p className="mt-1 text-sm text-gray-400">Last 90 days.</p>
+        <p className="mt-1 text-sm text-gray-400">Wealth events, warm intros, and geography — last 90 days.</p>
       </header>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
