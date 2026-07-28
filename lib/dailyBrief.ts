@@ -1,6 +1,7 @@
 import { loadContacts, type Contact } from "./contacts";
 import { loadLeads, type Lead } from "./store";
 import { findWarmIntros, type WarmIntroMatch } from "./warmIntros";
+import { matchLeadsToContact } from "./relevantLeads";
 import { COOLING_THRESHOLD_DAYS } from "./config";
 
 const MARKET_EVENT_LOOKBACK_DAYS = 14;
@@ -49,15 +50,12 @@ export function computeDailyBrief(): DailyBrief {
   );
 
   const cutoff = now - MARKET_EVENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
-  const marketEvents: MarketEventMatch[] = leads
-    .filter((l) => new Date(l.publishedAt).getTime() >= cutoff)
-    .map((lead) => {
-      const haystack = `${lead.title} ${lead.snippet}`.toLowerCase();
-      const affectedContacts = contacts.filter((c) =>
-        c.tags.some((tag) => haystack.includes(tag.toLowerCase()))
-      );
-      return { lead, affectedContacts };
-    })
+  const recentLeads = leads.filter((l) => new Date(l.publishedAt).getTime() >= cutoff);
+  const marketEvents: MarketEventMatch[] = recentLeads
+    .map((lead) => ({
+      lead,
+      affectedContacts: contacts.filter((c) => matchLeadsToContact(c, [lead]).length > 0),
+    }))
     .filter((match) => match.affectedContacts.length > 0);
 
   const warmIntros = findWarmIntros().slice(0, WARM_INTRO_TEASER_LIMIT);

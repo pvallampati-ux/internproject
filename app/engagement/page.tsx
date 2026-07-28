@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { Contact } from "@/lib/contactTypes";
 import type { Lead } from "@/lib/store";
 import type { DailyBrief } from "@/lib/dailyBrief";
+import { matchLeadsToContact } from "@/lib/relevantLeads";
+import AiMeetingPrep from "@/components/AiMeetingPrep";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -39,10 +41,7 @@ export default function EngagementPage() {
 
   const relevantLeads = useMemo(() => {
     if (!selectedContact) return [];
-    return leads.filter((lead) => {
-      const haystack = `${lead.title} ${lead.snippet}`.toLowerCase();
-      return selectedContact.tags.some((tag) => haystack.includes(tag.toLowerCase()));
-    });
+    return matchLeadsToContact(selectedContact, leads);
   }, [selectedContact, leads]);
 
   return (
@@ -127,6 +126,8 @@ export default function EngagementPage() {
                     </div>
                   </div>
                 )}
+
+                {selectedContact && <AiMeetingPrep key={selectedContact.id} contactId={selectedContact.id} />}
               </>
             )}
           </section>
