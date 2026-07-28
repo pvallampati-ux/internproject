@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import FilterBar from "@/components/FilterBar";
 import LeadCard from "@/components/LeadCard";
-import AddContactForm from "@/components/AddContactForm";
 import type { Lead } from "@/lib/store";
 import type { Contact } from "@/lib/contactTypes";
 import type { Category } from "@/lib/config";
@@ -62,30 +61,6 @@ export default function DiscoveryPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note }),
     });
-  }
-
-  async function handleAddContact(input: {
-    name: string;
-    title?: string;
-    company: string;
-    email?: string;
-    phone?: string;
-    location?: string;
-    industry?: string;
-    tags: string[];
-    cadenceDays: number;
-    estimatedValue?: number;
-    currentWalletShare?: number;
-    referredBy?: string;
-    referredByContactId?: string;
-  }) {
-    const res = await fetch("/api/contacts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    const created = await res.json();
-    setContacts((prev) => [...prev, created]);
   }
 
   async function handleRefresh() {
@@ -155,10 +130,6 @@ export default function DiscoveryPage() {
       {refreshMessage && (
         <p className="mb-4 text-sm text-gray-400">{refreshMessage}</p>
       )}
-
-      <div className="mb-4">
-        <AddContactForm contacts={contacts} onAdd={handleAddContact} />
-      </div>
 
       <FilterBar
         activeCategory={category}
