@@ -11,6 +11,14 @@ export default function PipelinePage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
+
+  function handleDrop(e: React.DragEvent, stage: PipelineStage) {
+    e.preventDefault();
+    setDragOverStage(null);
+    const id = e.dataTransfer.getData("text/plain");
+    if (id) handleStageChange(id, stage);
+  }
 
   async function loadAll() {
     setLoading(true);
@@ -141,7 +149,16 @@ export default function PipelinePage() {
             {JOURNEY_STAGES.map((stage, i) => {
               const stageContacts = contacts.filter((c) => c.stage === stage);
               return (
-                <div key={stage} className="relative">
+                <div
+                  key={stage}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnter={() => setDragOverStage(stage)}
+                  onDragLeave={() => setDragOverStage((prev) => (prev === stage ? null : prev))}
+                  onDrop={(e) => handleDrop(e, stage)}
+                  className={`relative rounded-lg p-1 transition ${
+                    dragOverStage === stage ? "bg-gold-500/10 ring-1 ring-gold-500/50" : ""
+                  }`}
+                >
                   <h3 className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
                     {stage} ({stageContacts.length})
                   </h3>
@@ -166,7 +183,15 @@ export default function PipelinePage() {
             })}
           </div>
 
-          <section className="mt-10 rounded-lg border border-charcoal-800 bg-black/20 p-4">
+          <section
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => setDragOverStage("Cold")}
+            onDragLeave={() => setDragOverStage((prev) => (prev === "Cold" ? null : prev))}
+            onDrop={(e) => handleDrop(e, "Cold")}
+            className={`mt-10 rounded-lg border border-charcoal-800 bg-black/20 p-4 transition ${
+              dragOverStage === "Cold" ? "bg-gold-500/10 ring-1 ring-gold-500/50" : ""
+            }`}
+          >
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
               Cold / Not Converting ({coldContacts.length})
             </h2>

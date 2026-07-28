@@ -35,7 +35,14 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
   const overdue = daysSinceContact > contact.cadenceDays;
 
   return (
-    <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", contact.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      className="cursor-grab rounded-lg border border-charcoal-700 bg-charcoal-800 p-4 active:cursor-grabbing"
+    >
       <Link href={`/contacts/${contact.id}`} className="block hover:underline">
         <p className="font-serif text-base font-semibold text-gray-100">{contact.name}</p>
       </Link>

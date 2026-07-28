@@ -1,1 +1,158 @@
-[]
+[
+  {
+    "id": "contact_demo_1",
+    "name": "Jane Whitfield",
+    "company": "Whitfield Software Partners",
+    "email": "jane.whitfield@example.com",
+    "tags": ["software firm", "software company"],
+    "lastContactedAt": "2026-07-16T14:00:00.000Z",
+    "cadenceDays": 10,
+    "stage": "Prospect",
+    "estimatedValue": 2500000,
+    "referredBy": "Columbus Chamber of Commerce",
+    "noteLog": [
+      {
+        "date": "2026-07-10T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real prospect. Met at a Chamber of Commerce event, runs a growing software firm."
+      },
+      {
+        "date": "2026-07-16T14:00:00.000Z",
+        "text": "Demo contact. Follow-up call — mentioned she's exploring liquidity options in the next couple years."
+      }
+    ]
+  },
+  {
+    "id": "contact_demo_2",
+    "name": "Marcus Bell",
+    "company": "Bell Manufacturing Co.",
+    "email": "marcus.bell@example.com",
+    "tags": ["manufacturing"],
+    "lastContactedAt": "2026-07-25T14:00:00.000Z",
+    "cadenceDays": 10,
+    "stage": "Prospect",
+    "estimatedValue": 1200000,
+    "noteLog": [
+      {
+        "date": "2026-07-25T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real prospect. Intro call, third-generation family manufacturing business."
+      }
+    ]
+  },
+  {
+    "id": "contact_demo_3",
+    "name": "Elena Rodriguez",
+    "company": "Rodriguez Dental Group",
+    "email": "elena.rodriguez@example.com",
+    "tags": ["dental", "healthcare"],
+    "lastContactedAt": "2026-07-18T14:00:00.000Z",
+    "cadenceDays": 30,
+    "stage": "Contacted",
+    "estimatedValue": 900000,
+    "referredBy": "Robert Chen",
+    "noteLog": [
+      {
+        "date": "2026-07-05T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real prospect. Referred by an existing client, owns a multi-location dental practice."
+      },
+      {
+        "date": "2026-07-18T14:00:00.000Z",
+        "text": "Demo contact. Sent intro email, she's open to a coffee meeting in August."
+      }
+    ]
+  },
+  {
+    "id": "contact_demo_4",
+    "name": "David Park",
+    "company": "Park Logistics",
+    "email": "david.park@example.com",
+    "tags": ["logistics"],
+    "lastContactedAt": "2026-07-23T14:00:00.000Z",
+    "cadenceDays": 30,
+    "stage": "Meeting",
+    "estimatedValue": 3000000,
+    "noteLog": [
+      {
+        "date": "2026-06-20T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real prospect. First meeting, discussed his logistics company's growth."
+      },
+      {
+        "date": "2026-07-05T14:00:00.000Z",
+        "text": "Demo contact. Follow-up meeting, walked through wealth planning basics."
+      },
+      {
+        "date": "2026-07-23T14:00:00.000Z",
+        "text": "Demo contact. Third meeting scheduled for next month, bringing his business partner."
+      }
+    ]
+  },
+  {
+    "id": "contact_demo_5",
+    "name": "Amanda Foster",
+    "company": "Foster Retail Holdings",
+    "email": "amanda.foster@example.com",
+    "tags": ["retail"],
+    "lastContactedAt": "2026-07-26T14:00:00.000Z",
+    "cadenceDays": 30,
+    "stage": "Proposal",
+    "estimatedValue": 5000000,
+    "referredBy": "David Park",
+    "noteLog": [
+      {
+        "date": "2026-05-15T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real prospect. Referred by David Park, owns a regional retail chain."
+      },
+      {
+        "date": "2026-06-10T14:00:00.000Z",
+        "text": "Demo contact. Discussed goals in depth, very interested in estate planning."
+      },
+      {
+        "date": "2026-07-10T14:00:00.000Z",
+        "text": "Demo contact. Sent formal proposal for review."
+      },
+      {
+        "date": "2026-07-26T14:00:00.000Z",
+        "text": "Demo contact. She's reviewing the proposal with her family, expects a decision soon."
+      }
+    ]
+  },
+  {
+    "id": "contact_demo_6",
+    "name": "Tom Whitmore",
+    "company": "Whitmore Insurance",
+    "email": "tom.whitmore@example.com",
+    "tags": ["insurance firm", "new albany"],
+    "lastContactedAt": "2026-07-08T14:00:00.000Z",
+    "cadenceDays": 45,
+    "stage": "Client",
+    "estimatedValue": 800000,
+    "noteLog": [
+      {
+        "date": "2026-01-15T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real client. Onboarded as a client."
+      },
+      {
+        "date": "2026-04-20T14:00:00.000Z",
+        "text": "Demo contact. Quarterly review, portfolio performing well."
+      },
+      {
+        "date": "2026-07-08T14:00:00.000Z",
+        "text": "Demo contact. Q3 review, discussed adding a trust structure."
+      }
+    ]
+  },
+  {
+    "id": "contact_demo_7",
+    "name": "Sam Delgado",
+    "company": "Delgado Retail Group",
+    "tags": ["retail"],
+    "lastContactedAt": "2026-04-30T14:00:00.000Z",
+    "cadenceDays": 30,
+    "stage": "Cold",
+    "noteLog": [
+      {
+        "date": "2026-04-30T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real contact. Went with a competitor's advisor, not interested for now."
+      }
+    ]
+  }
+]

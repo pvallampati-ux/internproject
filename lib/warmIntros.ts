@@ -2,9 +2,9 @@ import { loadContacts, type Contact } from "./contacts";
 
 // Words too common to count as a meaningful shared connection.
 const STOPWORDS = new Set([
-  "the", "this", "that", "these", "those", "sample", "contact", "edit",
-  "replace", "real", "client", "also", "met", "she", "her", "his", "he",
-  "they", "them", "existing",
+  "the", "this", "that", "these", "those", "sample", "demo", "contact",
+  "edit", "replace", "real", "client", "also", "met", "she", "her", "his",
+  "he", "they", "them", "existing", "referred", "sent",
 ]);
 
 // Crude proper-noun extraction: sequences of capitalized words. No real NLP,

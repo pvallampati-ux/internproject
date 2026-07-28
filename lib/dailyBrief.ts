@@ -30,7 +30,10 @@ export function computeDailyBrief(): DailyBrief {
   const leads = loadLeads();
   const now = Date.now();
 
+  // Cold contacts are deliberately off the active journey — don't nag to
+  // reach out to someone who's gone quiet or isn't converting.
   const overdueContacts: OverdueContact[] = contacts
+    .filter((c) => c.stage !== "Cold")
     .map((contact) => {
       const daysSinceContact = Math.floor(
         (now - new Date(contact.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)

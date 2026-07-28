@@ -152,10 +152,21 @@ every logistics story, not just ones about that client).
 
 **`data/contacts.json` is git-ignored on purpose** — it holds real names
 and meeting notes once you start using this for real. `data/contacts.sample.json`
-is tracked and ships in the repo, but it's an empty array (`[]`) on purpose —
-no placeholder people. It exists only as the seed template `data/contacts.json`
-is created from on first run (still empty), so there's nowhere for fake data
-to sneak back in.
+is tracked and ships in the repo as the seed template `data/contacts.json`
+is created from on first run.
+
+It currently ships with **7 demo contacts** (`contact_demo_1` through
+`_7`) spanning every pipeline stage — so the funnel, touchpoints, deal
+value, and daily-brief "people to call" logic all have something to show
+before you've added anyone real. These are clearly fake: names like "Jane
+Whitfield," emails on `@example.com`, and every note explicitly says "Demo
+contact." There are no fake **news articles** anywhere (`data/leads.json`
+and `data/market-insights.json` still start empty and only ever hold real
+fetched results) — only the contacts/pipeline side has placeholder data,
+and only because it was explicitly asked for to see the pipeline working
+end to end. Delete or edit `data/contacts.json` (or reset it to `[]`,
+delete it, and it reseeds from the sample) once you're ready to replace the
+demo contacts with real ones.
 
 ### Adding a lead straight into the pipeline
 
@@ -202,8 +213,15 @@ Meeting → Proposal → Client` — as a connected funnel (counts + % of active
 pipeline) above a Kanban board. A separate **Cold / Not Converting** stage
 exists outside that journey for contacts who've gone quiet or aren't going
 to convert; it's rendered in its own muted section below the board rather
-than as a further step, so it doesn't read as "progress." Move a contact
-back to an active stage anytime via the same dropdown if things change.
+than as a further step, so it doesn't read as "progress." Cold contacts are
+also excluded from the daily brief's "people to call" — the whole point of
+that bucket is that you're not actively chasing them.
+
+Move a contact to a different stage either by **dragging its card** to
+another column (or to the Cold section) or via the dropdown on the card —
+both call the same update, so use whichever's easier. Drag-and-drop uses
+plain HTML5 drag events (`ContactCard.tsx`, `app/pipeline/page.tsx`), no
+extra library.
 
 ### Warm intro finder
 
