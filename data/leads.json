@@ -16,6 +16,7 @@
       "majority stake",
       "private equity"
     ],
+    "regionTerms": ["columbus"],
     "score": 15,
     "fetchedAt": "2026-07-27T12:00:00.000Z"
   },
@@ -36,6 +37,7 @@
       "chief executive officer",
       "succeeds"
     ],
+    "regionTerms": ["central ohio"],
     "score": 13,
     "fetchedAt": "2026-07-27T12:00:00.000Z"
   },
@@ -54,6 +56,7 @@
       "to acquire",
       "definitive agreement"
     ],
+    "regionTerms": ["dublin, ohio"],
     "score": 9,
     "fetchedAt": "2026-07-27T12:00:00.000Z"
   },
@@ -72,6 +75,7 @@
       "relocating",
       "new headquarters"
     ],
+    "regionTerms": ["new albany, ohio"],
     "score": 7,
     "fetchedAt": "2026-07-27T12:00:00.000Z"
   }

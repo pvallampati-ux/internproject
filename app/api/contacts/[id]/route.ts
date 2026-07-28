@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
-import { updateContact } from "@/lib/contacts";
+import { updateContact, PIPELINE_STAGES, type Contact } from "@/lib/contacts";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const body = await request.json();
 
-  const patch: { lastContactedAt?: string } = {};
+  const patch: Partial<
+    Pick<Contact, "name" | "company" | "tags" | "cadenceDays" | "stage" | "lastContactedAt">
+  > = {};
   if (typeof body.lastContactedAt === "string") patch.lastContactedAt = body.lastContactedAt;
+  if (typeof body.name === "string") patch.name = body.name;
+  if (typeof body.company === "string") patch.company = body.company;
+  if (Array.isArray(body.tags)) patch.tags = body.tags;
+  if (typeof body.cadenceDays === "number") patch.cadenceDays = body.cadenceDays;
+  if (PIPELINE_STAGES.includes(body.stage)) patch.stage = body.stage;
 
   const updated = updateContact(id, patch);
   if (!updated) {

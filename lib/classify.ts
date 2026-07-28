@@ -4,6 +4,7 @@ export interface ClassificationResult {
   categories: Category[];
   regionMatch: boolean;
   matchedTerms: string[];
+  matchedRegionTerms: string[];
   score: number;
 }
 
@@ -27,7 +28,8 @@ export function classify(title: string, snippet: string): ClassificationResult {
     }
   }
 
-  const regionMatch = REGION_TERMS.some((term) => haystack.includes(term));
+  const matchedRegionTerms = REGION_TERMS.filter((term) => haystack.includes(term));
+  const regionMatch = matchedRegionTerms.length > 0;
 
   // Simple scoring: region relevance dominates, keyword density adds up.
   let score = 0;
@@ -35,5 +37,11 @@ export function classify(title: string, snippet: string): ClassificationResult {
   score += keywordHits * 2;
   if (categories.length > 1) score += 2; // multi-category stories are often juicier leads
 
-  return { categories, regionMatch, matchedTerms: [...new Set(matchedTerms)], score };
+  return {
+    categories,
+    regionMatch,
+    matchedTerms: [...new Set(matchedTerms)],
+    matchedRegionTerms,
+    score,
+  };
 }

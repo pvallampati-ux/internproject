@@ -22,19 +22,26 @@ data-handling and compliance policies before using it beyond a personal demo.
    "Refresh feeds" button calls `/api/refresh` to pull new stories on demand.
 4. Each lead can be starred (saved) and given a short freeform note, stored
    directly on the lead in `data/leads.json` (`PATCH /api/leads/[id]`).
-5. `data/contacts.json` holds a small list of contacts you're tracking, each
-   with a contact cadence (e.g. "every 30 days") and a list of keyword tags
-   used to match them against incoming leads.
-6. `lib/dailyBrief.ts` combines all of the above into a "Today's Brief":
-   contacts overdue for outreach, saved leads with no note yet ("follow up
-   on"), and recent leads that match a contact's tags ("market events
-   affecting your clients"). It pops up once per day (tracked via
-   `localStorage`, so it's per-browser) and can be reopened anytime with the
-   "Today's Brief" button in the header.
+5. `data/contacts.json` holds the contacts/prospects you're tracking, each
+   with a pipeline stage (Prospect → Contacted → Meeting → Proposal → Client),
+   a contact cadence (e.g. "every 30 days"), keyword tags used to match them
+   against incoming leads, and a timestamped note log.
+6. The **Pipeline** page (`/pipeline`) is the client hub: a Kanban-style
+   board by stage, add/edit contacts, log notes, mark contacted, and see
+   possible warm intros.
+7. The **Map** page (`/map`) plots recent leads on a static, self-contained
+   Central Ohio scatter map by matched town.
+8. `lib/dailyBrief.ts` combines everything into a "Today's Brief": contacts
+   overdue for outreach, saved leads with no note yet ("follow up on"),
+   saved leads with a stale note ("cooling"), recent leads matching a
+   contact's tags ("market events affecting your clients"), and possible
+   warm intros. It pops up once per day (tracked via `localStorage`, so it's
+   per-browser) and can be reopened anytime with the "Today's Brief" button.
 
-`data/leads.json` ships with a handful of sample leads, and `data/contacts.json`
-with a handful of sample contacts, so the dashboard and daily brief have
-something to show before you run a real refresh or add real contacts.
+`data/leads.json` ships with a handful of sample leads, and
+`data/contacts.sample.json` with a handful of sample contacts, so the
+dashboard, pipeline, map, and daily brief all have something to show before
+you run a real refresh or add real contacts.
 
 ## Running it
 
@@ -79,10 +86,11 @@ Edit `lib/config.ts`:
 - `CATEGORY_KEYWORDS` — the keyword lists that drive classification into the
   four buckets. Add terms as you notice false negatives/positives.
 
-## Managing contacts for the daily brief
+## Managing contacts / the client pipeline
 
-Edit `data/contacts.json` directly (it's a flat array, no UI for this yet).
-Each contact looks like:
+Use the **Pipeline** page (`/pipeline`) to add contacts, change their stage,
+mark them contacted, and log notes — no manual JSON editing needed day to
+day. Under the hood it's still a flat file, `data/contacts.json`:
 
 ```json
 {
@@ -92,17 +100,46 @@ Each contact looks like:
   "tags": ["their company name", "an alias it might be called in the news"],
   "lastContactedAt": "2026-07-01T00:00:00.000Z",
   "cadenceDays": 30,
-  "notes": "optional freeform notes"
+  "stage": "Prospect",
+  "noteLog": [{ "date": "2026-07-01T00:00:00.000Z", "text": "Met at a Chamber event." }]
 }
 ```
 
 `tags` are matched as case-insensitive substrings against each lead's title +
-snippet — keep them specific enough to avoid false matches (e.g. a tag like
-"logistics" alone will match every logistics story, not just ones about that
-client). The sample contacts in this file are placeholders; replace them with
-real names locally. **Don't commit real client names/details to a shared
-GitHub repo** — treat `data/contacts.json` as local-only once you put real
-people in it (add it to `.gitignore` if this repo is ever shared).
+snippet for the daily brief's "market events" section — keep them specific
+enough to avoid false matches (e.g. a tag like "logistics" alone will match
+every logistics story, not just ones about that client).
+
+**`data/contacts.json` is git-ignored on purpose** — it holds real
+names and meeting notes once you start using this for real, and
+`data/contacts.sample.json` (tracked, placeholder data only) is what ships
+in the repo and seeds `data/contacts.json` on first run. If you ever want to
+reset back to sample data, just delete `data/contacts.json` and it
+reseeds from the sample on next load.
+
+### Adding a lead straight into the pipeline
+
+Every lead card on the main dashboard has a **+ Add as contact** link that
+creates a new `Prospect`-stage contact seeded with a note pointing back to
+the source article — the "prospect → client" loop in one click.
+
+### Warm intro finder
+
+`lib/warmIntros.ts` scans every pair of contacts' tags/company/note text for
+shared terms (crude proper-noun extraction — sequences of capitalized
+words, filtered against a small stopword list) and flags a possible
+connection when two contacts mention the same thing (e.g. both notes
+mention "Ohio State University"). This is naive keyword overlap, not real
+NLP — expect false positives on generic terms, and treat every match as a
+prompt to double-check, not a confirmed connection. Results show up on the
+Pipeline page and as a short teaser in the daily brief.
+
+### Cooling leads
+
+A saved lead whose note hasn't been touched in `COOLING_THRESHOLD_DAYS`
+(`lib/config.ts`, default 14 days) shows up in the daily brief as
+"cooling — gone quiet," distinct from "follow up on" (which means no note
+has ever been added).
 
 ## Extending data sources
 
@@ -114,6 +151,15 @@ no other code needs to change. SEC EDGAR's full-text search API
 catching Form D private placements and 8-K/13D filings, but it returns JSON
 in a different shape than RSS, so it needs its own fetch/parse function
 rather than reusing the RSS path.
+
+## The lead map
+
+`/map` plots leads from the last 90 days using approximate town-center
+coordinates for each suburb in `REGION_TERMS` (`lib/geo.ts`). It's a static
+SVG scatter plot, not a real interactive/tile-based map — no external map
+provider, no API key, no cost, works fully offline. Leads that only matched
+a generic term ("Central Ohio," a county name) can't be pinpointed to a
+town and are called out as unmapped rather than guessed at.
 
 ## Known limitations (prototype scope)
 
@@ -132,3 +178,7 @@ rather than reusing the RSS path.
 - The "shown once per day" behavior for the brief pop-up is tracked in
   browser `localStorage`, so it resets if you clear browser data or open the
   dashboard in a different browser/device.
+- The warm intro finder and map are both intentionally low-tech (regex/
+  substring based, static coordinates) rather than real NLP or a mapping
+  API — keeps the project free and self-contained, at the cost of precision.
+  Treat both as a starting point to investigate, not a verified result.

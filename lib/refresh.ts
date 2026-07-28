@@ -60,6 +60,7 @@ export async function runRefresh(): Promise<RefreshSummary> {
           categories: result.categories,
           regionMatch: result.regionMatch,
           matchedTerms: result.matchedTerms,
+          regionTerms: result.matchedRegionTerms,
           score: result.score,
           fetchedAt: new Date().toISOString(),
         });

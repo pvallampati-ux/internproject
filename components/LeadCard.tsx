@@ -27,6 +27,22 @@ interface Props {
 
 export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
   const [noteDraft, setNoteDraft] = useState(lead.note ?? "");
+  const [added, setAdded] = useState(false);
+
+  async function addAsContact() {
+    await fetch("/api/contacts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: lead.title,
+        tags: [],
+        cadenceDays: 30,
+        stage: "Prospect",
+        initialNote: `Sourced from lead: ${lead.title} (${lead.link})`,
+      }),
+    });
+    setAdded(true);
+  }
 
   return (
     <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4 transition hover:border-gold-500/60">
@@ -62,6 +78,14 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
         <span>{lead.source}</span>
         <span>{timeAgo(lead.publishedAt)}</span>
       </div>
+
+      <button
+        onClick={addAsContact}
+        disabled={added}
+        className="mt-2 text-xs text-gray-500 hover:text-gold-400 disabled:text-gold-400"
+      >
+        {added ? "✓ Added to pipeline" : "+ Add as contact"}
+      </button>
 
       {lead.saved && (
         <input

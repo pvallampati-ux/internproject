@@ -2,3 +2,7 @@ node_modules/
 .next/
 .env*
 *.log
+
+# Real contact/meeting-note data stays local-only. data/contacts.sample.json
+# (placeholder data) is still tracked and ships in the repo.
+data/contacts.json

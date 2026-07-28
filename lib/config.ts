@@ -124,3 +124,7 @@ export const CATEGORY_KEYWORDS: Record<Category, string[]> = {
 };
 
 export const FEED_REFRESH_LOOKBACK_DAYS = 30;
+
+// A saved lead whose note hasn't been touched in this many days shows up
+// as "cooling" in the daily brief.
+export const COOLING_THRESHOLD_DAYS = 14;

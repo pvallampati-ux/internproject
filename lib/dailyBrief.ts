@@ -1,7 +1,10 @@
 import { loadContacts, type Contact } from "./contacts";
 import { loadLeads, type Lead } from "./store";
+import { findWarmIntros, type WarmIntroMatch } from "./warmIntros";
+import { COOLING_THRESHOLD_DAYS } from "./config";
 
 const MARKET_EVENT_LOOKBACK_DAYS = 14;
+const WARM_INTRO_TEASER_LIMIT = 3;
 
 export interface OverdueContact {
   contact: Contact;
@@ -16,7 +19,9 @@ export interface MarketEventMatch {
 export interface DailyBrief {
   overdueContacts: OverdueContact[];
   followUps: Lead[];
+  coolingLeads: Lead[];
   marketEvents: MarketEventMatch[];
+  warmIntros: WarmIntroMatch[];
 }
 
 export function computeDailyBrief(): DailyBrief {
@@ -34,7 +39,14 @@ export function computeDailyBrief(): DailyBrief {
     .filter((x) => x.daysOverdue >= 0)
     .sort((a, b) => b.daysOverdue - a.daysOverdue);
 
+  // No note yet at all — needs a first touch.
   const followUps = leads.filter((l) => l.saved && !l.note);
+
+  // Has a note, but it's gone stale — needs a follow-up touch.
+  const coolingCutoff = now - COOLING_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+  const coolingLeads = leads.filter(
+    (l) => l.saved && l.note && l.noteUpdatedAt && new Date(l.noteUpdatedAt).getTime() < coolingCutoff
+  );
 
   const cutoff = now - MARKET_EVENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
   const marketEvents: MarketEventMatch[] = leads
@@ -48,5 +60,7 @@ export function computeDailyBrief(): DailyBrief {
     })
     .filter((match) => match.affectedContacts.length > 0);
 
-  return { overdueContacts, followUps, marketEvents };
+  const warmIntros = findWarmIntros().slice(0, WARM_INTRO_TEASER_LIMIT);
+
+  return { overdueContacts, followUps, coolingLeads, marketEvents, warmIntros };
 }

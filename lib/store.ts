@@ -12,10 +12,12 @@ export interface Lead {
   categories: Category[];
   regionMatch: boolean;
   matchedTerms: string[];
+  regionTerms: string[];
   score: number;
   fetchedAt: string;
   saved?: boolean;
   note?: string;
+  noteUpdatedAt?: string;
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -54,7 +56,12 @@ export function upsertLeads(newLeads: Lead[]): { added: number; updated: number;
     const prev = byLink.get(lead.link);
     if (prev) {
       updated += 1;
-      byLink.set(lead.link, { ...lead, saved: prev.saved, note: prev.note });
+      byLink.set(lead.link, {
+        ...lead,
+        saved: prev.saved,
+        note: prev.note,
+        noteUpdatedAt: prev.noteUpdatedAt,
+      });
     } else {
       added += 1;
       byLink.set(lead.link, lead);
@@ -68,12 +75,14 @@ export function upsertLeads(newLeads: Lead[]): { added: number; updated: number;
   return { added, updated, total: merged.length };
 }
 
-// Patch a single lead's user-set fields (saved/note) and persist.
+// Patch a single lead's user-set fields (saved/note) and persist. Touching
+// the note stamps noteUpdatedAt, which the "cooling leads" check relies on.
 export function updateLead(id: string, patch: Partial<Pick<Lead, "saved" | "note">>): Lead | null {
   const leads = loadLeads();
   const idx = leads.findIndex((l) => l.id === id);
   if (idx === -1) return null;
   leads[idx] = { ...leads[idx], ...patch };
+  if (patch.note !== undefined) leads[idx].noteUpdatedAt = new Date().toISOString();
   saveLeads(leads);
   return leads[idx];
 }
