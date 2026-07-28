@@ -10,6 +10,9 @@ import DailyBrief from "@/components/DailyBrief";
 import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
 import { calculateWhyNowScore } from "@/lib/whyNowScore";
+import { WEALTH_EVENT_CATEGORIES } from "@/lib/config";
+import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
+import { PeopleIcon, CheckSquareIcon } from "@/components/icons";
 
 const SCORE_BAND_STYLES: Record<string, string> = {
   High: "border-red-500/50 bg-red-500/10 text-red-400",
@@ -25,6 +28,16 @@ function scoreBand(score: number): "High" | "Medium" | "Low" {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function formatCurrency(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
+  return `$${value}`;
 }
 
 const BRIEF_SHOWN_KEY = "dailyBriefShownDate";
@@ -57,6 +70,7 @@ export default function HomePage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
 
   async function loadTasks() {
     const res = await fetch("/api/tasks");
@@ -74,6 +88,12 @@ export default function HomePage() {
     const res = await fetch("/api/leads?days=90");
     const data = await res.json();
     setLeads(data.leads ?? []);
+  }
+
+  async function loadWarmIntros() {
+    const res = await fetch("/api/warm-intros");
+    const data = await res.json();
+    setWarmIntros(data.matches ?? []);
   }
 
   async function toggleTaskDone(task: Task) {
@@ -106,6 +126,7 @@ export default function HomePage() {
     loadTasks();
     loadContacts();
     loadLeads();
+    loadWarmIntros();
   }, []);
 
   async function handleMarkContacted(contactId: string) {
@@ -117,7 +138,9 @@ export default function HomePage() {
     await fetchBrief();
   }
 
-  const meetingsToday = brief?.meetingsToday ?? [];
+  const meetingsToday = [...(brief?.meetingsToday ?? [])].sort(
+    (a, b) => new Date(a.nextMeetingDate!).getTime() - new Date(b.nextMeetingDate!).getTime()
+  );
   const overdueContacts: OverdueContact[] = brief?.overdueContacts ?? [];
   const memoryByContactId = new Map((brief?.memoryReminders ?? []).map((m) => [m.contact.id, m.prompt]));
   const meetingPrepContact = meetingsToday.find((c) => c.id === meetingPrepContactId);
@@ -154,16 +177,19 @@ export default function HomePage() {
       return { kind: "task" as const, priority, task: t };
     });
 
-  const agenda = [...contactItems, ...taskItems].sort((a, b) => b.priority - a.priority).slice(0, 8);
+  const agenda = [...contactItems, ...taskItems].sort((a, b) => b.priority - a.priority);
+  const todaysFocus = agenda.slice(0, 5);
+  const highPriorityCount = contactItems.filter((x) => x.kind === "contact" && x.score >= 40).length;
+
+  const activeOpportunities = allContacts.filter((c) => c.stage !== "Client" && c.stage !== "Cold");
+  const totalPipelineValue = activeOpportunities.reduce((sum, c) => sum + (c.estimatedValue ?? 0), 0);
+
+  const topWarmIntro = warmIntros[0];
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-[1800px] px-6 py-6">
       {showBrief && brief && (
-        <DailyBrief
-          data={brief}
-          onClose={() => setShowBrief(false)}
-          onMarkContacted={handleMarkContacted}
-        />
+        <DailyBrief data={brief} onClose={() => setShowBrief(false)} onMarkContacted={handleMarkContacted} />
       )}
 
       {meetingPrepContact && (
@@ -178,9 +204,7 @@ export default function HomePage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs uppercase tracking-widest text-gold-500">Meeting Today</p>
-                <h2 className="font-serif text-2xl font-semibold text-gray-100">
-                  {meetingPrepContact.name}
-                </h2>
+                <h2 className="font-serif text-2xl font-semibold text-gray-100">{meetingPrepContact.name}</h2>
               </div>
               <button
                 onClick={() => setMeetingPrepContactId(null)}
@@ -195,194 +219,151 @@ export default function HomePage() {
         </div>
       )}
 
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gold-500">Home</p>
-        <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-        </h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Assembled fresh every time you load this page from data already on file — one
-          prioritized list (contacts scored by Why Now, plus standalone tasks), new
-          opportunities, and today's meetings. Rule-based, not an AI model; every item traces to
-          a specific reason. (Not here: proactively pre-generating AI Meeting Prep for every
-          meeting — that costs money per contact, so it stays a button you click — and document
-          summarization, since this app has no document upload to summarize.)
-        </p>
-      </header>
-
       {loading ? (
         <p className="text-sm text-gray-500">Loading...</p>
       ) : (
         <>
-          <section className="mb-8">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-lg text-gray-100">Prioritized agenda</h2>
-              <Link href="/tasks" className="text-xs text-gold-400 hover:underline">
-                View all tasks →
-              </Link>
-            </div>
-            {agenda.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-600">Nothing urgent — everyone reads healthy right now.</p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {agenda.map((item) =>
-                  item.kind === "contact" ? (
-                    <li
-                      key={`c-${item.contact.id}`}
-                      className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
-                    >
-                      <div className="flex items-start gap-2">
-                        <span
-                          className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[scoreBand(item.score)]}`}
-                        >
-                          {item.score}
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4 xl:col-span-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-serif text-lg text-gray-100">Today&rsquo;s Focus</h2>
+                  <p className="text-xs text-gray-500">
+                    {todaysFocus.length} action{todaysFocus.length === 1 ? "" : "s"} — scored by Why Now,
+                    rule-based
+                  </p>
+                </div>
+                <Link href="/tasks" className="text-xs text-gold-400 hover:underline">
+                  View all →
+                </Link>
+              </div>
+              {todaysFocus.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">Nothing urgent — everyone reads healthy right now.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {todaysFocus.map((item, i) =>
+                    item.kind === "contact" ? (
+                      <li
+                        key={`c-${item.contact.id}`}
+                        className="flex items-start gap-3 rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5"
+                      >
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gold-500/50 text-xs font-semibold text-gold-400">
+                          {i + 1}
                         </span>
-                        <div>
+                        <PeopleIcon className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
+                        <div className="min-w-0 flex-1">
                           <Link
                             href={`/contacts/${item.contact.id}`}
                             className="text-sm font-medium text-gray-100 hover:underline"
                           >
                             {item.contact.name}
                           </Link>
-                          <p className="text-xs text-gray-500">
-                            {item.action} {item.reasoning[0]}
+                          <span className="ml-1 text-xs text-gray-500">
+                            {item.contact.company ?? ""}
+                          </span>
+                          <p className="mt-0.5 text-xs text-emerald-400">Why now</p>
+                          <ul className="mt-0.5 space-y-0.5">
+                            {item.reasoning.slice(0, 2).map((r, ri) => (
+                              <li key={ri} className="text-xs text-gray-400">
+                                • {r}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[scoreBand(item.score)]}`}
+                        >
+                          {item.score}
+                        </span>
+                        <Link
+                          href={`/contacts/${item.contact.id}`}
+                          className="shrink-0 self-center rounded-md border border-gold-500/50 px-2.5 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                        >
+                          Open Profile →
+                        </Link>
+                      </li>
+                    ) : (
+                      <li
+                        key={`t-${item.task.id}`}
+                        className="flex items-center gap-3 rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5"
+                      >
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gold-500/50 text-xs font-semibold text-gold-400">
+                          {i + 1}
+                        </span>
+                        <CheckSquareIcon className="h-4 w-4 shrink-0 text-gray-500" />
+                        <input
+                          type="checkbox"
+                          checked={item.task.done}
+                          onChange={() => toggleTaskDone(item.task)}
+                          className="h-4 w-4 accent-gold-500"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-200">{item.task.title}</p>
+                          {item.task.dueDate && (
+                            <p
+                              className={`text-xs ${new Date(item.task.dueDate).getTime() < now ? "text-amber-400" : "text-gray-500"}`}
+                            >
+                              Due {formatDate(item.task.dueDate)}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  )}
+                </ul>
+              )}
+            </section>
+
+            <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-lg text-gray-100">Needs a Touch</h2>
+                <Link href="/pipeline" className="text-xs text-gold-400 hover:underline">
+                  View all →
+                </Link>
+              </div>
+              {overdueContacts.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">Nobody&rsquo;s overdue for outreach right now.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {overdueContacts.slice(0, 4).map(({ contact, daysOverdue }) => (
+                    <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/contacts/${contact.id}`}
+                              className="truncate text-sm font-medium text-gray-100 hover:underline"
+                            >
+                              {contact.name}
+                            </Link>
+                            <span
+                              className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${STAGE_BADGE[contact.stage]}`}
+                            >
+                              {contact.stage}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {daysOverdue + contact.cadenceDays}d since last touch · target every{" "}
+                            {contact.cadenceDays}d
                           </p>
                         </div>
-                      </div>
-                    </li>
-                  ) : (
-                    <li
-                      key={`t-${item.task.id}`}
-                      className="flex items-center gap-2 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={item.task.done}
-                        onChange={() => toggleTaskDone(item.task)}
-                        className="h-4 w-4 accent-gold-500"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-200">{item.task.title}</p>
-                        {item.task.dueDate && (
-                          <p
-                            className={`text-xs ${new Date(item.task.dueDate).getTime() < now ? "text-amber-400" : "text-gray-500"}`}
-                          >
-                            Due {formatDate(item.task.dueDate)}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  )
-                )}
-              </ul>
-            )}
-          </section>
-
-          {marketEvents.length > 0 && (
-            <section className="mb-8">
-              <h2 className="font-serif text-lg text-gray-100">New opportunities</h2>
-              <p className="mt-1 text-xs text-gray-500">
-                Recent wealth-event news matching your contacts' tags — see Discovery for the
-                full feed.
-              </p>
-              <ul className="mt-3 space-y-2">
-                {marketEvents.map(({ lead, affectedContacts }) => (
-                  <li key={lead.id} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
-                    <a
-                      href={lead.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-gray-100 hover:underline"
-                    >
-                      {lead.title}
-                    </a>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Affects:{" "}
-                      {affectedContacts.map((c, i) => (
-                        <span key={c.id}>
-                          {i > 0 && ", "}
-                          <Link href={`/contacts/${c.id}`} className="text-gray-300 hover:text-gold-400 hover:underline">
-                            {c.name}
-                          </Link>
+                        <span
+                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                            daysOverdue > 0
+                              ? "border-red-500/50 bg-red-500/10 text-red-400"
+                              : "border-amber-500/50 bg-amber-500/10 text-amber-400"
+                          }`}
+                        >
+                          {daysOverdue > 0 ? "Overdue" : "Due now"}
                         </span>
-                      ))}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <section className="mb-8">
-            <h2 className="font-serif text-lg text-gray-100">Meetings today</h2>
-            {meetingsToday.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-600">Nothing on the calendar today.</p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {meetingsToday.map((contact) => (
-                  <li
-                    key={contact.id}
-                    className="rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
                         <Link
                           href={`/contacts/${contact.id}`}
-                          className="text-sm font-medium text-gray-100 hover:underline"
+                          className="rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
                         >
-                          {contact.name}
+                          Open Profile →
                         </Link>
-                        <p className="text-xs text-gray-500">{contact.company ?? "No company on file"}</p>
-                      </div>
-                      <button
-                        onClick={() => setMeetingPrepContactId(contact.id)}
-                        className="rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
-                      >
-                        Open AI Meeting Prep →
-                      </button>
-                    </div>
-                    {memoryByContactId.has(contact.id) && (
-                      <p className="mt-2 text-xs text-gray-400">
-                        <span className="text-gold-400">Relationship memory:</span>{" "}
-                        {memoryByContactId.get(contact.id)}
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section>
-            <h2 className="font-serif text-lg text-gray-100">Clients &amp; prospects needing contact</h2>
-            {overdueContacts.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-600">Nobody&rsquo;s overdue for outreach right now.</p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {overdueContacts.map(({ contact, daysOverdue }) => (
-                  <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/contacts/${contact.id}`}
-                            className="text-sm font-medium text-gray-100 hover:underline"
-                          >
-                            {contact.name}
-                          </Link>
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STAGE_BADGE[contact.stage]}`}
-                          >
-                            {contact.stage}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {contact.company ? `${contact.company} · ` : ""}
-                          {daysOverdue} days overdue (every {contact.cadenceDays}d) ·{" "}
-                          {touchpointCount(contact)} touchpoint(s)
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
                         <EmailAction
                           contactId={contact.id}
                           email={emailOverrides[contact.id] ?? contact.email}
@@ -391,13 +372,213 @@ export default function HomePage() {
                           }
                           compact
                         />
-                        <button
-                          onClick={() => handleMarkContacted(contact.id)}
-                          className="rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
-                        >
-                          Mark contacted
-                        </button>
                       </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-lg text-gray-100">New Opportunities</h2>
+                <Link href="/discovery" className="text-xs text-gold-400 hover:underline">
+                  View all →
+                </Link>
+              </div>
+              <p className="text-xs text-gray-500">Matched signals from the last 90 days</p>
+              {marketEvents.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">Nothing matched to your contacts recently.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {marketEvents.slice(0, 4).map(({ lead, affectedContacts }) => {
+                    const highImpact = lead.categories.some((c) => WEALTH_EVENT_CATEGORIES.includes(c));
+                    return (
+                      <li key={lead.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <a
+                            href={lead.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-gray-100 hover:underline"
+                          >
+                            {lead.title}
+                          </a>
+                          <span
+                            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                              highImpact
+                                ? "border-red-500/50 bg-red-500/10 text-red-400"
+                                : "border-amber-500/50 bg-amber-500/10 text-amber-400"
+                            }`}
+                          >
+                            {highImpact ? "High Impact" : "Medium Impact"}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Affects:{" "}
+                          {affectedContacts.map((c, i) => (
+                            <span key={c.id}>
+                              {i > 0 && ", "}
+                              <Link href={`/contacts/${c.id}`} className="text-gray-300 hover:text-gold-400 hover:underline">
+                                {c.name}
+                              </Link>
+                            </span>
+                          ))}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+
+            <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-lg text-gray-100">Today&rsquo;s Work</h2>
+                <Link href="/calendar" className="text-xs text-gold-400 hover:underline">
+                  View calendar →
+                </Link>
+              </div>
+              {meetingsToday.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">Nothing on the calendar today.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {meetingsToday.map((contact) => (
+                    <li key={contact.id} className="rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-gold-500" />
+                        <span className="shrink-0 text-xs text-gray-400">
+                          {contact.nextMeetingDate ? formatTime(contact.nextMeetingDate) : ""}
+                        </span>
+                        <Link
+                          href={`/contacts/${contact.id}`}
+                          className="truncate text-sm font-medium text-gray-100 hover:underline"
+                        >
+                          {contact.name}
+                        </Link>
+                      </div>
+                      <p className="ml-4 text-xs text-gray-500">{contact.company ?? "No company on file"}</p>
+                      {memoryByContactId.has(contact.id) && (
+                        <p className="ml-4 mt-1 text-xs text-gray-400">
+                          <span className="text-gold-400">Remember:</span> {memoryByContactId.get(contact.id)}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => setMeetingPrepContactId(contact.id)}
+                        className="ml-4 mt-2 rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+                      >
+                        Open AI Meeting Prep →
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <div className="space-y-4">
+              <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-serif text-lg text-gray-100">Relationship Opportunity</h2>
+                  <Link href="/intelligence" className="text-xs text-gold-400 hover:underline">
+                    View all →
+                  </Link>
+                </div>
+                {!topWarmIntro ? (
+                  <p className="mt-3 text-sm text-gray-600">No warm intro matches on file yet.</p>
+                ) : (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <Link
+                        href={`/contacts/${topWarmIntro.contactA.id}`}
+                        className="font-medium text-gray-100 hover:underline"
+                      >
+                        {topWarmIntro.contactA.name}
+                      </Link>
+                      <span className="text-gray-600">↔</span>
+                      <Link
+                        href={`/contacts/${topWarmIntro.contactB.id}`}
+                        className="font-medium text-gray-100 hover:underline"
+                      >
+                        {topWarmIntro.contactB.name}
+                      </Link>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">Shared: {describeSharedTerms(topWarmIntro.sharedTerms)}</p>
+                    <p className="mt-2 text-[11px] text-gray-600">
+                      Keyword-matched, not a confidence score — verify before acting.
+                    </p>
+                    <Link
+                      href={`/contacts/${topWarmIntro.contactA.id}`}
+                      className="mt-3 inline-block rounded-md border border-gold-500/50 px-3 py-1.5 text-xs text-gold-400 hover:bg-gold-500/10"
+                    >
+                      View match →
+                    </Link>
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-serif text-lg text-gray-100">Pipeline Snapshot</h2>
+                  <Link href="/pipeline" className="text-xs text-gold-400 hover:underline">
+                    View pipeline →
+                  </Link>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="font-serif text-2xl text-gray-100">{formatCurrency(totalPipelineValue)}</p>
+                    <p className="text-[11px] text-gray-500">Active pipeline</p>
+                  </div>
+                  <div>
+                    <p className="font-serif text-2xl text-gray-100">{activeOpportunities.length}</p>
+                    <p className="text-[11px] text-gray-500">Active opportunities</p>
+                  </div>
+                  <div>
+                    <p className="font-serif text-2xl text-gray-100">{highPriorityCount}</p>
+                    <p className="text-[11px] text-gray-500">High priority</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <section className="mt-4 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+            <h2 className="font-serif text-lg text-gray-100">
+              Clients &amp; prospects needing contact ({overdueContacts.length})
+            </h2>
+            {overdueContacts.length === 0 ? (
+              <p className="mt-2 text-sm text-gray-600">Nobody&rsquo;s overdue for outreach right now.</p>
+            ) : (
+              <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {overdueContacts.map(({ contact, daysOverdue }) => (
+                  <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/contacts/${contact.id}`}
+                            className="truncate text-sm font-medium text-gray-100 hover:underline"
+                          >
+                            {contact.name}
+                          </Link>
+                          <span
+                            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${STAGE_BADGE[contact.stage]}`}
+                          >
+                            {contact.stage}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {contact.company ? `${contact.company} · ` : ""}
+                          {daysOverdue}d overdue (every {contact.cadenceDays}d) · {touchpointCount(contact)} touchpoint(s)
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleMarkContacted(contact.id)}
+                        className="shrink-0 rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                      >
+                        Mark contacted
+                      </button>
                     </div>
                   </li>
                 ))}

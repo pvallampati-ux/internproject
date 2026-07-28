@@ -106,7 +106,7 @@ export default function PipelinePage() {
   ) as Record<PipelineStage, number>;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto max-w-[1600px] px-6 py-8">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-widest text-gold-500">Client Pipeline</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">Prospect to Client</h1>

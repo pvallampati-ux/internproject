@@ -184,7 +184,7 @@ export default function IntelligencePage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto max-w-[1600px] px-6 py-8">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-widest text-gold-500">Intelligence</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">

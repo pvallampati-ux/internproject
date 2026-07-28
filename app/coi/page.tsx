@@ -44,7 +44,7 @@ export default function CoiPage() {
   const cois = contacts.filter((c) => c.isCOI);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto max-w-[1600px] px-6 py-8">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-widest text-gold-500">
           Centers of Influence

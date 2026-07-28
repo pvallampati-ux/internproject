@@ -109,7 +109,7 @@ export default function TasksPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-6 py-8">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-widest text-gold-500">Tasks</p>
         <h1 className="font-serif text-3xl font-semibold text-gray-100">Action Items</h1>

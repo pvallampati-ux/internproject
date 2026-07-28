@@ -1,7 +1,7 @@
-# Private Client Prospecting Hub
+# Connect Intelligence Hub
 
 A Columbus / Central Ohio prospecting platform organized into nine modules,
-navigable via the top nav bar:
+navigable via the left sidebar:
 
 | Tab | Route | What it does |
 |---|---|---|
@@ -23,8 +23,8 @@ timeline, email actions, a typed conversation log, an audit trail, and AI
 Meeting Prep — all in one place. See "Client 360 and beyond" below for the
 full rundown.
 
-The nav bar itself has a **contact search** (`components/GlobalSearch.tsx`)
-on every page — type a name, company, or tag and jump straight to that
+The header itself has a **contact search** (`components/GlobalSearch.tsx`,
+⌘K to focus) on every page — type a name, company, or tag and jump straight to that
 person's profile. This is separate from the headline search on Discovery
 and the event search on Calendar, which search leads/events rather than
 contacts.
@@ -551,7 +551,7 @@ them populated.
 
 ### Search and filters
 
-**Contact search** (nav bar, every page) now matches name, title, company,
+**Contact search** (header, every page) now matches name, title, company,
 industry, location, business ownership, existing relationships, tags,
 board memberships, schools, clubs, family member names/relationships, and
 **note text** — a match found only in notes is labeled "(matched in
@@ -857,6 +857,52 @@ plotted on the same coordinates, so a town with both prospects and
 clients shows overlapping circles). Same static-SVG-scatter approach and
 click-to-see-names interaction as the other maps in this app — not a
 live/interactive map provider.
+
+## Round 7: rename to Connect Intelligence Hub, sidebar shell, and a landscape Home redesign
+
+Renamed the app (was "Private Client Prospecting Hub") and rebuilt the
+navigation and Home page for a wide/landscape monitor instead of a
+narrow centered column with dead space on both sides.
+
+- **New shell**: the old top nav bar (`components/NavBar.tsx`, deleted)
+  is replaced by a persistent left sidebar (`components/Sidebar.tsx`) and
+  a top header bar (`components/AppHeader.tsx`), wired into
+  `app/layout.tsx` so it applies to every page. The sidebar has the same
+  nine links as before (now with small hand-rolled SVG icons —
+  `components/icons.tsx` — instead of adding an icon-library dependency
+  for ten glyphs) plus a "Shortcuts" list of your 5 most recently viewed
+  contacts (tracked client-side via `lib/userPrefs.ts`, no new
+  server-side data). The header has the contact search (now with a ⌘K
+  focus shortcut), a notification bell, and a profile menu.
+- **New Settings and Help pages**: `/settings` lets you set a display
+  name/role (stored in `localStorage` — there's no login, so this is
+  personalization, not accounts) used in the header greeting.
+  `/help` is a static reference page summarizing each tab and repeating
+  the app's core honesty disclosure (everything's rule-based except AI
+  Meeting Prep and email drafting).
+- **What's real vs. what's not, on the header**: the notification bell's
+  badge count is the real overdue-contact count from the existing Daily
+  Brief computation (`/api/daily-brief`) — not a decorative fixed number.
+  The avatar is initials-based, since there's no photo upload.
+- **Home page rebuilt as a dashboard grid**: "Today's Focus" (top 5 Why
+  Now items), "Needs a Touch" (overdue contacts), "New Opportunities"
+  (matched news, with a High/Medium Impact split based on whether the
+  category is a wealth-event category — not a fabricated score),
+  "Today's Work" (today's meetings, with actual times), "Relationship
+  Opportunity" (the top warm-intro match — shown with its actual shared
+  terms and a "keyword-matched, not a confidence score" note, since there
+  is no real model producing a percentage), and "Pipeline Snapshot"
+  (active pipeline value, active opportunity count, high-priority count —
+  no fabricated trend arrow, since there's no historical pipeline-value
+  time series to compute one honestly from).
+- **Widened every other page**: bumped each page's container from a
+  narrow centered `max-w-4xl`/`max-w-6xl` to `max-w-[1600px]` (or
+  `max-w-5xl`/`max-w-6xl` for the more form-heavy Tasks and contact
+  profile pages) so pages use the sidebar-adjusted width instead of
+  leaving blank margins on a landscape monitor. This pass widened
+  containers everywhere; it did not restructure every page's internals
+  into new multi-column grids (Home and the Prospect/Client map got that
+  treatment — the rest are candidates for a follow-up if wanted).
 
 ## Calendar (prospecting events)
 

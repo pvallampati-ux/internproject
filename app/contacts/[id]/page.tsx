@@ -29,6 +29,7 @@ import { overallSentiment, type Sentiment } from "@/lib/sentiment";
 import { findSimilarProspects } from "@/lib/similarProspects";
 import { buildTimeline, type TimelineItemKind } from "@/lib/timeline";
 import { buildRelationshipDNA } from "@/lib/relationshipDNA";
+import { pushRecentContactId } from "@/lib/userPrefs";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -152,6 +153,7 @@ export default function ContactProfilePage() {
     }
     const data: Contact = await res.json();
     setContact(data);
+    pushRecentContactId(data.id);
     setTitleDraft(data.title ?? "");
     setCompanyDraft(data.company ?? "");
     setLocationDraft(data.location ?? "");
@@ -263,7 +265,7 @@ export default function ContactProfilePage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-6 py-8">
         <p className="text-sm text-gray-500">Loading...</p>
       </main>
     );
@@ -271,7 +273,7 @@ export default function ContactProfilePage() {
 
   if (notFound || !contact) {
     return (
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto max-w-6xl px-6 py-8">
         <p className="text-sm text-gray-500">Contact not found.</p>
         <Link href="/pipeline" className="mt-2 inline-block text-sm text-gold-400 hover:underline">
           ← Back to Pipeline
