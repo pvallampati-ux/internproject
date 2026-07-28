@@ -1,15 +1,20 @@
 // Pure types/constants only — no filesystem imports — so client components
 // can import this without pulling Node's `fs` into the browser bundle.
 
-export type PipelineStage = "Prospect" | "Contacted" | "Meeting" | "Proposal" | "Client";
+export type PipelineStage = "Prospect" | "Contacted" | "Meeting" | "Proposal" | "Client" | "Cold";
 
-export const PIPELINE_STAGES: PipelineStage[] = [
+// The forward-moving journey, rendered as a connected funnel + Kanban board.
+export const JOURNEY_STAGES: PipelineStage[] = [
   "Prospect",
   "Contacted",
   "Meeting",
   "Proposal",
   "Client",
 ];
+
+// Every selectable stage, including the off-journey "Cold" bucket for
+// contacts who've gone quiet or aren't going to convert.
+export const PIPELINE_STAGES: PipelineStage[] = [...JOURNEY_STAGES, "Cold"];
 
 export interface NoteEntry {
   date: string; // ISO

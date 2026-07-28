@@ -79,6 +79,27 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
         <span>{timeAgo(lead.publishedAt)}</span>
       </div>
 
+      {lead.relatedArticles && lead.relatedArticles.length > 0 && (
+        <div className="mt-2 border-t border-charcoal-700 pt-2">
+          <p className="text-xs text-gray-600">More coverage:</p>
+          <ul className="mt-1 space-y-0.5">
+            {lead.relatedArticles.map((article) => (
+              <li key={article.link} className="truncate text-xs">
+                <a
+                  href={article.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-gold-400 hover:underline"
+                  title={article.title}
+                >
+                  {article.source}: {article.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <button
         onClick={addAsContact}
         disabled={added}

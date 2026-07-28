@@ -16,7 +16,11 @@ data-handling and compliance policies before using it beyond a personal demo.
 2. `lib/refresh.ts` fetches those feeds, runs each headline through a
    keyword classifier (`lib/classify.ts`), drops anything that doesn't match
    the region or a category, and stores the rest in `data/leads.json`
-   (`lib/store.ts`), de-duplicated by link.
+   (`lib/store.ts`), de-duplicated by link. For each new lead it also runs a
+   follow-up Google News search on the headline and attaches up to 3 related
+   articles ("More coverage" on the lead card) so you can cross-reference
+   before acting — capped at 20 lookups per refresh so one run doesn't turn
+   into dozens of extra requests; anything past the cap backfills next run.
 3. The dashboard (`app/page.tsx`) reads leads via `/api/leads` and lets you
    filter by category, date range, saved-only, and free-text search. The
    "Refresh feeds" button calls `/api/refresh` to pull new stories on demand.
@@ -122,6 +126,16 @@ reseeds from the sample on next load.
 Every lead card on the main dashboard has a **+ Add as contact** link that
 creates a new `Prospect`-stage contact seeded with a note pointing back to
 the source article — the "prospect → client" loop in one click.
+
+### Pipeline stages
+
+The Pipeline page shows the forward journey — `Prospect → Contacted →
+Meeting → Proposal → Client` — as a connected funnel (counts + % of active
+pipeline) above a Kanban board. A separate **Cold / Not Converting** stage
+exists outside that journey for contacts who've gone quiet or aren't going
+to convert; it's rendered in its own muted section below the board rather
+than as a further step, so it doesn't read as "progress." Move a contact
+back to an active stage anytime via the same dropdown if things change.
 
 ### Warm intro finder
 

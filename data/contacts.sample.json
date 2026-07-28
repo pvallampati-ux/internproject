@@ -58,5 +58,20 @@
         "text": "Sample contact — edit or replace with a real client. Existing client, quarterly review went well."
       }
     ]
+  },
+  {
+    "id": "contact_5",
+    "name": "Sam Delgado",
+    "company": "Delgado Retail Group",
+    "tags": ["retail"],
+    "lastContactedAt": "2026-04-01T00:00:00.000Z",
+    "cadenceDays": 30,
+    "stage": "Cold",
+    "noteLog": [
+      {
+        "date": "2026-04-01T00:00:00.000Z",
+        "text": "Sample contact — edit or replace with a real client. Went with a competitor's advisor, not interested for now."
+      }
+    ]
   }
 ]

@@ -1,10 +1,26 @@
 import Parser from "rss-parser";
 import { classify } from "./classify";
-import { buildSources } from "./sources";
-import { upsertLeads, type Lead } from "./store";
+import { buildSources, googleNewsRss } from "./sources";
+import { loadLeads, upsertLeads, type Lead, type RelatedArticle } from "./store";
 import { FEED_REFRESH_LOOKBACK_DAYS } from "./config";
 
 const parser = new Parser();
+
+// Cap on how many leads get a related-articles lookup per refresh run, so a
+// large batch of brand-new leads doesn't turn one refresh into dozens of
+// sequential extra requests. Anything past the cap gets backfilled on the
+// next run (leads already missing relatedArticles are retried each time).
+const MAX_RELATED_LOOKUPS_PER_RUN = 20;
+const RELATED_ARTICLES_PER_LEAD = 3;
+
+// Some Google News RSS items come back with their <description> containing
+// our own search query instead of real article text (an occasional feed
+// quirk, not something we send). Detect and drop it rather than storing
+// query syntax as if it were a snippet.
+function looksLikeLeakedQuery(text: string): boolean {
+  const orCount = (text.match(/"\s*OR\s*"/g) ?? []).length;
+  return orCount >= 2 || /^\(/.test(text.trim());
+}
 
 function makeId(link: string): string {
   // Cheap stable id derived from the link, no crypto dependency needed.
@@ -13,6 +29,24 @@ function makeId(link: string): string {
     hash = (hash * 31 + link.charCodeAt(i)) | 0;
   }
   return `lead_${Math.abs(hash)}`;
+}
+
+// Looks up other coverage of the same story via a title-based Google News
+// search, so a lead card can link out to a few more sources for research.
+async function fetchRelatedArticles(title: string, excludeLink: string): Promise<RelatedArticle[]> {
+  const feed = await parser.parseURL(googleNewsRss(title));
+  const related: RelatedArticle[] = [];
+  const seenLinks = new Set<string>([excludeLink]);
+
+  for (const item of feed.items ?? []) {
+    if (related.length >= RELATED_ARTICLES_PER_LEAD) break;
+    const link = item.link ?? "";
+    const itemTitle = item.title ?? "";
+    if (!link || !itemTitle || seenLinks.has(link)) continue;
+    seenLinks.add(link);
+    related.push({ title: itemTitle, link, source: item.creator || feed.title || "Google News" });
+  }
+  return related;
 }
 
 export interface RefreshSummary {
@@ -41,7 +75,8 @@ export async function runRefresh(): Promise<RefreshSummary> {
         itemsSeen += 1;
         const title = item.title ?? "";
         const link = item.link ?? "";
-        const snippet = item.contentSnippet ?? item.content ?? "";
+        let snippet = item.contentSnippet ?? item.content ?? "";
+        if (looksLikeLeakedQuery(snippet)) snippet = "";
         if (!title || !link) continue;
 
         const publishedAt = item.isoDate ?? item.pubDate ?? new Date().toISOString();
@@ -67,6 +102,26 @@ export async function runRefresh(): Promise<RefreshSummary> {
       }
     } catch (err) {
       errors.push({ source: source.label, message: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  // Backfill related articles for leads that don't have them yet (new this
+  // run, or left over from before this feature existed), bounded so one
+  // refresh can't balloon into dozens of extra sequential requests.
+  const existingByLink = new Map(loadLeads().map((l) => [l.link, l]));
+  let relatedLookupsDone = 0;
+  for (const lead of keptLeads) {
+    const existing = existingByLink.get(lead.link);
+    if (existing?.relatedArticles?.length) {
+      lead.relatedArticles = existing.relatedArticles;
+      continue;
+    }
+    if (relatedLookupsDone >= MAX_RELATED_LOOKUPS_PER_RUN) continue;
+    relatedLookupsDone += 1;
+    try {
+      lead.relatedArticles = await fetchRelatedArticles(lead.title, lead.link);
+    } catch {
+      lead.relatedArticles = [];
     }
   }
 

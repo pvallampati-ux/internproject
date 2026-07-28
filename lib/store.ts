@@ -2,6 +2,12 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import type { Category } from "./config";
 
+export interface RelatedArticle {
+  title: string;
+  link: string;
+  source: string;
+}
+
 export interface Lead {
   id: string;
   title: string;
@@ -18,6 +24,7 @@ export interface Lead {
   saved?: boolean;
   note?: string;
   noteUpdatedAt?: string;
+  relatedArticles?: RelatedArticle[];
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");

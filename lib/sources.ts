@@ -13,7 +13,7 @@ export interface FeedSource {
 const PRIMARY_REGION = REGION_TERMS[0]; // "columbus"
 const SECONDARY_REGION = REGION_TERMS[1]; // "central ohio"
 
-function googleNewsRss(query: string): string {
+export function googleNewsRss(query: string): string {
   const params = new URLSearchParams({
     q: query,
     hl: "en-US",
