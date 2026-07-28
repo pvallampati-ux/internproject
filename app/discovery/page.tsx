@@ -134,8 +134,9 @@ export default function DiscoveryPage() {
           <p className="text-sm text-gray-500">Loading...</p>
         ) : leads.length === 0 ? (
           <p className="text-sm text-gray-500">
-            No leads yet. Click &ldquo;Refresh feeds&rdquo; to pull the latest news, or seed
-            sample data with <code className="text-gray-400">npm run refresh</code>.
+            No leads yet. Click &ldquo;Refresh feeds&rdquo; to pull the latest real news, or run
+            it from the command line with <code className="text-gray-400">npm run refresh</code>.
+            Nothing here is sample/fake data — this stays empty until a real fetch succeeds.
           </p>
         ) : (
           leads.map((lead) => (

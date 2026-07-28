@@ -681,15 +681,21 @@ way to get (a real prospect-discovery/coverage-gap engine, competitor
 monitoring, market penetration) or don't apply to a single-user app
 (firmwide search, a referral marketplace, team dashboards).
 
-### Next Best Action / "Why Now?" (Home page + contact profile)
+### Why Now Score (Home page + contact profile)
 
-`lib/nextBestAction.ts` is a fixed priority waterfall — not an AI
-recommendation — over signals already computed elsewhere: relationship
-health, life stage, Relationship Memory prompts, and open tasks. Every
-recommendation comes with a visible "why now" reason. Home's "Prioritized
-agenda" section runs this across every non-Cold contact and shows the top
-few by priority; the profile page shows the single recommendation for that
-contact, folded into the Follow-up Summary card.
+`lib/whyNowScore.ts` is a weighted point system — not an AI/ML model — over
+signals already on file: a matched wealth-event news lead, a shared
+board/club with an existing client, time since last banker interaction,
+life stage, and referral warmth. It returns a 0–100 score, a recommended
+action band, and a bulleted `reasoning` list where every point traces to a
+specific signal — e.g. "No banker interaction in 18 months" or "Existing
+client Jane Whitfield shares board membership: United Way of Central
+Ohio." Deliberately **not** included: third-party conference/speaking
+schedules (no data source for that here). Home's "Prioritized agenda"
+section runs this across every non-Cold contact, merges it with standalone
+tasks into one priority-sorted list, and shows the top few; the profile
+page shows the score/action/reasoning in full inside the Follow-up Summary
+card. This replaces the earlier fixed-priority "Next Best Action" system.
 
 ### Wealth Creation Watchlist (Intelligence tab)
 
@@ -759,6 +765,51 @@ the manual "Tag prospects" list on each event card.
 Two more KPIs: a geography breakdown (same pattern as the industry
 breakdown, using the Location field) and referral conversion — of contacts
 with a referral source on file, what percentage are now a Client.
+
+## Round 4: Why Now scoring, unified agenda, lead name extraction, and a warm-intro bug fix
+
+### Scored Why Now Engine
+
+Replaced the old fixed-priority "Next Best Action" (`lib/nextBestAction.ts`,
+now deleted) with `lib/whyNowScore.ts` — see above. Wired into both the
+Home page agenda and the contact profile's Follow-up Summary card, in a
+Score/Recommended Action/Reasoning format.
+
+### Unified "Prioritized agenda" (Home page)
+
+The Home page had two overlapping sections — "Prioritized agenda" and
+"Tasks due this week" — that both amounted to "what should I do." They're
+now one merged, priority-sorted list mixing scored contacts (Why Now
+Score) and standalone tasks (not linked to a contact), so there's a single
+place to look instead of two.
+
+### "Mentioned:" on lead cards (Discovery tab)
+
+Each lead card now runs the same crude proper-noun extraction used by the
+Wealth Creation Watchlist over its own headline/snippet and shows
+"Mentioned: [name]," or "No name identified in this headline/snippet" when
+extraction finds nothing — so a lead with no identifiable person is
+visibly less actionable at a glance, instead of requiring a click-through
+to find out. Also pre-fills the "+ Add as contact" name field with the
+first extracted name. The Discovery empty-state copy was also corrected —
+it previously read ambiguously; it now states plainly that this list stays
+empty until a real feed fetch succeeds and contains no sample/fake data.
+
+### Bug fix: bogus warm-intro matches from auto-note boilerplate
+
+The event-tagging auto-note feature (`describeEventForNote` in
+`lib/eventsStore.ts`, added in Round 2) writes identical boilerplate text
+— e.g. `Tagged to prospecting event: "Ohio State vs. Michigan — Tailgate"
+— Nov 28, 2026 at Ohio Stadium, Columbus.` — to every contact tagged to
+the same event. The warm-intro finder and Relationship Memory detector
+were both scanning note text for shared proper nouns, so two contacts
+tagged to the same event were showing up as a "warm intro" match on the
+event's own title/date/location words ("both mention tagged, ohio state,
+michigan, tailgate..."), not a real shared connection. Fixed in
+`lib/warmIntros.ts` and `lib/relationshipMemory.ts` by excluding any note
+starting with the `Tagged to prospecting event:` prefix from proper-noun
+extraction entirely, since it's synthetic boilerplate duplicated across
+attendees rather than organic note content.
 
 ## Calendar (prospecting events)
 

@@ -19,7 +19,16 @@ const STOPWORDS = new Set([
   "their", "we", "it", "if", "so", "but", "and", "or", "when", "while",
   "since", "because", "although", "though", "still", "just", "now",
   "here", "there", "very", "really", "has", "had", "will", "would",
+  "tagged", "prospecting", "event",
 ]);
+
+// Auto-generated note text (see lib/eventsStore.ts's describeEventForNote)
+// is boilerplate duplicated verbatim across every contact tagged to the
+// same calendar event — it reflects shared attendance, not an organic
+// mention of a real connection, so it must never feed the note-phrase
+// extractor. Otherwise every attendee of the same event "shares" the
+// event's own title/date/location words with every other attendee.
+const AUTO_NOTE_PREFIX = "Tagged to prospecting event:";
 
 // Crude proper-noun extraction: sequences of capitalized words. No real NLP,
 // just enough to catch things like "Ohio State University" or "Acme Corp"
@@ -46,6 +55,7 @@ function collectTerms(contact: Contact): SharedTerm[] {
   for (const board of contact.boardMemberships ?? [])
     entries.push({ term: board.toLowerCase(), source: "board" });
   for (const entry of contact.noteLog) {
+    if (entry.text.startsWith(AUTO_NOTE_PREFIX)) continue;
     for (const phrase of extractPhrases(entry.text)) {
       entries.push({ term: phrase.toLowerCase(), source: "note" });
     }

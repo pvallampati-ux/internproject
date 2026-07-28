@@ -9,7 +9,14 @@ const STOPWORDS = new Set([
   "he", "they", "them", "existing", "referred", "sent", "follow-up",
   "followup", "follow", "meeting", "call", "email", "notes", "note",
   "discussed", "scheduled", "review", "reviewing", "ask", "about",
+  "tagged", "prospecting", "event",
 ]);
+
+// Auto-generated note text (see lib/eventsStore.ts's describeEventForNote)
+// is synthetic boilerplate, not an organic mention — an event's own title
+// words shouldn't be treated as a "recurring memory" just because a
+// contact was tagged to a couple of events that both mention it.
+const AUTO_NOTE_PREFIX = "Tagged to prospecting event:";
 
 // Keyword -> normalized life-event label. A note containing one of these
 // gets that label attached to every name mentioned in the same note.
@@ -76,6 +83,7 @@ export function findRelationshipMemories(contact: Contact): RelationshipMemory[]
   const byName = new Map<string, MemoryMention[]>();
 
   for (const entry of contact.noteLog) {
+    if (entry.text.startsWith(AUTO_NOTE_PREFIX)) continue;
     const names = new Set(extractNames(entry.text, exclude));
     const eventLabels = detectEventLabels(entry.text);
     for (const name of names) {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Lead } from "@/lib/store";
 import { CATEGORY_GROUPS, type Category, type CategoryGroup } from "@/lib/config";
+import { extractLeadNames } from "@/lib/prospectDiscovery";
 
 // Badge color follows the wealth-event group (Business/Personal/Corporate)
 // rather than the specific category, so the 17 categories stay visually
@@ -32,7 +33,8 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
   const [noteDraft, setNoteDraft] = useState(lead.note ?? "");
   const [added, setAdded] = useState(false);
   const [addingContact, setAddingContact] = useState(false);
-  const [contactName, setContactName] = useState("");
+  const mentionedNames = extractLeadNames(lead);
+  const [contactName, setContactName] = useState(mentionedNames[0] ?? "");
 
   async function submitAddContact() {
     if (!contactName.trim()) return;
@@ -81,6 +83,15 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
       {lead.snippet && (
         <p className="mt-1 line-clamp-2 text-sm text-gray-400">{lead.snippet}</p>
       )}
+      <p className="mt-1 text-xs text-gray-500">
+        {mentionedNames.length > 0 ? (
+          <>
+            Mentioned: <span className="text-gray-300">{mentionedNames.join(", ")}</span>
+          </>
+        ) : (
+          "No name identified in this headline/snippet"
+        )}
+      </p>
       <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
         <span>{lead.source}</span>
         <span>{timeAgo(lead.publishedAt)}</span>

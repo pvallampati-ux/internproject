@@ -39,7 +39,11 @@ const STOPWORDS = new Set([
   "chamber", "commerce", "google", "news", "first", "second", "third",
 ]);
 
-function extractCandidateNames(text: string): string[] {
+// Crude proper-noun extraction — no real NLP, no way to tell a person's
+// name from a place or product name apart from the stopword list. Exported
+// so lead cards can show "who's mentioned here" inline, not just the
+// Watchlist.
+export function extractCandidateNames(text: string): string[] {
   const matches = text.match(/\b[A-Z][a-zA-Z'-]*(?:\s+[A-Z][a-zA-Z'-]*){1,2}\b/g) ?? [];
   return matches
     .map((m) => m.trim())
@@ -48,6 +52,21 @@ function extractCandidateNames(text: string): string[] {
       if (words.length < 2) return false;
       return !words.some((w) => STOPWORDS.has(w.toLowerCase()));
     });
+}
+
+// Names mentioned in a single lead, deduped — for a compact per-card
+// display ("Mentioned: Sarah Mitchell").
+export function extractLeadNames(lead: Pick<Lead, "title" | "snippet">, limit = 2): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const name of extractCandidateNames(`${lead.title} ${lead.snippet}`)) {
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+    if (names.length >= limit) break;
+  }
+  return names;
 }
 
 export interface WatchlistEntry {

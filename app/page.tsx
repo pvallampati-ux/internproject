@@ -5,16 +5,23 @@ import Link from "next/link";
 import { touchpointCount, type Contact, type PipelineStage } from "@/lib/contactTypes";
 import type { DailyBrief as DailyBriefData, OverdueContact } from "@/lib/dailyBrief";
 import type { Task } from "@/lib/taskTypes";
+import type { Lead } from "@/lib/store";
 import DailyBrief from "@/components/DailyBrief";
 import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
-import { calculateNextBestAction } from "@/lib/nextBestAction";
+import { calculateWhyNowScore } from "@/lib/whyNowScore";
 
-const PRIORITY_STYLES: Record<string, string> = {
+const SCORE_BAND_STYLES: Record<string, string> = {
   High: "border-red-500/50 bg-red-500/10 text-red-400",
   Medium: "border-amber-500/50 bg-amber-500/10 text-amber-400",
   Low: "border-gray-500/50 bg-gray-500/10 text-gray-400",
 };
+
+function scoreBand(score: number): "High" | "Medium" | "Low" {
+  if (score >= 40) return "High";
+  if (score >= 15) return "Medium";
+  return "Low";
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -37,6 +44,10 @@ const STAGE_BADGE: Record<PipelineStage, string> = {
   Cold: "border-gray-500/50 bg-gray-500/10 text-gray-400",
 };
 
+type AgendaItem =
+  | { kind: "contact"; priority: number; contact: Contact; score: number; action: string; reasoning: string[] }
+  | { kind: "task"; priority: number; task: Task };
+
 export default function HomePage() {
   const [brief, setBrief] = useState<DailyBriefData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +56,7 @@ export default function HomePage() {
   const [meetingPrepContactId, setMeetingPrepContactId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
 
   async function loadTasks() {
     const res = await fetch("/api/tasks");
@@ -56,6 +68,12 @@ export default function HomePage() {
     const res = await fetch("/api/contacts");
     const data = await res.json();
     setAllContacts(data.contacts ?? []);
+  }
+
+  async function loadLeads() {
+    const res = await fetch("/api/leads?days=90");
+    const data = await res.json();
+    setLeads(data.leads ?? []);
   }
 
   async function toggleTaskDone(task: Task) {
@@ -87,6 +105,7 @@ export default function HomePage() {
     })();
     loadTasks();
     loadContacts();
+    loadLeads();
   }, []);
 
   async function handleMarkContacted(contactId: string) {
@@ -102,34 +121,40 @@ export default function HomePage() {
   const overdueContacts: OverdueContact[] = brief?.overdueContacts ?? [];
   const memoryByContactId = new Map((brief?.memoryReminders ?? []).map((m) => [m.contact.id, m.prompt]));
   const meetingPrepContact = meetingsToday.find((c) => c.id === meetingPrepContactId);
-
+  const marketEvents = brief?.marketEvents ?? [];
   const now = Date.now();
-  const dueSoonCutoff = now + 7 * 24 * 60 * 60 * 1000;
-  const dueTasks = tasks
-    .filter((t) => !t.done && (!t.dueDate || new Date(t.dueDate).getTime() < dueSoonCutoff))
-    .sort((a, b) => {
-      const aTime = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
-      const bTime = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
-      return aTime - bTime;
+
+  // One unified, prioritized list — contacts scored by Why Now, and
+  // standalone tasks (no linked contact) folded in by urgency, instead of
+  // two separate lists that mostly said the same thing.
+  const contactItems: AgendaItem[] = allContacts
+    .filter((c) => c.stage !== "Cold")
+    .map((c) => {
+      const result = calculateWhyNowScore(c, allContacts, leads);
+      return {
+        kind: "contact" as const,
+        priority: result.score,
+        contact: c,
+        score: result.score,
+        action: result.recommendedAction,
+        reasoning: result.reasoning,
+      };
+    })
+    .filter((x) => x.score > 0);
+
+  const taskItems: AgendaItem[] = tasks
+    .filter((t) => !t.done && !t.contactId)
+    .map((t) => {
+      let priority = 40;
+      if (t.dueDate) {
+        const daysUntil = (new Date(t.dueDate).getTime() - now) / (1000 * 60 * 60 * 24);
+        if (daysUntil < 0) priority = 100;
+        else priority = Math.max(30, 90 - daysUntil * 10);
+      }
+      return { kind: "task" as const, priority, task: t };
     });
 
-  const openTaskCountByContact = new Map<string, number>();
-  for (const t of tasks) {
-    if (t.done || !t.contactId) continue;
-    openTaskCountByContact.set(t.contactId, (openTaskCountByContact.get(t.contactId) ?? 0) + 1);
-  }
-  const priorityRank = { High: 0, Medium: 1, Low: 2 };
-  const nextBestActions = allContacts
-    .filter((c) => c.stage !== "Cold")
-    .map((c) => ({
-      contact: c,
-      nba: calculateNextBestAction(c, openTaskCountByContact.get(c.id) ?? 0),
-    }))
-    .filter((x) => x.nba.priority !== "Low")
-    .sort((a, b) => priorityRank[a.nba.priority] - priorityRank[b.nba.priority])
-    .slice(0, 6);
-
-  const marketEvents = brief?.marketEvents ?? [];
+  const agenda = [...contactItems, ...taskItems].sort((a, b) => b.priority - a.priority).slice(0, 8);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -176,12 +201,12 @@ export default function HomePage() {
           {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
         </h1>
         <p className="mt-1 text-sm text-gray-400">
-          Assembled fresh every time you load this page from data already on file — a
-          prioritized agenda, follow-ups, new opportunities, and people to call. Rule-based, not
-          an AI model; every item below traces to a specific reason. (Not here: proactively
-          pre-generating AI Meeting Prep for every meeting — that costs money per contact, so it
-          stays a button you click — and document summarization, since this app has no document
-          upload to summarize.)
+          Assembled fresh every time you load this page from data already on file — one
+          prioritized list (contacts scored by Why Now, plus standalone tasks), new
+          opportunities, and today's meetings. Rule-based, not an AI model; every item traces to
+          a specific reason. (Not here: proactively pre-generating AI Meeting Prep for every
+          meeting — that costs money per contact, so it stays a button you click — and document
+          summarization, since this app has no document upload to summarize.)
         </p>
       </header>
 
@@ -190,31 +215,65 @@ export default function HomePage() {
       ) : (
         <>
           <section className="mb-8">
-            <h2 className="font-serif text-lg text-gray-100">Prioritized agenda</h2>
-            {nextBestActions.length === 0 ? (
+            <div className="flex items-center justify-between">
+              <h2 className="font-serif text-lg text-gray-100">Prioritized agenda</h2>
+              <Link href="/tasks" className="text-xs text-gold-400 hover:underline">
+                View all tasks →
+              </Link>
+            </div>
+            {agenda.length === 0 ? (
               <p className="mt-2 text-sm text-gray-600">Nothing urgent — everyone reads healthy right now.</p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {nextBestActions.map(({ contact, nba }) => (
-                  <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
-                    <div className="flex items-start gap-2">
-                      <span
-                        className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[nba.priority]}`}
-                      >
-                        {nba.priority}
-                      </span>
-                      <div>
-                        <Link
-                          href={`/contacts/${contact.id}`}
-                          className="text-sm font-medium text-gray-100 hover:underline"
+                {agenda.map((item) =>
+                  item.kind === "contact" ? (
+                    <li
+                      key={`c-${item.contact.id}`}
+                      className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span
+                          className={`mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[scoreBand(item.score)]}`}
                         >
-                          {nba.action}
-                        </Link>
-                        <p className="text-xs text-gray-500">{nba.whyNow}</p>
+                          {item.score}
+                        </span>
+                        <div>
+                          <Link
+                            href={`/contacts/${item.contact.id}`}
+                            className="text-sm font-medium text-gray-100 hover:underline"
+                          >
+                            {item.contact.name}
+                          </Link>
+                          <p className="text-xs text-gray-500">
+                            {item.action} {item.reasoning[0]}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  ) : (
+                    <li
+                      key={`t-${item.task.id}`}
+                      className="flex items-center gap-2 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={item.task.done}
+                        onChange={() => toggleTaskDone(item.task)}
+                        className="h-4 w-4 accent-gold-500"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-200">{item.task.title}</p>
+                        {item.task.dueDate && (
+                          <p
+                            className={`text-xs ${new Date(item.task.dueDate).getTime() < now ? "text-amber-400" : "text-gray-500"}`}
+                          >
+                            Due {formatDate(item.task.dueDate)}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  )
+                )}
               </ul>
             )}
           </section>
@@ -290,45 +349,6 @@ export default function HomePage() {
                     )}
                   </li>
                 ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="mb-8">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-lg text-gray-100">Tasks due this week</h2>
-              <Link href="/tasks" className="text-xs text-gold-400 hover:underline">
-                View all tasks →
-              </Link>
-            </div>
-            {dueTasks.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-600">Nothing due in the next 7 days.</p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {dueTasks.map((task) => {
-                  const isOverdue = task.dueDate && new Date(task.dueDate).getTime() < now;
-                  return (
-                    <li
-                      key={task.id}
-                      className="flex items-center gap-2 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={task.done}
-                        onChange={() => toggleTaskDone(task)}
-                        className="h-4 w-4 accent-gold-500"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-200">{task.title}</p>
-                        {task.dueDate && (
-                          <p className={`text-xs ${isOverdue ? "text-amber-400" : "text-gray-500"}`}>
-                            Due {formatDate(task.dueDate)}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
               </ul>
             )}
           </section>

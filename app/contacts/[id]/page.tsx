@@ -24,7 +24,7 @@ import { detectLifeStage, LIFE_STAGE_TALKING_POINTS } from "@/lib/lifeStages";
 import { findRelationshipMemories, suggestedMemoryPrompt } from "@/lib/relationshipMemory";
 import { calculateProspectScore } from "@/lib/prospectScore";
 import { calculateInfluenceScore } from "@/lib/influenceScore";
-import { calculateNextBestAction } from "@/lib/nextBestAction";
+import { calculateWhyNowScore } from "@/lib/whyNowScore";
 import { overallSentiment, type Sentiment } from "@/lib/sentiment";
 import { findSimilarProspects } from "@/lib/similarProspects";
 import { buildTimeline, type TimelineItemKind } from "@/lib/timeline";
@@ -78,6 +78,12 @@ const PRIORITY_STYLES: Record<string, string> = {
   Medium: "border-amber-500/50 bg-amber-500/10 text-amber-400",
   Low: "border-gray-500/50 bg-gray-500/10 text-gray-400",
 };
+
+function whyNowBand(score: number): "High" | "Medium" | "Low" {
+  if (score >= 40) return "High";
+  if (score >= 15) return "Medium";
+  return "Low";
+}
 
 function arrayFieldToText(v: string[] | undefined): string {
   return (v ?? []).join(", ");
@@ -284,7 +290,7 @@ export default function ContactProfilePage() {
   const similar = findSimilarProspects(contact, allContacts);
   const timelineItems = buildTimeline(contact.noteLog, relevantLeads, tasks);
   const openTasks = tasks.filter((t) => !t.done);
-  const nextBestAction = calculateNextBestAction(contact, openTasks.length);
+  const whyNow = calculateWhyNowScore(contact, allContacts, relevantLeads);
   const relationshipDNA = buildRelationshipDNA(contact);
 
   return (
@@ -379,16 +385,25 @@ export default function ContactProfilePage() {
         )}
         {memoryPrompt && <p className="mt-1 text-sm text-gold-400">{memoryPrompt}</p>}
 
-        <div className="mt-3 flex items-start gap-2 border-t border-charcoal-700 pt-3">
-          <span
-            className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[nextBestAction.priority]}`}
-          >
-            {nextBestAction.priority}
-          </span>
-          <div>
-            <p className="text-sm font-medium text-gray-100">{nextBestAction.action}</p>
-            <p className="text-xs text-gray-500">{nextBestAction.whyNow}</p>
+        <div className="mt-3 border-t border-charcoal-700 pt-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[whyNowBand(whyNow.score)]}`}
+            >
+              Why Now Score: {whyNow.score}/100
+            </span>
+            <p className="text-sm font-medium text-gray-100">{whyNow.recommendedAction}</p>
           </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Reasoning: rule-based score, not a prediction — every point below is a signal already on file.
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {whyNow.reasoning.map((reason, i) => (
+              <li key={i} className="text-xs text-gray-400">
+                · {reason}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
