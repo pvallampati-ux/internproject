@@ -316,16 +316,18 @@ export default function HomePage() {
 
             <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-serif text-lg text-gray-100">Needs a Touch</h2>
+                <h2 className="font-serif text-lg text-gray-100">
+                  Needs a Touch {overdueContacts.length > 0 && `(${overdueContacts.length})`}
+                </h2>
                 <Link href="/pipeline" className="text-xs text-gold-400 hover:underline">
-                  View all →
+                  Full pipeline →
                 </Link>
               </div>
               {overdueContacts.length === 0 ? (
                 <p className="mt-3 text-sm text-gray-600">Nobody&rsquo;s overdue for outreach right now.</p>
               ) : (
-                <ul className="mt-3 space-y-2">
-                  {overdueContacts.slice(0, 4).map(({ contact, daysOverdue }) => (
+                <ul className="mt-3 max-h-[26rem] space-y-2 overflow-y-auto pr-1">
+                  {overdueContacts.map(({ contact, daysOverdue }) => (
                     <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
@@ -344,7 +346,7 @@ export default function HomePage() {
                           </div>
                           <p className="mt-1 text-xs text-gray-500">
                             {daysOverdue + contact.cadenceDays}d since last touch · target every{" "}
-                            {contact.cadenceDays}d
+                            {contact.cadenceDays}d · {touchpointCount(contact)} touchpoint(s)
                           </p>
                         </div>
                         <span
@@ -372,6 +374,12 @@ export default function HomePage() {
                           }
                           compact
                         />
+                        <button
+                          onClick={() => handleMarkContacted(contact.id)}
+                          className="rounded-md border border-charcoal-700 px-2 py-1 text-xs text-gray-400 hover:border-gold-500/50 hover:text-gold-400"
+                        >
+                          Mark contacted
+                        </button>
                       </div>
                     </li>
                   ))}
@@ -542,49 +550,6 @@ export default function HomePage() {
               </section>
             </div>
           </div>
-
-          <section className="mt-4 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-            <h2 className="font-serif text-lg text-gray-100">
-              Clients &amp; prospects needing contact ({overdueContacts.length})
-            </h2>
-            {overdueContacts.length === 0 ? (
-              <p className="mt-2 text-sm text-gray-600">Nobody&rsquo;s overdue for outreach right now.</p>
-            ) : (
-              <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {overdueContacts.map(({ contact, daysOverdue }) => (
-                  <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/contacts/${contact.id}`}
-                            className="truncate text-sm font-medium text-gray-100 hover:underline"
-                          >
-                            {contact.name}
-                          </Link>
-                          <span
-                            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${STAGE_BADGE[contact.stage]}`}
-                          >
-                            {contact.stage}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {contact.company ? `${contact.company} · ` : ""}
-                          {daysOverdue}d overdue (every {contact.cadenceDays}d) · {touchpointCount(contact)} touchpoint(s)
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleMarkContacted(contact.id)}
-                        className="shrink-0 rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
-                      >
-                        Mark contacted
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </>
       )}
     </main>
