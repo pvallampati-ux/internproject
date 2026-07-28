@@ -32,13 +32,19 @@ function extractPhrases(text: string): string[] {
 }
 
 // Keeps track of where each shared term came from (a tag, a company name,
-// or note text) so the UI can describe the match in a way that actually
-// makes sense — "both tagged retail" reads very differently from "both
-// mention Ohio State University."
+// a school/club/board, or note text) so the UI can describe the match in a
+// way that actually makes sense — "both tagged retail" reads very
+// differently from "both mention Ohio State University." Schools/clubs/
+// boards are structured fields (Client 360), so matches on them are
+// reliable — not naive extraction like the note-phrase matching.
 function collectTerms(contact: Contact): SharedTerm[] {
   const entries: SharedTerm[] = [];
   for (const tag of contact.tags) entries.push({ term: tag.toLowerCase(), source: "tag" });
   if (contact.company) entries.push({ term: contact.company.toLowerCase(), source: "company" });
+  for (const school of contact.schools ?? []) entries.push({ term: school.toLowerCase(), source: "school" });
+  for (const club of contact.clubs ?? []) entries.push({ term: club.toLowerCase(), source: "club" });
+  for (const board of contact.boardMemberships ?? [])
+    entries.push({ term: board.toLowerCase(), source: "board" });
   for (const entry of contact.noteLog) {
     for (const phrase of extractPhrases(entry.text)) {
       entries.push({ term: phrase.toLowerCase(), source: "note" });

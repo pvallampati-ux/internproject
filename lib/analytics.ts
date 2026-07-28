@@ -15,7 +15,9 @@ export interface AnalyticsSummary {
   referredContacts: number;
   warmReferrals: number; // referredByContactId set — a reliable, structured referral link
   conversionRate: number | null; // Client / (Client + Cold); null if there's no data either way yet
+  referralConversionRate: number | null; // of referred contacts, how many are now Client
   industryBreakdown: { industry: string; count: number }[];
+  locationBreakdown: { location: string; count: number }[];
 }
 
 // All computed from data already on file — no historical snapshots, so
@@ -60,6 +62,11 @@ export function computeAnalytics(): AnalyticsSummary {
 
   const referredContacts = contacts.filter((c) => c.referredBy).length;
   const warmReferrals = contacts.filter((c) => c.referredByContactId).length;
+  const referredContactsList = contacts.filter((c) => c.referredBy);
+  const referralConversionRate =
+    referredContactsList.length > 0
+      ? referredContactsList.filter((c) => c.stage === "Client").length / referredContactsList.length
+      : null;
 
   const clientCount = countsByStage.Client ?? 0;
   const coldCount = countsByStage.Cold ?? 0;
@@ -72,6 +79,15 @@ export function computeAnalytics(): AnalyticsSummary {
   }
   const industryBreakdown = [...industryCounts.entries()]
     .map(([industry, count]) => ({ industry, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const locationCounts = new Map<string, number>();
+  for (const c of contacts) {
+    if (!c.location) continue;
+    locationCounts.set(c.location, (locationCounts.get(c.location) ?? 0) + 1);
+  }
+  const locationBreakdown = [...locationCounts.entries()]
+    .map(([location, count]) => ({ location, count }))
     .sort((a, b) => b.count - a.count);
 
   return {
@@ -87,6 +103,8 @@ export function computeAnalytics(): AnalyticsSummary {
     referredContacts,
     warmReferrals,
     conversionRate,
+    referralConversionRate,
     industryBreakdown,
+    locationBreakdown,
   };
 }

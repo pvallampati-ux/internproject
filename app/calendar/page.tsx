@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CalendarEvent } from "@/lib/eventsStore";
 import type { Contact } from "@/lib/contactTypes";
+import { suggestInvitees } from "@/lib/eventOptimizer";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -173,6 +174,32 @@ export default function CalendarPage() {
               </a>
             ))}
           </div>
+        )}
+
+        {contacts.length > 0 && (
+          <>
+            {(() => {
+              const suggestions = suggestInvitees(event, contacts, event.taggedContactIds);
+              if (suggestions.length === 0) return null;
+              return (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500">Suggested invitees:</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {suggestions.map(({ contact, reasons }) => (
+                      <button
+                        key={contact.id}
+                        onClick={() => toggleTag(event.id, contact.id, event.taggedContactIds)}
+                        title={reasons.join("; ")}
+                        className="rounded-full border border-gold-500/50 bg-gold-500/10 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/20"
+                      >
+                        + {contact.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </>
         )}
 
         {contacts.length > 0 && (

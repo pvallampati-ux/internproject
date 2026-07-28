@@ -23,8 +23,12 @@ import { assessRelationshipHealth, formatTenure } from "@/lib/relationshipHealth
 import { detectLifeStage, LIFE_STAGE_TALKING_POINTS } from "@/lib/lifeStages";
 import { findRelationshipMemories, suggestedMemoryPrompt } from "@/lib/relationshipMemory";
 import { calculateProspectScore } from "@/lib/prospectScore";
+import { calculateInfluenceScore } from "@/lib/influenceScore";
+import { calculateNextBestAction } from "@/lib/nextBestAction";
+import { overallSentiment, type Sentiment } from "@/lib/sentiment";
 import { findSimilarProspects } from "@/lib/similarProspects";
 import { buildTimeline, type TimelineItemKind } from "@/lib/timeline";
+import { buildRelationshipDNA } from "@/lib/relationshipDNA";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -61,6 +65,18 @@ const TIMELINE_KIND_STYLES: Record<TimelineItemKind, string> = {
   note: "bg-charcoal-700 text-gray-400",
   news: "bg-emerald-900/50 text-emerald-300",
   task: "bg-purple-900/50 text-purple-300",
+};
+
+const SENTIMENT_STYLES: Record<Sentiment, string> = {
+  Positive: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+  Neutral: "border-gray-500/50 bg-gray-500/10 text-gray-400",
+  Negative: "border-red-500/50 bg-red-500/10 text-red-400",
+};
+
+const PRIORITY_STYLES: Record<string, string> = {
+  High: "border-red-500/50 bg-red-500/10 text-red-400",
+  Medium: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+  Low: "border-gray-500/50 bg-gray-500/10 text-gray-400",
 };
 
 function arrayFieldToText(v: string[] | undefined): string {
@@ -263,9 +279,13 @@ export default function ContactProfilePage() {
   const memories = findRelationshipMemories(contact);
   const memoryPrompt = suggestedMemoryPrompt(memories);
   const prospectScore = calculateProspectScore(contact);
+  const influenceScore = calculateInfluenceScore(contact, allContacts);
+  const sentiment = overallSentiment(contact.noteLog);
   const similar = findSimilarProspects(contact, allContacts);
   const timelineItems = buildTimeline(contact.noteLog, relevantLeads, tasks);
   const openTasks = tasks.filter((t) => !t.done);
+  const nextBestAction = calculateNextBestAction(contact, openTasks.length);
+  const relationshipDNA = buildRelationshipDNA(contact);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -288,6 +308,18 @@ export default function ContactProfilePage() {
               title={prospectScore.reasons.join("; ") || "Not enough data to explain the score yet."}
             >
               Prospect Score: {prospectScore.score} ({prospectScore.band})
+            </span>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[influenceScore.band]}`}
+              title={influenceScore.reasons.join("; ") || "Not enough data to explain the score yet."}
+            >
+              Influence: {influenceScore.score} ({influenceScore.band})
+            </span>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SENTIMENT_STYLES[sentiment]}`}
+              title="Naive keyword sentiment over the last 5 notes — not real NLP."
+            >
+              {sentiment}
             </span>
           </div>
           <input
@@ -346,6 +378,18 @@ export default function ContactProfilePage() {
           </p>
         )}
         {memoryPrompt && <p className="mt-1 text-sm text-gold-400">{memoryPrompt}</p>}
+
+        <div className="mt-3 flex items-start gap-2 border-t border-charcoal-700 pt-3">
+          <span
+            className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[nextBestAction.priority]}`}
+          >
+            {nextBestAction.priority}
+          </span>
+          <div>
+            <p className="text-sm font-medium text-gray-100">{nextBestAction.action}</p>
+            <p className="text-xs text-gray-500">{nextBestAction.whyNow}</p>
+          </div>
+        </div>
       </section>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -599,6 +643,62 @@ export default function ContactProfilePage() {
           </div>
         </div>
       </section>
+
+      {(relationshipDNA.professional.length > 0 ||
+        relationshipDNA.personal.length > 0 ||
+        relationshipDNA.philanthropic.length > 0) && (
+        <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Relationship DNA</h2>
+          <p className="mt-1 text-xs text-gray-500">
+            A reorganized view of the Client 360 data above — not new information, just grouped
+            for a quick read before a call.
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-400">Professional</p>
+              {relationshipDNA.professional.length === 0 ? (
+                <p className="mt-1 text-xs text-gray-600">Nothing on file.</p>
+              ) : (
+                <ul className="mt-1 space-y-0.5">
+                  {relationshipDNA.professional.map((item, i) => (
+                    <li key={i} className="text-sm text-gray-300">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-400">Personal</p>
+              {relationshipDNA.personal.length === 0 ? (
+                <p className="mt-1 text-xs text-gray-600">Nothing on file.</p>
+              ) : (
+                <ul className="mt-1 space-y-0.5">
+                  {relationshipDNA.personal.map((item, i) => (
+                    <li key={i} className="text-sm text-gray-300">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gold-400">Philanthropic</p>
+              {relationshipDNA.philanthropic.length === 0 ? (
+                <p className="mt-1 text-xs text-gray-600">Nothing on file.</p>
+              ) : (
+                <ul className="mt-1 space-y-0.5">
+                  {relationshipDNA.philanthropic.map((item, i) => (
+                    <li key={i} className="text-sm text-gray-300">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {lifeStage && (
         <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">

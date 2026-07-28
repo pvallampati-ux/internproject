@@ -14,16 +14,13 @@ function timeAgo(iso: string): string {
   return `${days} days ago`;
 }
 
-// Meetings today and overdue contacts live permanently on the Home page now
-// (not just in this once-a-day popup), so this stays focused on the softer,
-// easy-to-miss nudges: market events, follow-ups, cooling leads, warm intros.
+// Meetings today, overdue contacts, and market events ("new opportunities")
+// all live permanently on the Home page now (not just in this once-a-day
+// popup), so this stays focused on the softer, easy-to-miss nudges:
+// follow-ups, cooling leads, warm intros.
 export default function DailyBrief({ data, onClose }: Props) {
-  const { followUps, coolingLeads, marketEvents, warmIntros } = data;
-  const isEmpty =
-    followUps.length === 0 &&
-    coolingLeads.length === 0 &&
-    marketEvents.length === 0 &&
-    warmIntros.length === 0;
+  const { followUps, coolingLeads, warmIntros } = data;
+  const isEmpty = followUps.length === 0 && coolingLeads.length === 0 && warmIntros.length === 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-6">
@@ -52,37 +49,6 @@ export default function DailyBrief({ data, onClose }: Props) {
           <p className="mt-6 text-sm text-gray-400">
             Nothing urgent today. Nice and quiet.
           </p>
-        )}
-
-        {marketEvents.length > 0 && (
-          <section className="mt-6">
-            <h3 className="font-serif text-lg text-gray-100">Market events affecting your clients</h3>
-            <ul className="mt-2 space-y-2">
-              {marketEvents.map(({ lead, affectedContacts }) => (
-                <li key={lead.id} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
-                  <a
-                    href={lead.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-gray-100 hover:underline"
-                  >
-                    {lead.title}
-                  </a>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Affects:{" "}
-                    {affectedContacts.map((c, i) => (
-                      <span key={c.id}>
-                        {i > 0 && ", "}
-                        <a href={`/contacts/${c.id}`} className="text-gray-300 hover:text-gold-400 hover:underline">
-                          {c.name}
-                        </a>
-                      </span>
-                    ))}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
         )}
 
         {followUps.length > 0 && (

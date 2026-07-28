@@ -81,6 +81,11 @@ export default function AnalyticsPage() {
               value={formatPercent(data.conversionRate)}
               sub="Client ÷ (Client + Cold)"
             />
+            <KpiCard
+              label="Referral conversion"
+              value={formatPercent(data.referralConversionRate)}
+              sub="Of referred contacts, % now Client"
+            />
           </div>
 
           <section className="mt-8">
@@ -126,6 +131,34 @@ export default function AnalyticsPage() {
                       <div className="h-4 flex-1 overflow-hidden rounded-full bg-charcoal-800">
                         <div
                           className="h-full rounded-full bg-sky-500/60"
+                          style={{ width: `${(count / max) * 100}%` }}
+                        />
+                      </div>
+                      <span className="w-10 shrink-0 text-right text-xs text-gray-400">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className="mt-8">
+            <h2 className="font-serif text-lg text-gray-100">Geography breakdown</h2>
+            {data.locationBreakdown.length === 0 ? (
+              <p className="mt-2 text-sm text-gray-600">
+                No contacts have a Location set yet — add one on a contact&rsquo;s profile to see
+                this fill in.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {data.locationBreakdown.map(({ location, count }) => {
+                  const max = Math.max(...data.locationBreakdown.map((l) => l.count));
+                  return (
+                    <div key={location} className="flex items-center gap-3">
+                      <span className="w-32 shrink-0 truncate text-xs text-gray-400">{location}</span>
+                      <div className="h-4 flex-1 overflow-hidden rounded-full bg-charcoal-800">
+                        <div
+                          className="h-full rounded-full bg-emerald-500/60"
                           style={{ width: `${(count / max) * 100}%` }}
                         />
                       </div>

@@ -668,6 +668,98 @@ more precision — if you want that level of control for a new vertical,
 add it directly to `INDUSTRIES`/`INDUSTRY_TOPICS` in `lib/industries.ts`
 instead of through the UI.
 
+## Round 3: agenda, watchlist, DNA, geography, influence, and invite suggestions
+
+A second pass against a broader "enterprise AI platform" wishlist. Same
+rule as everywhere else in this app: free/rule-based features got built;
+anything needing a new paid LLM call (semantic search, AI meeting-note
+summarization with automatic CRM writes, a meeting simulator, an audio
+briefing) was intentionally held back rather than silently adding more
+recurring cost — ask if you want any of those built. A few items were also
+skipped outright because they'd need external data this app has no honest
+way to get (a real prospect-discovery/coverage-gap engine, competitor
+monitoring, market penetration) or don't apply to a single-user app
+(firmwide search, a referral marketplace, team dashboards).
+
+### Next Best Action / "Why Now?" (Home page + contact profile)
+
+`lib/nextBestAction.ts` is a fixed priority waterfall — not an AI
+recommendation — over signals already computed elsewhere: relationship
+health, life stage, Relationship Memory prompts, and open tasks. Every
+recommendation comes with a visible "why now" reason. Home's "Prioritized
+agenda" section runs this across every non-Cold contact and shows the top
+few by priority; the profile page shows the single recommendation for that
+contact, folded into the Follow-up Summary card.
+
+### Wealth Creation Watchlist (Intelligence tab)
+
+Answers "can you predict who's about to get wealthy from news?" — partially,
+and only for people already newsworthy enough to appear in a wealth-event
+headline. `lib/prospectDiscovery.ts` extracts candidate names from
+Business-group wealth-event leads (Founder Exit, IPO/Stock Sale, PE
+Investment, M&A, Executive Hiring) who aren't already a tracked contact,
+and buckets them under a label matching that category. **This is not a
+predictive model** — no wealth forecast, no confidence score, and no way
+to catch the harder signals (equity quietly vesting pre-liquidity,
+emerging fund managers, employees at fast-growing private companies) since
+none of that exists in free public news; a real version would need
+licensed data (Crunchbase/PitchBook) or SEC Form 4 filings, neither of
+which this app has. Name extraction is the same crude proper-noun regex
+used elsewhere, with no cross-validation (unlike the warm intro finder,
+which requires a match across two contacts) — expect real noise from place
+names and product names. Every entry is exactly one fact: this name showed
+up in a wealth-event headline.
+
+### Relationship DNA (contact profile)
+
+`lib/relationshipDNA.ts` reorganizes Client 360 fields already on the page
+into three columns — Professional (title, industry, ownership, boards,
+tags), Personal (family, schools, clubs), Philanthropic (notes matching a
+small charitable-keyword list). Not new information, just grouped for a
+faster pre-call read.
+
+### Hidden relationship detection
+
+The warm intro finder and Similar Prospects now also match on the
+structured Board/School/Club fields, not just tags/company/free-text notes
+— e.g. "both serve on the board of Columbus Chamber of Commerce" reads as
+a reliable structured match, distinct from the naive note-text matching
+next to it.
+
+### Contact Heat Map and White Space Analysis (Intelligence tab)
+
+A second static-SVG scatter plot (`components/ContactHeatMap.tsx`, same
+approach as the Regional Map) plots contacts by their Location field
+instead of leads by matched news region — where your book of business
+actually is. White Space Analysis (`lib/whiteSpace.ts`) lists contacts
+with a real wealth gap on file, ranked by size, with their
+`existingRelationships` status — the biggest untapped-opportunity view,
+one click from every contact's profile.
+
+### Note sentiment and Executive Influence Score
+
+`lib/sentiment.ts` is naive keyword sentiment (a fixed positive/negative
+word list) over a contact's most recent notes — not real NLP, shown as a
+badge on the profile header. `lib/influenceScore.ts` is a second
+rule-based 0–100 score, separate from Prospect Score, weighing COI status,
+how many tracked contacts someone has referred, board/club count, and a
+senior-title check — "how connected is this person," not "how much
+opportunity does this person represent."
+
+### Event invitation optimizer (Calendar tab)
+
+`lib/eventOptimizer.ts` ranks untagged contacts for a given event by
+industry/tag keyword match against the event's title/description, life
+stage, COI status, and declining relationship health (a good excuse for a
+low-key touchpoint) — surfaced as one-click "+ Name" suggestion chips above
+the manual "Tag prospects" list on each event card.
+
+### Analytics: geography and referral conversion
+
+Two more KPIs: a geography breakdown (same pattern as the industry
+breakdown, using the Location field) and referral conversion — of contacts
+with a referral source on file, what percentage are now a Client.
+
 ## Calendar (prospecting events)
 
 `/calendar` tracks social/sporting events used for prospecting — tailgates,
@@ -790,3 +882,15 @@ only one of each).
   is worse than not having it (it would look secure while being fake).
   Real permissions require real auth and a real backend; that's a
   different, larger project than this one, not a checkbox to fake.
+- Note sentiment is a fixed positive/negative word list over the last 5
+  notes — no negation handling ("not unhappy" reads negative), no sarcasm
+  detection. The Wealth Creation Watchlist's name extraction has no
+  cross-validation at all (unlike the warm intro finder, which needs a
+  match across two contacts), so expect the highest noise rate of any
+  naive-matching feature in this app — place names and product names will
+  show up. Executive Influence Score is a separate fixed-weight system
+  from Prospect Score (same "hand-picked weights, not learned" caveat).
+- The event invitation optimizer only ranks contacts *not yet* tagged to
+  an event, and only against that event's title/description text plus
+  each contact's own signals — it has no concept of how many people
+  should be invited or venue capacity, just a relevance ranking.

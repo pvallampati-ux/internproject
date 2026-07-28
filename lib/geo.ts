@@ -28,3 +28,16 @@ export function pickMapPoint(matchedRegionTerms: string[]): { lat: number; lng: 
   );
   return specific ? REGION_COORDINATES[specific] : null;
 }
+
+// Same idea, but for a contact's free-text `location` field ("Dublin, OH",
+// "Columbus, Ohio") rather than a lead's pre-matched region terms — checks
+// whether the town name appears anywhere in the string.
+export function pickPointForLocation(location: string | undefined): { lat: number; lng: number } | null {
+  if (!location) return null;
+  const lower = location.toLowerCase();
+  for (const [key, coords] of Object.entries(REGION_COORDINATES)) {
+    const townName = key.split(",")[0];
+    if (lower.includes(townName)) return coords;
+  }
+  return null;
+}

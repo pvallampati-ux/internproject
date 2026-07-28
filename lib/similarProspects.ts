@@ -1,6 +1,12 @@
 import type { Contact } from "./contactTypes";
 import { detectLifeStage } from "./lifeStages";
 
+function overlap(a: string[] | undefined, b: string[] | undefined): string[] {
+  if (!a || !b) return [];
+  const bLower = new Set(b.map((x) => x.toLowerCase()));
+  return a.filter((x) => bLower.has(x.toLowerCase()));
+}
+
 // Rule-based similarity (tag overlap, industry, life stage, location,
 // wealth range) — not an embedding/ML model. "People like your best
 // clients" in spirit, computed from data already on file, no LLM call.
@@ -52,6 +58,24 @@ export function findSimilarProspects(target: Contact, allContacts: Contact[], li
           score += 3;
           reasons.push("Similar estimated wealth range");
         }
+      }
+
+      const sharedSchools = overlap(target.schools, c.schools);
+      if (sharedSchools.length > 0) {
+        score += sharedSchools.length * 4;
+        reasons.push(`Same school: ${sharedSchools.join(", ")}`);
+      }
+
+      const sharedClubs = overlap(target.clubs, c.clubs);
+      if (sharedClubs.length > 0) {
+        score += sharedClubs.length * 4;
+        reasons.push(`Same club: ${sharedClubs.join(", ")}`);
+      }
+
+      const sharedBoards = overlap(target.boardMemberships, c.boardMemberships);
+      if (sharedBoards.length > 0) {
+        score += sharedBoards.length * 4;
+        reasons.push(`Same board: ${sharedBoards.join(", ")}`);
       }
 
       return { contact: c, score, reasons };

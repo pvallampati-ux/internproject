@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import LeadCard from "@/components/LeadCard";
 import RegionMap from "@/components/RegionMap";
+import ContactHeatMap from "@/components/ContactHeatMap";
 import AddIndustryForm from "@/components/AddIndustryForm";
 import type { Lead } from "@/lib/store";
-import { pickMapPoint } from "@/lib/geo";
+import type { Contact } from "@/lib/contactTypes";
+import { pickMapPoint, pickPointForLocation } from "@/lib/geo";
+import { buildWhiteSpaceAnalysis } from "@/lib/whiteSpace";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { INDUSTRIES, INDUSTRY_TOPICS } from "@/lib/industries";
 import type { CustomIndustry } from "@/lib/customIndustriesStore";
 import type { MarketInsight } from "@/lib/marketInsightsStore";
 import { WEALTH_EVENT_CATEGORIES } from "@/lib/config";
+import { buildWealthCreationWatchlist } from "@/lib/prospectDiscovery";
 
 interface DisplayTopic {
   id: string;
@@ -25,8 +29,15 @@ function timeAgo(iso: string): string {
   return `${days} days ago`;
 }
 
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
+    value
+  );
+}
+
 export default function IntelligencePage() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [focus, setFocus] = useState<string>("All");
@@ -45,14 +56,17 @@ export default function IntelligencePage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [leadsRes, introsRes] = await Promise.all([
+      const [leadsRes, introsRes, contactsRes] = await Promise.all([
         fetch("/api/leads?days=90"),
         fetch("/api/warm-intros"),
+        fetch("/api/contacts"),
       ]);
       const leadsData = await leadsRes.json();
       const introsData = await introsRes.json();
+      const contactsData = await contactsRes.json();
       setLeads(leadsData.leads ?? []);
       setWarmIntros(introsData.matches ?? []);
+      setContacts(contactsData.contacts ?? []);
       setLoading(false);
       await loadCustomIndustries();
     })();
@@ -129,6 +143,7 @@ export default function IntelligencePage() {
   const wealthEvents = leads.filter((l) =>
     l.categories.some((c) => WEALTH_EVENT_CATEGORIES.includes(c))
   );
+  const watchlist = buildWealthCreationWatchlist(leads, contacts);
 
   const plotted = leads
     .map((lead) => {
@@ -137,6 +152,16 @@ export default function IntelligencePage() {
     })
     .filter((x): x is { lead: Lead; point: { lat: number; lng: number } } => x !== null);
   const unmapped = leads.length - plotted.length;
+
+  const contactsPlotted = contacts
+    .map((contact) => {
+      const point = pickPointForLocation(contact.location);
+      return point ? { contact, point } : null;
+    })
+    .filter((x): x is { contact: Contact; point: { lat: number; lng: number } } => x !== null);
+  const contactsUnmapped = contacts.filter((c) => c.location).length - contactsPlotted.length;
+
+  const whiteSpace = buildWhiteSpaceAnalysis(contacts).slice(0, 10);
 
   // Resolve the currently-selected focus's topic list, whether it's one of
   // the two built-in industries or a user-added custom one.
@@ -259,6 +284,65 @@ export default function IntelligencePage() {
             )}
           </section>
 
+          <section className="mb-10">
+            <h2 className="font-serif text-lg text-gray-100">Contact Heat Map</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Where your book of business actually is, plotted from each contact&rsquo;s
+              Location field (Client 360). Same static-plot approach as the Regional Map above.
+            </p>
+            {contactsPlotted.length === 0 ? (
+              <p className="mt-3 text-sm text-gray-600">
+                No contacts with a mappable Location yet — add one on a contact&rsquo;s profile.
+              </p>
+            ) : (
+              <div className="mt-3">
+                <ContactHeatMap plotted={contactsPlotted} />
+                {contactsUnmapped > 0 && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    {contactsUnmapped} contact(s) not shown — location didn&rsquo;t match a
+                    plottable town.
+                  </p>
+                )}
+              </div>
+            )}
+          </section>
+
+          <section className="mb-10">
+            <h2 className="font-serif text-lg text-gray-100">White Space Analysis</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Contacts with a real wealth gap on file, ranked by size — where the biggest
+              &ldquo;we don&rsquo;t have this relationship yet&rdquo; opportunity sits. Only as
+              accurate as the numbers typed in on each profile.
+            </p>
+            {whiteSpace.length === 0 ? (
+              <p className="mt-3 text-sm text-gray-600">
+                No contacts with an estimated wealth gap yet.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {whiteSpace.map(({ contact, gap, relationshipStatus }) => (
+                  <li
+                    key={contact.id}
+                    className="flex items-center justify-between rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
+                  >
+                    <div>
+                      <a
+                        href={`/contacts/${contact.id}`}
+                        className="text-sm font-medium text-gray-100 hover:underline"
+                      >
+                        {contact.name}
+                      </a>
+                      <p className="text-xs text-gray-500">
+                        {contact.company ? `${contact.company} · ` : ""}Relationship: {relationshipStatus}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm font-medium text-gold-400">{formatCurrency(gap)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           {focus === "All" ? (
             <section>
               <h2 className="font-serif text-lg text-gray-100">
@@ -284,6 +368,50 @@ export default function IntelligencePage() {
                   ))}
                 </div>
               )}
+
+              <div className="mt-8">
+                <h2 className="font-serif text-lg text-gray-100">
+                  Wealth Creation Watchlist ({watchlist.length})
+                </h2>
+                <p className="mt-1 text-xs text-gray-500">
+                  Names mentioned in Business wealth-event headlines (founder exits, IPOs, PE
+                  investment, M&amp;A, executive moves) who aren&rsquo;t a tracked contact yet.
+                  This is <strong>not a predictive model</strong> — there&rsquo;s no wealth
+                  forecast, no confidence score, and no way to catch the harder signals (equity
+                  quietly vesting pre-liquidity, emerging fund managers, employees at fast-growing
+                  private companies) since none of that is in free public news; a real version of
+                  that would need licensed data (Crunchbase/PitchBook) or SEC filings, which this
+                  app doesn&rsquo;t have. What&rsquo;s here is exactly one fact: this name showed
+                  up in a wealth-event headline. Expect noise (place names, product names) — treat
+                  every entry as a lead to verify, not a qualified prospect.
+                </p>
+                {watchlist.length === 0 ? (
+                  <p className="mt-3 text-sm text-gray-600">
+                    Nothing new in the last 90 days of wealth-event headlines.
+                  </p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {watchlist.map((entry, i) => (
+                      <li key={i} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-gray-100">{entry.name}</span>
+                          <span className="shrink-0 rounded-full border border-gold-500/50 bg-gold-500/10 px-2 py-0.5 text-xs text-gold-400">
+                            {entry.bucket}
+                          </span>
+                        </div>
+                        <a
+                          href={entry.lead.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 block text-xs text-gray-500 hover:text-gold-400 hover:underline"
+                        >
+                          {entry.lead.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </section>
           ) : (
             <section>
