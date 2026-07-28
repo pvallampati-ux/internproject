@@ -25,6 +25,10 @@ export interface Lead {
   note?: string;
   noteUpdatedAt?: string;
   relatedArticles?: RelatedArticle[];
+  // Set once a banker turns this headline into a named Contact (stage
+  // "Prospect") — the lead then drops out of the Market Lead lane instead
+  // of reappearing as if it were still unactioned.
+  promotedToContactId?: string;
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -84,7 +88,10 @@ export function upsertLeads(newLeads: Lead[]): { added: number; updated: number;
 
 // Patch a single lead's user-set fields (saved/note) and persist. Touching
 // the note stamps noteUpdatedAt, which the "cooling leads" check relies on.
-export function updateLead(id: string, patch: Partial<Pick<Lead, "saved" | "note">>): Lead | null {
+export function updateLead(
+  id: string,
+  patch: Partial<Pick<Lead, "saved" | "note" | "promotedToContactId">>
+): Lead | null {
   const leads = loadLeads();
   const idx = leads.findIndex((l) => l.id === id);
   if (idx === -1) return null;

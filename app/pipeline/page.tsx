@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ContactCard from "@/components/ContactCard";
+import MarketLeadCard from "@/components/MarketLeadCard";
 import AddContactForm from "@/components/AddContactForm";
 import PipelineFunnel from "@/components/PipelineFunnel";
 import ContactFilterBar from "@/components/ContactFilterBar";
@@ -101,6 +102,16 @@ export default function PipelinePage() {
     setContacts((prev) => [...prev, created]);
   }
 
+  function handleLeadPromoted(leadId: string, contact: Contact) {
+    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, promotedToContactId: contact.id } : l)));
+    setContacts((prev) => [...prev, contact]);
+  }
+
+  const marketLeads = leads
+    .filter((l) => !l.promotedToContactId)
+    .sort((a, b) => b.score - a.score || new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    .slice(0, 8);
+
   const filteredContacts = applyContactFilters(contacts, filters);
   const coldContacts = filteredContacts.filter((c) => c.stage === "Cold");
 
@@ -183,7 +194,35 @@ export default function PipelinePage() {
             <PipelineFunnel counts={counts} values={values} />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-6">
+            <div className="relative rounded-lg p-1">
+              <h3 className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Market Lead ({marketLeads.length})
+              </h3>
+              <div className="space-y-3">
+                {marketLeads.length === 0 ? (
+                  <p className="text-xs text-gray-600">
+                    No open leads.{" "}
+                    <Link href="/discover" className="text-gold-400 hover:underline">
+                      Discover →
+                    </Link>
+                  </p>
+                ) : (
+                  marketLeads.map((lead) => (
+                    <MarketLeadCard key={lead.id} lead={lead} onPromoted={handleLeadPromoted} />
+                  ))
+                )}
+              </div>
+              <Link
+                href="/discover"
+                className="mt-2 block text-xs text-gray-500 hover:text-gold-400"
+              >
+                View all leads →
+              </Link>
+              <span className="pointer-events-none absolute -right-3 top-0 hidden text-charcoal-700 lg:block">
+                →
+              </span>
+            </div>
             {JOURNEY_STAGES.map((stage, i) => {
               const stageContacts = filteredContacts.filter((c) => c.stage === stage);
               return (

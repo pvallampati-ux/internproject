@@ -31,14 +31,14 @@ interface Props {
 
 export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
   const [noteDraft, setNoteDraft] = useState(lead.note ?? "");
-  const [added, setAdded] = useState(false);
+  const [added, setAdded] = useState(!!lead.promotedToContactId);
   const [addingContact, setAddingContact] = useState(false);
   const mentionedNames = extractLeadNames(lead);
   const [contactName, setContactName] = useState(mentionedNames[0] ?? "");
 
   async function submitAddContact() {
     if (!contactName.trim()) return;
-    await fetch("/api/contacts", {
+    const res = await fetch("/api/contacts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -48,6 +48,12 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
         stage: "Prospect",
         initialNote: `Sourced from lead: ${lead.title} (${lead.link})`,
       }),
+    });
+    const created = await res.json();
+    await fetch(`/api/leads/${lead.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ promotedToContactId: created.id }),
     });
     setAdded(true);
     setAddingContact(false);
