@@ -127,7 +127,7 @@ export default function Home() {
   }, [leads]);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-6xl px-4 py-8">
       {showBrief && brief && (
         <DailyBrief
           data={brief}
@@ -138,15 +138,14 @@ export default function Home() {
 
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-widest text-gold-500">
-            Columbus / Central Ohio
-          </p>
+          <p className="text-xs uppercase tracking-widest text-gold-500">Prospect Discovery</p>
           <h1 className="font-serif text-3xl font-semibold text-gray-100">
-            Private Client Prospecting Hub
+            Sourcing, Filtering &amp; Ranking
           </h1>
           <p className="mt-1 text-sm text-gray-400">
             Auto-tracked signals: liquidity events, executive changes, M&amp;A / buyouts, and
-            new-firm expansions in the region.
+            new-firm expansions in the region — rule-based sourcing and relevance scoring, not
+            an LLM-driven model.
           </p>
         </div>
         <button

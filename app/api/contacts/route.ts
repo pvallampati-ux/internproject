@@ -20,6 +20,8 @@ export async function POST(request: Request) {
     cadenceDays: typeof body.cadenceDays === "number" ? body.cadenceDays : 30,
     stage,
     initialNote: typeof body.initialNote === "string" ? body.initialNote : undefined,
+    estimatedValue: typeof body.estimatedValue === "number" ? body.estimatedValue : undefined,
+    referredBy: typeof body.referredBy === "string" ? body.referredBy : undefined,
   });
 
   return NextResponse.json(contact, { status: 201 });

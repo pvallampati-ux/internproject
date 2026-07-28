@@ -32,4 +32,6 @@ export interface Contact {
   cadenceDays: number; // how often you want to be in touch
   stage: PipelineStage;
   noteLog: NoteEntry[];
+  estimatedValue?: number; // rough opportunity size, e.g. estimated investable assets ($)
+  referredBy?: string; // free text: who/what referred this contact
 }

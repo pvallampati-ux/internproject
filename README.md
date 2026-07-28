@@ -1,13 +1,25 @@
 # Private Client Prospecting Hub
 
-A Columbus / Central Ohio prospecting dashboard that tracks public news for
-four signal types: **liquidity events**, **executive changes**,
-**M&A / buyouts**, and **new firm / expansion** announcements.
+A Columbus / Central Ohio prospecting platform organized into six modules,
+navigable via the top nav bar:
+
+| Tab | Route | What it does |
+|---|---|---|
+| Prospect Discovery | `/` | News-based lead sourcing, filtering, and scoring |
+| Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map |
+| Engagement | `/engagement` | Meeting prep, outreach queue, follow-ups/cooling leads |
+| Pipeline | `/pipeline` | Prospect → Client Kanban/funnel, deal value, referral source |
+| Market Insights | `/market-insights` | **Not built yet** — stub page, see below |
+| Analytics | `/analytics` | **Not built yet** — stub page, see below |
 
 This is a personal prototype built on free, public data sources. It is not
 connected to any JPMorgan internal system, licensed data feed, or CRM —
 treat any real prospect data you load into it according to your firm's
 data-handling and compliance policies before using it beyond a personal demo.
+It's also worth being direct about scope: nothing here is AI/ML-driven —
+"sourcing, filtering, and ranking" is keyword/rule-based, and "relationship
+mapping" is regex-based proper-noun overlap, not a real graph or NLP model.
+See "Known limitations" below for the full list of what's simulated vs. real.
 
 ## How it works
 
@@ -30,12 +42,17 @@ data-handling and compliance policies before using it beyond a personal demo.
    with a pipeline stage (Prospect → Contacted → Meeting → Proposal → Client),
    a contact cadence (e.g. "every 30 days"), keyword tags used to match them
    against incoming leads, and a timestamped note log.
-6. The **Pipeline** page (`/pipeline`) is the client hub: a Kanban-style
-   board by stage, add/edit contacts, log notes, mark contacted, and see
-   possible warm intros.
-7. The **Map** page (`/map`) plots recent leads on a static, self-contained
-   Central Ohio scatter map by matched town.
-8. `lib/dailyBrief.ts` combines everything into a "Today's Brief": contacts
+6. The **Pipeline** page (`/pipeline`) is the client hub: a connected funnel
+   + Kanban board by stage, add/edit contacts (including estimated deal
+   value and referral source), log notes, mark contacted, and see possible
+   warm intros. A separate **Cold** section holds contacts who've gone quiet.
+7. The **Intelligence** page (`/intelligence`) surfaces liquidity-event
+   leads, the warm-intro finder, and a static regional map plotting leads by
+   matched town — no live/interactive map, no map API, no cost.
+8. The **Engagement** page (`/engagement`) has a meeting-prep panel (pick a
+   contact, see their full note history plus any leads matching their tags),
+   an outreach queue of overdue contacts, and follow-ups/cooling leads.
+9. `lib/dailyBrief.ts` combines everything into a "Today's Brief": contacts
    overdue for outreach, saved leads with no note yet ("follow up on"),
    saved leads with a stale note ("cooling"), recent leads matching a
    contact's tags ("market events affecting your clients"), and possible
@@ -44,9 +61,9 @@ data-handling and compliance policies before using it beyond a personal demo.
 
 No sample/demo data ships in this repo — `data/leads.json` and
 `data/contacts.json` both start empty and are git-ignored (local-only).
-The dashboard, pipeline, map, and daily brief show nothing until you run a
-real refresh (`npm run refresh` or the "Refresh feeds" button) and add real
-contacts on the Pipeline page.
+Every tab and the daily brief show nothing until you run a real refresh
+(`npm run refresh` or the "Refresh feeds" button) and add real contacts on
+the Pipeline page.
 
 ## Running it
 
@@ -171,14 +188,32 @@ catching Form D private placements and 8-K/13D filings, but it returns JSON
 in a different shape than RSS, so it needs its own fetch/parse function
 rather than reusing the RSS path.
 
-## The lead map
+## The regional map (Intelligence tab)
 
-`/map` plots leads from the last 90 days using approximate town-center
-coordinates for each suburb in `REGION_TERMS` (`lib/geo.ts`). It's a static
-SVG scatter plot, not a real interactive/tile-based map — no external map
-provider, no API key, no cost, works fully offline. Leads that only matched
-a generic term ("Central Ohio," a county name) can't be pinpointed to a
-town and are called out as unmapped rather than guessed at.
+`/intelligence` plots leads from the last 90 days using approximate
+town-center coordinates for each suburb in `REGION_TERMS` (`lib/geo.ts`).
+It's a static SVG scatter plot, not a real interactive/tile-based map — no
+external map provider, no API key, no cost, works fully offline. Leads that
+only matched a generic term ("Central Ohio," a county name) can't be
+pinpointed to a town and are called out as unmapped rather than guessed at.
+
+## Deal value and referral source (Pipeline tab)
+
+Contacts optionally carry `estimatedValue` (a number, e.g. estimated
+investable assets) and `referredBy` (free text). Set them when adding a
+contact or editing one; the Pipeline funnel header rolls them up into a
+per-stage total and an "Active pipeline value" figure. These two fields are
+also what a future Analytics module would report on — see below.
+
+## Market Insights and Analytics (not built)
+
+`/market-insights` and `/analytics` are intentionally stub pages, not fake
+dashboards. Market Insights would need an industry/sector dimension added
+to leads and contacts (nothing currently classifies by industry, only by
+event type). Analytics would need historical snapshots — everything today
+reflects only current state, nothing tracks change over time — plus real
+usage data to be meaningful. Both are flagged honestly in-app rather than
+populated with placeholder numbers.
 
 ## Known limitations (prototype scope)
 

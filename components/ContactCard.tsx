@@ -12,6 +12,12 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(
+    value
+  );
+}
+
 export default function ContactCard({ contact, onStageChange, onMarkContacted, onAddNote }: Props) {
   const [noteDraft, setNoteDraft] = useState("");
   const [showLog, setShowLog] = useState(false);
@@ -54,6 +60,15 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
               {tag}
             </span>
           ))}
+        </div>
+      )}
+
+      {(contact.estimatedValue || contact.referredBy) && (
+        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-gray-500">
+          {contact.estimatedValue !== undefined && (
+            <span className="text-gold-400">{formatCurrency(contact.estimatedValue)}</span>
+          )}
+          {contact.referredBy && <span>Referred by {contact.referredBy}</span>}
         </div>
       )}
 

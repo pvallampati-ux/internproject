@@ -6,7 +6,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const body = await request.json();
 
   const patch: Partial<
-    Pick<Contact, "name" | "company" | "tags" | "cadenceDays" | "stage" | "lastContactedAt">
+    Pick<
+      Contact,
+      "name" | "company" | "tags" | "cadenceDays" | "stage" | "lastContactedAt" | "estimatedValue" | "referredBy"
+    >
   > = {};
   if (typeof body.lastContactedAt === "string") patch.lastContactedAt = body.lastContactedAt;
   if (typeof body.name === "string") patch.name = body.name;
@@ -14,6 +17,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (Array.isArray(body.tags)) patch.tags = body.tags;
   if (typeof body.cadenceDays === "number") patch.cadenceDays = body.cadenceDays;
   if (PIPELINE_STAGES.includes(body.stage)) patch.stage = body.stage;
+  if (typeof body.estimatedValue === "number") patch.estimatedValue = body.estimatedValue;
+  if (typeof body.referredBy === "string") patch.referredBy = body.referredBy;
 
   const updated = updateContact(id, patch);
   if (!updated) {

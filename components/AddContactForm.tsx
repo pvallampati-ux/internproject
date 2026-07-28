@@ -1,7 +1,14 @@
 import { useState } from "react";
 
 interface Props {
-  onAdd: (input: { name: string; company: string; tags: string[]; cadenceDays: number }) => void;
+  onAdd: (input: {
+    name: string;
+    company: string;
+    tags: string[];
+    cadenceDays: number;
+    estimatedValue?: number;
+    referredBy?: string;
+  }) => void;
 }
 
 export default function AddContactForm({ onAdd }: Props) {
@@ -9,6 +16,8 @@ export default function AddContactForm({ onAdd }: Props) {
   const [company, setCompany] = useState("");
   const [tags, setTags] = useState("");
   const [cadenceDays, setCadenceDays] = useState(30);
+  const [estimatedValue, setEstimatedValue] = useState("");
+  const [referredBy, setReferredBy] = useState("");
   const [open, setOpen] = useState(false);
 
   function submit() {
@@ -21,11 +30,15 @@ export default function AddContactForm({ onAdd }: Props) {
         .map((t) => t.trim())
         .filter(Boolean),
       cadenceDays,
+      estimatedValue: estimatedValue ? Number(estimatedValue) : undefined,
+      referredBy: referredBy.trim() || undefined,
     });
     setName("");
     setCompany("");
     setTags("");
     setCadenceDays(30);
+    setEstimatedValue("");
+    setReferredBy("");
     setOpen(false);
   }
 
@@ -66,6 +79,19 @@ export default function AddContactForm({ onAdd }: Props) {
           value={cadenceDays}
           onChange={(e) => setCadenceDays(Number(e.target.value))}
           placeholder="Contact every N days"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+        />
+        <input
+          type="number"
+          value={estimatedValue}
+          onChange={(e) => setEstimatedValue(e.target.value)}
+          placeholder="Estimated opportunity value ($, optional)"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+        />
+        <input
+          value={referredBy}
+          onChange={(e) => setReferredBy(e.target.value)}
+          placeholder="Referred by (optional)"
           className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
         />
       </div>

@@ -47,6 +47,8 @@ export function createContact(input: {
   cadenceDays: number;
   stage?: PipelineStage;
   initialNote?: string;
+  estimatedValue?: number;
+  referredBy?: string;
 }): Contact {
   const contacts = loadContacts();
   const now = new Date().toISOString();
@@ -59,6 +61,8 @@ export function createContact(input: {
     cadenceDays: input.cadenceDays,
     stage: input.stage ?? "Prospect",
     noteLog: input.initialNote ? [{ date: now, text: input.initialNote }] : [],
+    estimatedValue: input.estimatedValue,
+    referredBy: input.referredBy,
   };
   contacts.push(contact);
   saveContacts(contacts);
@@ -67,7 +71,12 @@ export function createContact(input: {
 
 export function updateContact(
   id: string,
-  patch: Partial<Pick<Contact, "name" | "company" | "tags" | "cadenceDays" | "stage" | "lastContactedAt">>
+  patch: Partial<
+    Pick<
+      Contact,
+      "name" | "company" | "tags" | "cadenceDays" | "stage" | "lastContactedAt" | "estimatedValue" | "referredBy"
+    >
+  >
 ): Contact | null {
   const contacts = loadContacts();
   const idx = contacts.findIndex((c) => c.id === id);

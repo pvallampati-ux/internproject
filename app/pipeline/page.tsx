@@ -66,6 +66,8 @@ export default function PipelinePage() {
     company: string;
     tags: string[];
     cadenceDays: number;
+    estimatedValue?: number;
+    referredBy?: string;
   }) {
     const res = await fetch("/api/contacts", {
       method: "POST",
@@ -82,6 +84,15 @@ export default function PipelinePage() {
     [...JOURNEY_STAGES, "Cold" as const].map((stage) => [
       stage,
       contacts.filter((c) => c.stage === stage).length,
+    ])
+  ) as Record<PipelineStage, number>;
+
+  const values = Object.fromEntries(
+    [...JOURNEY_STAGES, "Cold" as const].map((stage) => [
+      stage,
+      contacts
+        .filter((c) => c.stage === stage)
+        .reduce((sum, c) => sum + (c.estimatedValue ?? 0), 0),
     ])
   ) as Record<PipelineStage, number>;
 
@@ -122,7 +133,7 @@ export default function PipelinePage() {
       ) : (
         <>
           <div className="mb-6">
-            <PipelineFunnel counts={counts} />
+            <PipelineFunnel counts={counts} values={values} />
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
