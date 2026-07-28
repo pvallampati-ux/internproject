@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import GlobalSearch from "@/components/GlobalSearch";
 
 const LINKS = [
   { href: "/", label: "Home" },
@@ -20,10 +21,11 @@ export default function NavBar() {
   return (
     <nav className="border-b border-charcoal-700 bg-charcoal-950">
       <div className="mx-auto max-w-6xl px-4">
-        <div className="flex items-center justify-between border-b border-charcoal-800 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-charcoal-800 py-2">
           <span className="font-serif text-sm font-semibold tracking-wide text-gray-200">
             Private Client Prospecting Hub
           </span>
+          <GlobalSearch />
           <span className="text-xs uppercase tracking-widest text-gold-500">
             Columbus / Central Ohio
           </span>

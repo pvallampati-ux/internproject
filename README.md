@@ -19,6 +19,12 @@ Pipeline or the daily brief to open it. That's the CRM-360 view: editable
 details, cadence/touchpoints, email actions, conversation log, and AI
 Meeting Prep in one place.
 
+The nav bar itself has a **contact search** (`components/GlobalSearch.tsx`)
+on every page — type a name, company, or tag and jump straight to that
+person's profile. This is separate from the headline search on Discovery
+and the event search on Calendar, which search leads/events rather than
+contacts.
+
 ### Home page (`/`)
 
 The landing page is a dashboard, not the news feed (that moved to
