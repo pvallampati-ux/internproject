@@ -24,7 +24,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       href={lead.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="block rounded-lg border border-navy-700 bg-navy-800 p-4 transition hover:border-gold-500/60 hover:bg-navy-700"
+      className="block rounded-lg border border-charcoal-700 bg-charcoal-800 p-4 transition hover:border-gold-500/60 hover:bg-charcoal-700"
     >
       <div className="flex flex-wrap gap-2">
         {lead.categories.map((c) => (
@@ -36,7 +36,7 @@ export default function LeadCard({ lead }: { lead: Lead }) {
           </span>
         ))}
       </div>
-      <h3 className="mt-2 text-base font-semibold text-gray-100">{lead.title}</h3>
+      <h3 className="mt-2 font-serif text-base font-semibold text-gray-100">{lead.title}</h3>
       {lead.snippet && (
         <p className="mt-1 line-clamp-2 text-sm text-gray-400">{lead.snippet}</p>
       )}

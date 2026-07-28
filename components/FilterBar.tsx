@@ -24,14 +24,14 @@ export default function FilterBar({
   refreshing,
 }: Props) {
   return (
-    <div className="flex flex-col gap-3 border-b border-navy-700 pb-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 border-b border-charcoal-700 pb-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => onCategoryChange(null)}
           className={`rounded-full border px-3 py-1 text-sm ${
             activeCategory === null
               ? "border-gold-500 bg-gold-500/10 text-gold-400"
-              : "border-navy-700 text-gray-400 hover:border-gray-500"
+              : "border-charcoal-700 text-gray-400 hover:border-gray-500"
           }`}
         >
           All
@@ -43,7 +43,7 @@ export default function FilterBar({
             className={`rounded-full border px-3 py-1 text-sm ${
               activeCategory === c
                 ? "border-gold-500 bg-gold-500/10 text-gold-400"
-                : "border-navy-700 text-gray-400 hover:border-gray-500"
+                : "border-charcoal-700 text-gray-400 hover:border-gray-500"
             }`}
           >
             {c}
@@ -57,12 +57,12 @@ export default function FilterBar({
           placeholder="Search headlines..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="rounded-md border border-navy-700 bg-navy-900 px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:border-gold-500 focus:outline-none"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:border-gold-500 focus:outline-none"
         />
         <select
           value={days}
           onChange={(e) => onDaysChange(Number(e.target.value))}
-          className="rounded-md border border-navy-700 bg-navy-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
         >
           {DAY_OPTIONS.map((d) => (
             <option key={d} value={d}>
@@ -73,7 +73,7 @@ export default function FilterBar({
         <button
           onClick={onRefresh}
           disabled={refreshing}
-          className="rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-navy-950 hover:bg-gold-400 disabled:opacity-50"
+          className="rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
         >
           {refreshing ? "Refreshing..." : "Refresh feeds"}
         </button>

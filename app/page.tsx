@@ -68,7 +68,7 @@ export default function Home() {
         <p className="text-xs uppercase tracking-widest text-gold-500">
           Columbus / Central Ohio
         </p>
-        <h1 className="text-2xl font-semibold text-gray-100">
+        <h1 className="font-serif text-3xl font-semibold text-gray-100">
           Private Client Prospecting Hub
         </h1>
         <p className="mt-1 text-sm text-gray-400">

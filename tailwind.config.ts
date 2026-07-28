@@ -5,11 +5,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: "#0a0f1f",
-          900: "#0d1526",
-          800: "#121b30",
-          700: "#1a2540",
+        charcoal: {
+          950: "#0a0a0a",
+          900: "#141414",
+          800: "#1e1e1e",
+          700: "#2a2a2a",
         },
         gold: {
           400: "#d4af6a",
