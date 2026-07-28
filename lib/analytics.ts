@@ -9,7 +9,10 @@ export interface AnalyticsSummary {
   totalCapturedWalletShare: number;
   totalWealthGap: number;
   meetingsThisMonth: number;
+  callsThisMonth: number;
+  emailsThisMonth: number;
   needsOutreach: number;
+  coolingRelationships: number;
   referredContacts: number;
   warmReferrals: number; // referredByContactId set — a reliable, structured referral link
   conversionRate: number | null; // Client / (Client + Cold); null if there's no data either way yet
@@ -43,26 +46,36 @@ export function computeAnalytics(): AnalyticsSummary {
     return sum + Math.max(0, c.estimatedValue - (c.currentWalletShare ?? 0));
   }, 0);
 
-  const meetingsThisMonth = contacts.reduce((count, c) => {
-    return (
-      count +
-      c.noteLog.filter((n) => {
-        if (n.type !== "meeting") return false;
-        const d = new Date(n.date);
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-      }).length
-    );
-  }, 0);
+  function notesThisMonthOfType(type: "meeting" | "call" | "email"): number {
+    return contacts.reduce((count, c) => {
+      return (
+        count +
+        c.noteLog.filter((n) => {
+          if (n.type !== type) return false;
+          const d = new Date(n.date);
+          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+        }).length
+      );
+    }, 0);
+  }
+  const meetingsThisMonth = notesThisMonthOfType("meeting");
+  const callsThisMonth = notesThisMonthOfType("call");
+  const emailsThisMonth = notesThisMonthOfType("email");
 
   // Same "overdue for outreach" rule as the Home page / Daily Brief —
-  // Cold contacts are off the active journey and don't count.
-  const needsOutreach = contacts.filter((c) => {
-    if (c.stage === "Cold") return false;
-    const daysSinceContact = Math.floor(
-      (now.getTime() - new Date(c.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return daysSinceContact >= c.cadenceDays;
-  }).length;
+  // Cold contacts are off the active journey and don't count. Cooling
+  // relationships (45+ days overdue) is the same longer-threshold split
+  // used on the Engage page.
+  const daysOverdueByContact = contacts
+    .filter((c) => c.stage !== "Cold")
+    .map((c) => {
+      const daysSinceContact = Math.floor(
+        (now.getTime() - new Date(c.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return daysSinceContact - c.cadenceDays;
+    });
+  const needsOutreach = daysOverdueByContact.filter((d) => d >= 0).length;
+  const coolingRelationships = daysOverdueByContact.filter((d) => d >= 45).length;
 
   const referredContacts = contacts.filter((c) => c.referredBy).length;
   const warmReferrals = contacts.filter((c) => c.referredByContactId).length;
@@ -102,7 +115,10 @@ export function computeAnalytics(): AnalyticsSummary {
     totalCapturedWalletShare,
     totalWealthGap,
     meetingsThisMonth,
+    callsThisMonth,
+    emailsThisMonth,
     needsOutreach,
+    coolingRelationships,
     referredContacts,
     warmReferrals,
     conversionRate,

@@ -10,6 +10,7 @@ import { assessRelationshipHealth } from "@/lib/relationshipHealth";
 import { detectLifeStage } from "@/lib/lifeStages";
 import { calculateProspectScore } from "@/lib/prospectScore";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
+import type { WhyNowResult } from "@/lib/whyNowScore";
 
 const HEALTH_DOT: Record<string, string> = {
   Strong: "bg-emerald-400",
@@ -27,10 +28,23 @@ const SCORE_BAND_STYLES: Record<string, string> = {
 
 interface Props {
   contact: Contact;
+  whyNow?: WhyNowResult;
   onStageChange: (id: string, stage: PipelineStage) => void;
   onMarkContacted: (id: string) => void;
   onAddNote: (id: string, text: string) => void;
 }
+
+function whyNowBand(score: number): "High" | "Medium" | "Low" {
+  if (score >= 40) return "High";
+  if (score >= 15) return "Medium";
+  return "Low";
+}
+
+const WHY_NOW_STYLES: Record<string, string> = {
+  High: "border-red-500/50 bg-red-500/10 text-red-400",
+  Medium: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+  Low: "border-gray-500/50 bg-gray-500/10 text-gray-400",
+};
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -42,7 +56,7 @@ function formatCurrency(value: number): string {
   );
 }
 
-export default function ContactCard({ contact, onStageChange, onMarkContacted, onAddNote }: Props) {
+export default function ContactCard({ contact, whyNow, onStageChange, onMarkContacted, onAddNote }: Props) {
   const [noteDraft, setNoteDraft] = useState("");
   const [showLog, setShowLog] = useState(false);
   const { openDrawer } = useContactDrawer();
@@ -88,6 +102,17 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
         )}
       </div>
       {contact.company && <p className="truncate text-sm text-gray-400">{contact.company}</p>}
+      {whyNow && whyNow.score > 0 && (
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span
+            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${WHY_NOW_STYLES[whyNowBand(whyNow.score)]}`}
+            title={whyNow.reasoning.join("; ")}
+          >
+            {whyNow.score}
+          </span>
+          <p className="truncate text-[11px] text-gray-500">{whyNow.recommendedAction}</p>
+        </div>
+      )}
 
       {/* Full detail — revealed on hover, positioned to overlay rather than
           push the column layout around. */}

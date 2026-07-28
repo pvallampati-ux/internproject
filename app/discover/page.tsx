@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import LeadCard from "@/components/LeadCard";
 import type { Lead } from "@/lib/store";
+import type { Contact } from "@/lib/contactTypes";
 import type { Category } from "@/lib/config";
+import { WEALTH_EVENT_CATEGORIES } from "@/lib/config";
+import { matchLeadsToContact } from "@/lib/relevantLeads";
+import { extractLeadNames } from "@/lib/prospectDiscovery";
 
 export default function DiscoveryPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
@@ -32,6 +38,13 @@ export default function DiscoveryPage() {
     loadLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, days, search, savedOnly]);
+
+  useEffect(() => {
+    fetch("/api/contacts")
+      .then((res) => res.json())
+      .then((data) => setContacts(data.contacts ?? []))
+      .catch(() => {});
+  }, []);
 
   async function handleToggleSave(id: string, saved: boolean) {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, saved } : l)));
@@ -72,15 +85,26 @@ export default function DiscoveryPage() {
     }
   }
 
-  const counts = useMemo(() => {
-    const byCategory: Record<string, number> = {};
-    for (const lead of leads) {
-      for (const c of lead.categories) {
-        byCategory[c] = (byCategory[c] ?? 0) + 1;
-      }
+  // Triage: high-priority = wealth-event category with a name identified in
+  // the headline/snippet — the ones actually worth acting on today, not
+  // just background noise. Matched = affects a contact already on file.
+  const matchedLeadIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const contact of contacts) {
+      for (const lead of matchLeadsToContact(contact, leads)) ids.add(lead.id);
     }
-    return byCategory;
-  }, [leads]);
+    return ids;
+  }, [contacts, leads]);
+
+  const highPriority = useMemo(
+    () =>
+      leads.filter(
+        (l) => l.categories.some((c) => WEALTH_EVENT_CATEGORIES.includes(c)) && extractLeadNames(l).length > 0
+      ),
+    [leads]
+  );
+  const highPriorityIds = new Set(highPriority.map((l) => l.id));
+  const remainingLeads = leads.filter((l) => !highPriorityIds.has(l.id));
 
   return (
     <main className="mx-auto max-w-[1600px] px-6 py-8">
@@ -95,13 +119,21 @@ export default function DiscoveryPage() {
             not an LLM model.
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="shrink-0 rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
-        >
-          {refreshing ? "Refreshing..." : "Refresh feeds"}
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <Link
+            href="/pipeline"
+            className="rounded-md border border-charcoal-700 px-3 py-1.5 text-sm text-gray-300 hover:border-gold-500/50 hover:text-gold-400"
+          >
+            + Add Prospect
+          </Link>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
+          >
+            {refreshing ? "Refreshing..." : "Refresh feeds"}
+          </button>
+        </div>
       </header>
 
       {refreshMessage && (
@@ -119,35 +151,61 @@ export default function DiscoveryPage() {
         onSavedOnlyChange={setSavedOnly}
       />
 
-      <div className="mt-4 flex gap-4 text-xs text-gray-500">
-        <span>{leads.length} leads shown</span>
-        {Object.entries(counts).map(([c, n]) => (
-          <span key={c}>
-            {c}: {n}
-          </span>
-        ))}
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:max-w-xl">
+        <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-2.5 text-center">
+          <p className="font-serif text-lg text-gray-100">{leads.length}</p>
+          <p className="text-[11px] text-gray-500">New opportunities</p>
+        </div>
+        <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-2.5 text-center">
+          <p className="font-serif text-lg text-red-400">{highPriority.length}</p>
+          <p className="text-[11px] text-gray-500">High priority</p>
+        </div>
+        <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-2.5 text-center">
+          <p className="font-serif text-lg text-gray-100">{matchedLeadIds.size}</p>
+          <p className="text-[11px] text-gray-500">Matched contacts</p>
+        </div>
+        <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-2.5 text-center">
+          <p className="font-serif text-lg text-gray-100">{leads.length - matchedLeadIds.size}</p>
+          <p className="text-[11px] text-gray-500">Unmatched</p>
+        </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {loading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
-        ) : leads.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No leads yet. Click &ldquo;Refresh feeds&rdquo; to pull the latest real news, or run
-            it from the command line with <code className="text-gray-400">npm run refresh</code>.
-            Nothing here is sample/fake data — this stays empty until a real fetch succeeds.
-          </p>
-        ) : (
-          leads.map((lead) => (
-            <LeadCard
-              key={lead.id}
-              lead={lead}
-              onToggleSave={handleToggleSave}
-              onSaveNote={handleSaveNote}
-            />
-          ))
-        )}
-      </div>
+      {loading ? (
+        <p className="mt-4 text-sm text-gray-500">Loading...</p>
+      ) : leads.length === 0 ? (
+        <p className="mt-4 text-sm text-gray-500">
+          No leads yet. Click &ldquo;Refresh feeds&rdquo; to pull the latest real news, or run
+          it from the command line with <code className="text-gray-400">npm run refresh</code>.
+          Nothing here is sample/fake data — this stays empty until a real fetch succeeds.
+        </p>
+      ) : (
+        <>
+          {highPriority.length > 0 && (
+            <section className="mt-6">
+              <h2 className="font-serif text-lg text-gray-100">
+                High-Priority Opportunities ({highPriority.length})
+              </h2>
+              <p className="mt-1 text-xs text-gray-500">
+                Wealth-event category with a name identified — worth acting on today.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {highPriority.map((lead) => (
+                  <LeadCard key={lead.id} lead={lead} onToggleSave={handleToggleSave} onSaveNote={handleSaveNote} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="mt-6">
+            <h2 className="font-serif text-lg text-gray-100">Opportunity Feed ({remainingLeads.length})</h2>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {remainingLeads.map((lead) => (
+                <LeadCard key={lead.id} lead={lead} onToggleSave={handleToggleSave} onSaveNote={handleSaveNote} />
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </main>
   );
 }

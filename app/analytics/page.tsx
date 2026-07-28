@@ -40,11 +40,10 @@ export default function AnalyticsPage() {
     <main className="mx-auto max-w-[1600px] px-6 py-8">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-widest text-gold-500">Analytics</p>
-        <h1 className="font-serif text-3xl font-semibold text-gray-100">Pipeline &amp; Sourcing KPIs</h1>
+        <h1 className="font-serif text-3xl font-semibold text-gray-100">How is activity converting?</h1>
         <p className="mt-1 text-sm text-gray-400">
-          Computed live from current data — everything here is current-state, not a historical
-          trend (this app doesn&rsquo;t take periodic snapshots, so nothing tracks change over
-          time yet).
+          Computed live from current data — current-state, not a historical trend (no periodic
+          snapshots are taken, so nothing tracks change over time yet).
         </p>
       </header>
 
@@ -52,41 +51,57 @@ export default function AnalyticsPage() {
         <p className="text-sm text-gray-500">Loading...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            <KpiCard label="Prospects &amp; Clients" value={String(data.totalContacts)} />
-            <KpiCard
-              label="Meetings this month"
-              value={String(data.meetingsThisMonth)}
-              sub="From notes logged as type 'meeting'"
-            />
-            <KpiCard label="Pipeline value" value={formatCurrency(data.totalEstimatedWealth)} sub="Sum of estimated wealth" />
-            <KpiCard
-              label="Wealth gap (opportunity)"
-              value={formatCurrency(data.totalWealthGap)}
-              sub="Estimated wealth not yet captured"
-            />
-            <KpiCard label="Captured wallet share" value={formatCurrency(data.totalCapturedWalletShare)} />
-            <KpiCard
-              label="Needs outreach"
-              value={String(data.needsOutreach)}
-              sub="Overdue on their contact cadence"
-            />
-            <KpiCard
-              label="Referrals"
-              value={String(data.referredContacts)}
-              sub={`${data.warmReferrals} linked to a tracked contact`}
-            />
-            <KpiCard
-              label="Client conversion"
-              value={formatPercent(data.conversionRate)}
-              sub="Client ÷ (Client + Cold)"
-            />
-            <KpiCard
-              label="Referral conversion"
-              value={formatPercent(data.referralConversionRate)}
-              sub="Of referred contacts, % now Client"
-            />
-          </div>
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Activity this month</h2>
+            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <KpiCard label="Meetings" value={String(data.meetingsThisMonth)} sub="Notes logged as type 'meeting'" />
+              <KpiCard label="Calls" value={String(data.callsThisMonth)} sub="Notes logged as type 'call'" />
+              <KpiCard label="Emails" value={String(data.emailsThisMonth)} sub="Notes logged as type 'email'" />
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Relationship cadence</h2>
+            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <KpiCard label="Prospects &amp; Clients" value={String(data.totalContacts)} />
+              <KpiCard label="Needs outreach" value={String(data.needsOutreach)} sub="Overdue on their own cadence" />
+              <KpiCard label="Cooling relationships" value={String(data.coolingRelationships)} sub="45+ days overdue" />
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Pipeline performance</h2>
+            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <KpiCard label="Pipeline value" value={formatCurrency(data.totalEstimatedWealth)} sub="Sum of estimated wealth" />
+              <KpiCard
+                label="Wealth gap"
+                value={formatCurrency(data.totalWealthGap)}
+                sub="Estimated wealth not yet captured"
+              />
+              <KpiCard label="Captured wallet share" value={formatCurrency(data.totalCapturedWalletShare)} />
+              <KpiCard
+                label="Client conversion"
+                value={formatPercent(data.conversionRate)}
+                sub="Client ÷ (Client + Cold)"
+              />
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Referral performance</h2>
+            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <KpiCard
+                label="Referrals"
+                value={String(data.referredContacts)}
+                sub={`${data.warmReferrals} linked to a tracked contact`}
+              />
+              <KpiCard
+                label="Referral conversion"
+                value={formatPercent(data.referralConversionRate)}
+                sub="Of referred contacts, % now Client"
+              />
+            </div>
+          </section>
 
           <section className="mt-8">
             <h2 className="font-serif text-lg text-gray-100">Pipeline by stage</h2>
@@ -172,8 +187,12 @@ export default function AnalyticsPage() {
 
           <p className="mt-8 text-xs text-gray-600">
             Not here yet, honestly: pipeline/revenue by banker or office (this is a single-user
-            app — there&rsquo;s only one banker and one office), and any trend-over-time chart
-            (would need periodic historical snapshots, which nothing in this app takes today).
+            app — there&rsquo;s only one banker and one office); any trend-over-time chart (would
+            need periodic historical snapshots, which nothing in this app takes today);
+            introduction-request tracking (Network&rsquo;s intro paths aren&rsquo;t logged as
+            sent/accepted anywhere yet); and an "Efficiency" section (time saved, adoption) —
+            there&rsquo;s no real baseline to measure either against, so a number there would be
+            invented, not measured.
           </p>
         </>
       )}

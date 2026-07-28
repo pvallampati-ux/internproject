@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ContactCard from "@/components/ContactCard";
 import AddContactForm from "@/components/AddContactForm";
@@ -8,9 +8,18 @@ import PipelineFunnel from "@/components/PipelineFunnel";
 import ContactFilterBar from "@/components/ContactFilterBar";
 import { JOURNEY_STAGES, type Contact, type PipelineStage } from "@/lib/contactTypes";
 import { EMPTY_CONTACT_FILTERS, applyContactFilters, isFiltersActive, type ContactFilters } from "@/lib/contactFilters";
+import { calculateWhyNowScore, type WhyNowResult } from "@/lib/whyNowScore";
+import type { Lead } from "@/lib/store";
+
+function formatCurrency(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
+  return `$${value}`;
+}
 
 export default function PipelinePage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
   const [filters, setFilters] = useState<ContactFilters>(EMPTY_CONTACT_FILTERS);
@@ -24,9 +33,14 @@ export default function PipelinePage() {
 
   async function loadAll() {
     setLoading(true);
-    const contactsRes = await fetch("/api/contacts");
+    const [contactsRes, leadsRes] = await Promise.all([
+      fetch("/api/contacts"),
+      fetch("/api/leads?days=90"),
+    ]);
     const contactsData = await contactsRes.json();
+    const leadsData = await leadsRes.json();
     setContacts(contactsData.contacts ?? []);
+    setLeads(leadsData.leads ?? []);
     setLoading(false);
   }
 
@@ -89,6 +103,19 @@ export default function PipelinePage() {
   const filteredContacts = applyContactFilters(contacts, filters);
   const coldContacts = filteredContacts.filter((c) => c.stage === "Cold");
 
+  const whyNowByContactId = useMemo(() => {
+    const map = new Map<string, WhyNowResult>();
+    for (const c of contacts) {
+      if (c.stage === "Cold") continue;
+      map.set(c.id, calculateWhyNowScore(c, contacts, leads));
+    }
+    return map;
+  }, [contacts, leads]);
+
+  const activeContacts = filteredContacts.filter((c) => c.stage !== "Client" && c.stage !== "Cold");
+  const activePipelineValue = activeContacts.reduce((sum, c) => sum + (c.estimatedValue ?? 0), 0);
+  const highPriorityCount = activeContacts.filter((c) => (whyNowByContactId.get(c.id)?.score ?? 0) >= 40).length;
+
   const counts = Object.fromEntries(
     [...JOURNEY_STAGES, "Cold" as const].map((stage) => [
       stage,
@@ -112,8 +139,8 @@ export default function PipelinePage() {
         <h1 className="font-serif text-3xl font-semibold text-gray-100">Prospect to Client</h1>
         <p className="mt-1 text-sm text-gray-400">
           Track relationships through each stage and log meeting notes. Warm intros:{" "}
-          <Link href="/research" className="text-gold-400 hover:underline">
-            Intelligence →
+          <Link href="/network" className="text-gold-400 hover:underline">
+            Network →
           </Link>
         </p>
       </header>
@@ -135,6 +162,21 @@ export default function PipelinePage() {
               Showing {filteredContacts.length} of {contacts.length} contacts matching the active filters.
             </p>
           )}
+
+          <div className="mb-6 grid grid-cols-3 gap-3 sm:max-w-md">
+            <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-3 text-center">
+              <p className="font-serif text-xl text-gray-100">{formatCurrency(activePipelineValue)}</p>
+              <p className="text-[11px] text-gray-500">Active pipeline</p>
+            </div>
+            <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-3 text-center">
+              <p className="font-serif text-xl text-gray-100">{activeContacts.length}</p>
+              <p className="text-[11px] text-gray-500">Opportunities</p>
+            </div>
+            <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-3 text-center">
+              <p className="font-serif text-xl text-gray-100">{highPriorityCount}</p>
+              <p className="text-[11px] text-gray-500">High priority</p>
+            </div>
+          </div>
 
           <div className="mb-6">
             <PipelineFunnel counts={counts} values={values} />
@@ -162,6 +204,7 @@ export default function PipelinePage() {
                       <ContactCard
                         key={contact.id}
                         contact={contact}
+                        whyNow={whyNowByContactId.get(contact.id)}
                         onStageChange={handleStageChange}
                         onMarkContacted={handleMarkContacted}
                         onAddNote={handleAddNote}
@@ -178,7 +221,7 @@ export default function PipelinePage() {
             })}
           </div>
 
-          <section
+          <details
             onDragOver={(e) => e.preventDefault()}
             onDragEnter={() => setDragOverStage("Cold")}
             onDragLeave={() => setDragOverStage((prev) => (prev === "Cold" ? null : prev))}
@@ -187,9 +230,9 @@ export default function PipelinePage() {
               dragOverStage === "Cold" ? "bg-gold-500/10 ring-1 ring-gold-500/50" : ""
             }`}
           >
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wide text-gray-500">
               Cold / Not Converting ({coldContacts.length})
-            </h2>
+            </summary>
             <p className="mt-1 text-xs text-gray-600">
               Off the active journey — gone quiet or not moving forward. Move a contact back to
               an active stage anytime if things change.
@@ -209,7 +252,7 @@ export default function PipelinePage() {
                 ))}
               </div>
             )}
-          </section>
+          </details>
         </>
       )}
     </main>
