@@ -28,7 +28,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [view, setView] = useState<"list" | "month">("list");
+  const [view, setView] = useState<"list" | "month">("month");
   const today = new Date();
   const [monthCursor, setMonthCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(dateKey(today));

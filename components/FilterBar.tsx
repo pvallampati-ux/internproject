@@ -9,8 +9,6 @@ interface Props {
   onSearchChange: (s: string) => void;
   savedOnly: boolean;
   onSavedOnlyChange: (v: boolean) => void;
-  onRefresh: () => void;
-  refreshing: boolean;
 }
 
 const DAY_OPTIONS = [7, 14, 30, 90];
@@ -24,8 +22,6 @@ export default function FilterBar({
   onSearchChange,
   savedOnly,
   onSavedOnlyChange,
-  onRefresh,
-  refreshing,
 }: Props) {
   return (
     <div className="flex flex-col gap-3 border-b border-charcoal-700 pb-4">
@@ -93,13 +89,6 @@ export default function FilterBar({
             </option>
           ))}
         </select>
-        <button
-          onClick={onRefresh}
-          disabled={refreshing}
-          className="rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
-        >
-          {refreshing ? "Refreshing..." : "Refresh feeds"}
-        </button>
       </div>
     </div>
   );

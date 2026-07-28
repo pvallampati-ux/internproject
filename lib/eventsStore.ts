@@ -79,6 +79,20 @@ export function updateEvent(
   return events[idx];
 }
 
+// Text logged to a contact's note log when they're tagged to an event, so
+// the connection is traceable from their profile instead of only showing
+// up as an unexplained tag on the event itself.
+export function describeEventForNote(event: Pick<CalendarEvent, "title" | "date" | "location">): string {
+  const formattedDate = new Date(event.date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `Tagged to prospecting event: "${event.title}" — ${formattedDate}${
+    event.location ? ` at ${event.location}` : ""
+  }.`;
+}
+
 export function createEventsBulk(inputs: { title: string; date: string; location?: string; description?: string }[]): CalendarEvent[] {
   const events = loadEvents();
   const created = inputs.map((input) => ({

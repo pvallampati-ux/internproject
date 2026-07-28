@@ -353,8 +353,14 @@ physics simulation. It draws two kinds of edges (`lib/networkGraph.ts`):
   matches from the warm intro finder, deduped against referral edges so a
   pair already linked one way doesn't also get a second line.
 
-COI contacts render as larger nodes with a gold ring; hover any node to
-highlight just its connections, click to open that contact's profile.
+Node color follows pipeline stage, so you can tell clients from prospects
+from a cold contact at a glance: green fill/ring for **Client**, blue for
+anyone still in the pipeline (Prospect/Contacted/Meeting/Proposal), gray
+for **Cold**. The gold COI ring (and larger node size) is layered on top of
+that and is orthogonal to stage — a COI can be a client, a prospect, or
+neither. Hover any node to highlight just its connections (and see its
+stage/COI status called out below the diagram), click to open that
+contact's profile.
 
 ### Cooling leads
 
@@ -571,13 +577,25 @@ schedule) seeded from `data/events.sample.json` (tracked — ships with three
 demo events, including an Ohio State football tailgate, as an example of
 the pattern rather than confidential data).
 
-Two views, toggled with the List/Month buttons at the top: **List** is the
-original flat, chronological list. **Month** is a grid for the current
-month (prev/next/Today navigation) with up to 2 event titles per day cell
-and a "+N more" overflow indicator; clicking any day shows that day's full
-event details (same cards as list view) below the grid. Both views read
-from the same `/api/events` fetch and respect the search box — search
-narrows what shows up in either view.
+Two views, toggled with the List/Month buttons at the top — **Month** is
+the default. **List** is the original flat, chronological list. **Month**
+is a grid for the current month (prev/next/Today navigation) with up to 2
+event titles per day cell and a "+N more" overflow indicator; clicking any
+day shows that day's full event details (same cards as list view) below
+the grid. Both views read from the same `/api/events` fetch and respect
+the search box — search narrows what shows up in either view.
+
+**Tagging a contact to an event automatically logs a note on their
+profile** — "Tagged to prospecting event: `<title>` — `<date>` at
+`<location>`" — so the connection is traceable later. Opening a contact's
+profile after tagging them to something answers "why is this person
+connected to this event" without having to guess; before this, a tag was
+just a chip with no record of the reasoning. This only fires for newly
+added tags (untagging or editing other event fields doesn't touch anyone's
+notes), and it's a real `PATCH`/`POST`-time side effect
+(`lib/eventsStore.ts`'s `describeEventForNote`, wired into both
+`app/api/events/route.ts` and `app/api/events/[id]/route.ts`), not
+something simulated only in the demo data.
 
 **Upload schedule (CSV)** parses a simple CSV
 (`title,date,location,description` header, last two optional) and

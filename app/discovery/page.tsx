@@ -84,17 +84,30 @@ export default function DiscoveryPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gold-500">Prospect Discovery</p>
-        <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          Sourcing, Filtering &amp; Ranking
-        </h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Auto-tracked signals: liquidity events, executive changes, M&amp;A / buyouts, and
-          new-firm expansions in the region — rule-based sourcing and relevance scoring, not
-          an LLM-driven model.
-        </p>
+      <header className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-gold-500">Prospect Discovery</p>
+          <h1 className="font-serif text-3xl font-semibold text-gray-100">
+            Sourcing, Filtering &amp; Ranking
+          </h1>
+          <p className="mt-1 text-sm text-gray-400">
+            Auto-tracked signals: liquidity events, executive changes, M&amp;A / buyouts, and
+            new-firm expansions in the region — rule-based sourcing and relevance scoring, not
+            an LLM-driven model.
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="shrink-0 rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
+        >
+          {refreshing ? "Refreshing..." : "Refresh feeds"}
+        </button>
       </header>
+
+      {refreshMessage && (
+        <p className="mb-4 text-sm text-gray-400">{refreshMessage}</p>
+      )}
 
       <FilterBar
         activeCategory={category}
@@ -105,13 +118,7 @@ export default function DiscoveryPage() {
         onSearchChange={setSearch}
         savedOnly={savedOnly}
         onSavedOnlyChange={setSavedOnly}
-        onRefresh={handleRefresh}
-        refreshing={refreshing}
       />
-
-      {refreshMessage && (
-        <p className="mt-3 text-sm text-gray-400">{refreshMessage}</p>
-      )}
 
       <div className="mt-4 flex gap-4 text-xs text-gray-500">
         <span>{leads.length} leads shown</span>

@@ -11,6 +11,15 @@ const SIZE = 700;
 const CENTER = SIZE / 2;
 const RADIUS = SIZE / 2 - 90;
 
+// Node color follows pipeline stage — Client vs. still-a-prospect vs. Cold
+// — so the diagram distinguishes who's already a client from who isn't at
+// a glance. The gold COI ring is orthogonal (a COI can also be a client).
+function stageStyle(contact: Contact): { fill: string; stroke: string } {
+  if (contact.stage === "Client") return { fill: "#10b98133", stroke: "#10b981" };
+  if (contact.stage === "Cold") return { fill: "#6b728033", stroke: "#6b7280" };
+  return { fill: "#38bdf833", stroke: "#38bdf8" };
+}
+
 function positions(contacts: Contact[]): Map<string, { x: number; y: number }> {
   const map = new Map<string, { x: number; y: number }>();
   const n = contacts.length;
@@ -48,8 +57,29 @@ export default function NetworkGraph({ contacts, edges }: Props) {
           warm intro
         </span>
         <span className="flex items-center gap-1">
+          <span
+            className="inline-block h-3 w-3 rounded-full border-2"
+            style={{ backgroundColor: "#10b98133", borderColor: "#10b981" }}
+          />{" "}
+          Client
+        </span>
+        <span className="flex items-center gap-1">
+          <span
+            className="inline-block h-3 w-3 rounded-full border-2"
+            style={{ backgroundColor: "#38bdf833", borderColor: "#38bdf8" }}
+          />{" "}
+          Prospect (in pipeline)
+        </span>
+        <span className="flex items-center gap-1">
+          <span
+            className="inline-block h-3 w-3 rounded-full border-2"
+            style={{ backgroundColor: "#6b728033", borderColor: "#6b7280" }}
+          />{" "}
+          Cold
+        </span>
+        <span className="flex items-center gap-1">
           <span className="inline-block h-3 w-3 rounded-full border-2 border-gold-500" /> Center of
-          Influence
+          Influence (ring)
         </span>
       </div>
 
@@ -79,6 +109,7 @@ export default function NetworkGraph({ contacts, edges }: Props) {
           if (!p) return null;
           const dimmed = connectedIds && !connectedIds.has(contact.id) && selectedId !== contact.id;
           const r = contact.isCOI ? 14 : 9;
+          const { fill, stroke } = stageStyle(contact);
           return (
             <g
               key={contact.id}
@@ -92,9 +123,9 @@ export default function NetworkGraph({ contacts, edges }: Props) {
                 cx={p.x}
                 cy={p.y}
                 r={r}
-                fill={contact.isCOI ? "#c39a4f33" : "#1e1e1e"}
-                stroke={contact.isCOI ? "#c39a4f" : "#4b5563"}
-                strokeWidth={contact.isCOI ? 2 : 1.5}
+                fill={fill}
+                stroke={contact.isCOI ? "#c39a4f" : stroke}
+                strokeWidth={contact.isCOI ? 2.5 : 1.5}
               />
               <text
                 x={p.x}
@@ -112,8 +143,10 @@ export default function NetworkGraph({ contacts, edges }: Props) {
 
       {selectedId && byId.get(selectedId) && (
         <p className="mt-2 text-xs text-gray-500">
-          Hovering: <span className="text-gray-300">{byId.get(selectedId)!.name}</span> — click to
-          open their profile.
+          Hovering: <span className="text-gray-300">{byId.get(selectedId)!.name}</span>
+          {" — "}
+          {byId.get(selectedId)!.stage}
+          {byId.get(selectedId)!.isCOI ? " · COI" : ""} — click to open their profile.
         </p>
       )}
     </div>

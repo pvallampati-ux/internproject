@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { loadEvents, createEvent } from "@/lib/eventsStore";
+import { loadEvents, createEvent, describeEventForNote } from "@/lib/eventsStore";
+import { addNoteEntry } from "@/lib/contacts";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -30,13 +31,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "date is required" }, { status: 400 });
   }
 
+  const taggedContactIds = Array.isArray(body.taggedContactIds) ? body.taggedContactIds : [];
   const event = createEvent({
     title: body.title.trim(),
     date: body.date,
     location: typeof body.location === "string" ? body.location : undefined,
     description: typeof body.description === "string" ? body.description : undefined,
-    taggedContactIds: Array.isArray(body.taggedContactIds) ? body.taggedContactIds : [],
+    taggedContactIds,
   });
+
+  const noteText = describeEventForNote(event);
+  for (const contactId of taggedContactIds) {
+    addNoteEntry(contactId, noteText);
+  }
 
   return NextResponse.json(event, { status: 201 });
 }

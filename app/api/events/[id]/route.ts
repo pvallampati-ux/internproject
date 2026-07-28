@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
-import { updateEvent, type CalendarEvent } from "@/lib/eventsStore";
+import { loadEvents, updateEvent, describeEventForNote, type CalendarEvent } from "@/lib/eventsStore";
+import { addNoteEntry } from "@/lib/contacts";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const body = await request.json();
+
+  const existing = loadEvents().find((e) => e.id === id);
+  if (!existing) {
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+  }
 
   const patch: Partial<
     Pick<CalendarEvent, "title" | "date" | "location" | "description" | "taggedContactIds">
@@ -18,5 +24,18 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (!updated) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
+
+  // Only log a note for contacts newly added by this patch — untagging or
+  // an unrelated field update shouldn't re-log anything.
+  if (patch.taggedContactIds) {
+    const newlyTagged = patch.taggedContactIds.filter((cid) => !existing.taggedContactIds.includes(cid));
+    if (newlyTagged.length > 0) {
+      const noteText = describeEventForNote(updated);
+      for (const contactId of newlyTagged) {
+        addNoteEntry(contactId, noteText);
+      }
+    }
+  }
+
   return NextResponse.json(updated);
 }
