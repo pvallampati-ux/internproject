@@ -1,5 +1,4 @@
 import { loadContacts } from "./contacts";
-import { loadTasks } from "./tasksStore";
 import { PIPELINE_STAGES, type PipelineStage } from "./contactTypes";
 
 export interface AnalyticsSummary {
@@ -10,8 +9,7 @@ export interface AnalyticsSummary {
   totalCapturedWalletShare: number;
   totalWealthGap: number;
   meetingsThisMonth: number;
-  openTasks: number;
-  overdueTasks: number;
+  needsOutreach: number;
   referredContacts: number;
   warmReferrals: number; // referredByContactId set — a reliable, structured referral link
   conversionRate: number | null; // Client / (Client + Cold); null if there's no data either way yet
@@ -25,7 +23,6 @@ export interface AnalyticsSummary {
 // meeting-type notes logged this month, not a true scheduled-meeting log).
 export function computeAnalytics(): AnalyticsSummary {
   const contacts = loadContacts();
-  const tasks = loadTasks();
   const now = new Date();
 
   const countsByStage = Object.fromEntries(
@@ -57,8 +54,15 @@ export function computeAnalytics(): AnalyticsSummary {
     );
   }, 0);
 
-  const openTasks = tasks.filter((t) => !t.done).length;
-  const overdueTasks = tasks.filter((t) => !t.done && t.dueDate && new Date(t.dueDate) < now).length;
+  // Same "overdue for outreach" rule as the Home page / Daily Brief —
+  // Cold contacts are off the active journey and don't count.
+  const needsOutreach = contacts.filter((c) => {
+    if (c.stage === "Cold") return false;
+    const daysSinceContact = Math.floor(
+      (now.getTime() - new Date(c.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysSinceContact >= c.cadenceDays;
+  }).length;
 
   const referredContacts = contacts.filter((c) => c.referredBy).length;
   const warmReferrals = contacts.filter((c) => c.referredByContactId).length;
@@ -98,8 +102,7 @@ export function computeAnalytics(): AnalyticsSummary {
     totalCapturedWalletShare,
     totalWealthGap,
     meetingsThisMonth,
-    openTasks,
-    overdueTasks,
+    needsOutreach,
     referredContacts,
     warmReferrals,
     conversionRate,

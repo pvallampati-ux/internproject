@@ -1,16 +1,18 @@
 # Connect Intelligence Hub
 
-A Columbus / Central Ohio prospecting platform organized into nine modules,
-navigable via the left sidebar:
+A Columbus / Central Ohio prospecting platform focused on operational
+efficiency for prospecting and generating insights — organized into eight
+modules, navigable via the left sidebar. Deliberately **not** a task
+manager or calendar app — that's what Outlook is for; nothing here
+replicates a generic to-do list.
 
 | Tab | Route | What it does |
 |---|---|---|
-| Home | `/` | Dashboard: today's meetings (AI Meeting Prep as a popup), tasks due this week, and a persistent list of clients/prospects needing contact |
+| Home | `/` | Dashboard: Today's Focus (Why Now-scored agenda), Needs a Touch, New Opportunities, Today's Work, Relationship Opportunity, Pipeline Snapshot |
 | Prospect Discovery | `/discovery` | News-based lead sourcing, filtering, and scoring |
-| Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map, and an industry-focus filter (Healthcare / Business Owners / anything you add) for Market Insights |
+| Intelligence | `/intelligence` | Wealth/liquidity events, warm intros, a combined Prospect/Client/Lead map, and an industry-focus filter (Healthcare / Business Owners / anything you add) for Market Insights |
 | Engagement | `/engagement` | Meeting prep (+ optional AI Meeting Prep), outreach queue, follow-ups/cooling leads |
 | Pipeline | `/pipeline` | Prospect → Client Kanban/funnel (drag-and-drop or dropdown), deal value, referral source, filterable by industry/location/wealth/life stage |
-| Tasks | `/tasks` | Action items — optionally tied to a contact, with due dates |
 | COI / Network | `/coi` | Centers of Influence and a visual graph of referral/warm-intro connections, color-coded by stage |
 | Calendar | `/calendar` | Prospecting events (tailgates, networking nights) — list or monthly grid view, search, CSV schedule upload, tag prospects |
 | Analytics | `/analytics` | Real KPIs computed live from current data — see below |
@@ -18,10 +20,10 @@ navigable via the left sidebar:
 Every contact also has a profile page at `/contacts/[id]` — click any name in
 Pipeline or the daily brief to open it. That's the Client 360 view: full
 identity/firmographic detail, cadence/touchpoints, wealth gap, prospect
-score, life stage, relationship memory, similar prospects, tasks, a unified
+score, life stage, relationship memory, similar prospects, a unified
 timeline, email actions, a typed conversation log, an audit trail, and AI
-Meeting Prep — all in one place. See "Client 360 and beyond" below for the
-full rundown.
+Meeting Prep — all in one place, organized into tabs. See "Client 360 and
+beyond" below for the full rundown.
 
 The header itself has a **contact search** (`components/GlobalSearch.tsx`,
 ⌘K to focus) on every page — type a name, company, or tag and jump straight to that
@@ -32,17 +34,14 @@ contacts.
 ### Home page (`/`)
 
 The landing page is a dashboard, not the news feed (that moved to
-`/discovery`). Three always-visible sections:
+`/discovery`). Always-visible sections:
 
-- **Meetings today** (from `/api/daily-brief`) — anyone with a
-  `nextMeetingDate` of today. "Open AI Meeting Prep" opens the prep panel as
-  a popup right on this page, instead of navigating to their profile first.
-- **Tasks due this week** (from `/api/tasks`) — open tasks with no due date
-  or due within 7 days, checkable right from the dashboard. Links to the
-  full `/tasks` page for everything else.
-- **Clients & prospects needing contact** (from `/api/daily-brief`) —
-  everyone overdue relative to their own cadence, with a stage badge, quick
-  Mark Contacted, and email actions. This is permanent, not a once-a-day
+- **Today's Focus** — the top contacts scored by the Why Now engine, most
+  urgent first, with the reasoning behind each score and a link to their
+  profile.
+- **Needs a Touch** (from `/api/daily-brief`) — everyone overdue relative
+  to their own contact cadence, with a stage badge, quick Mark Contacted,
+  and email actions. This is permanent, not a once-a-day
   dismissable notice — it stays visible every time you load the page.
 
 The "Today's Brief" popup (`components/DailyBrief.tsx`) still auto-opens
@@ -573,18 +572,9 @@ entry. A note can also carry a `fileUrl` — a link to an external doc
 (Drive/SharePoint/etc), since this app doesn't host file uploads itself.
 
 The **Timeline** section on the profile page (`lib/timeline.ts`) merges
-notes, relevant news, and tasks into one chronological feed — "every
-interaction," as close as a notes-based system gets without a real email/
-calendar integration.
-
-### Tasks
-
-A real task entity (`lib/taskTypes.ts`, `lib/tasksStore.ts`,
-`/api/tasks`), independent of the single `nextMeetingDate` field that
-existed before: title, optional due date, optional linked contact,
-done/not-done. Manage them from a dedicated `/tasks` page (grouped into
-Overdue / Open / Completed), from a contact's profile (scoped to that
-contact), or from the Home page's "Tasks due this week" widget.
+notes and relevant news into one chronological feed — "every interaction,"
+as close as a notes-based system gets without a real email/calendar
+integration.
 
 ### Audit trail
 
@@ -600,9 +590,10 @@ authentication, which this app doesn't have (see "Known limitations").
 ### Follow-up summary
 
 A compact card at the top of each profile combining relationship health,
-tenure, open-task count, the last logged note, and the Relationship Memory
-prompt (if any) into one "catch me up" glance before a call — rule-based,
-assembled from data already computed elsewhere on the page, no new query.
+tenure, the last logged note, the Relationship Memory prompt (if any), and
+the Why Now score into one "catch me up" glance before a call —
+rule-based, assembled from data already computed elsewhere on the page, no
+new query.
 
 ### AI Prospect Score (rule-based, not ML)
 
@@ -950,7 +941,7 @@ computed live from current data on every load:
   chart), industry breakdown
 - Meetings this month (counted from notes logged with `type: "meeting"`)
 - Pipeline value, wealth gap (untapped opportunity), captured wallet share
-- Open/overdue tasks
+- Needs outreach (contacts overdue on their own contact cadence)
 - Referral count and how many are warm (linked via `referredByContactId`
   vs. free text)
 - Client conversion rate (Client ÷ (Client + Cold), as a proxy "win rate")

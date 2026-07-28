@@ -4,7 +4,6 @@ const SECTIONS: { title: string; body: string }[] = [
   { title: "Intelligence", body: "Warm intros, wealth events, the Wealth Creation Watchlist, and the Prospect/Client map." },
   { title: "Engagement", body: "AI Meeting Prep and email drafting — the only two features that call an external LLM." },
   { title: "Pipeline", body: "Kanban board across prospect stages, drag-and-drop, deal value and referral tracking." },
-  { title: "Tasks", body: "Action items, linked to a contact or standalone, with due dates." },
   { title: "COI / Network", body: "Relationship graph, color-coded by pipeline stage." },
   { title: "Calendar", body: "Prospecting events; tagging a contact logs a traceable note automatically." },
   { title: "Analytics", body: "Pipeline value, conversion, geography, and referral stats." },

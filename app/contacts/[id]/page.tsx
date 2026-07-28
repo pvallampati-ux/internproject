@@ -13,7 +13,6 @@ import {
   type NoteType,
 } from "@/lib/contactTypes";
 import type { Lead } from "@/lib/store";
-import type { Task } from "@/lib/taskTypes";
 import type { AuditEntry } from "@/lib/auditLog";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import EmailAction from "@/components/EmailAction";
@@ -65,7 +64,6 @@ const NOTE_TYPE_STYLES: Record<NoteType, string> = {
 const TIMELINE_KIND_STYLES: Record<TimelineItemKind, string> = {
   note: "bg-charcoal-700 text-gray-400",
   news: "bg-emerald-900/50 text-emerald-300",
-  task: "bg-purple-900/50 text-purple-300",
 };
 
 const SENTIMENT_STYLES: Record<Sentiment, string> = {
@@ -90,7 +88,7 @@ function arrayFieldToText(v: string[] | undefined): string {
   return (v ?? []).join(", ");
 }
 
-const TABS = ["Overview", "Profile", "Activity", "Tasks", "Insights", "History"] as const;
+const TABS = ["Overview", "Profile", "Activity", "Insights", "History"] as const;
 type ProfileTab = (typeof TABS)[number];
 
 export default function ContactProfilePage() {
@@ -100,7 +98,6 @@ export default function ContactProfilePage() {
   const [contact, setContact] = useState<Contact | null>(null);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [relevantLeads, setRelevantLeads] = useState<Lead[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -127,16 +124,6 @@ export default function ContactProfilePage() {
   // Family member add-row.
   const [familyNameDraft, setFamilyNameDraft] = useState("");
   const [familyRelDraft, setFamilyRelDraft] = useState("");
-
-  // Task add-row.
-  const [taskTitleDraft, setTaskTitleDraft] = useState("");
-  const [taskDueDraft, setTaskDueDraft] = useState("");
-
-  async function loadTasksForContact() {
-    const res = await fetch(`/api/tasks?contactId=${contactId}`);
-    const data = await res.json();
-    setTasks(data.tasks ?? []);
-  }
 
   async function loadAuditForContact() {
     const res = await fetch(`/api/audit?contactId=${contactId}`);
@@ -177,7 +164,7 @@ export default function ContactProfilePage() {
     setRelevantLeads(matchLeadsToContact(data, leadsData.leads ?? []));
     const contactsData = await contactsRes.json();
     setAllContacts(contactsData.contacts ?? []);
-    await Promise.all([loadTasksForContact(), loadAuditForContact()]);
+    await loadAuditForContact();
     setLoading(false);
   }
 
@@ -238,31 +225,6 @@ export default function ContactProfilePage() {
     patch({ familyMembers: next });
   }
 
-  async function addTask() {
-    if (!taskTitleDraft.trim()) return;
-    await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: taskTitleDraft.trim(),
-        contactId,
-        dueDate: taskDueDraft ? new Date(taskDueDraft).toISOString() : undefined,
-      }),
-    });
-    setTaskTitleDraft("");
-    setTaskDueDraft("");
-    await loadTasksForContact();
-  }
-
-  async function toggleTaskDone(task: Task) {
-    await fetch(`/api/tasks/${task.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ done: !task.done }),
-    });
-    await loadTasksForContact();
-  }
-
   if (loading) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-8">
@@ -294,8 +256,7 @@ export default function ContactProfilePage() {
   const influenceScore = calculateInfluenceScore(contact, allContacts);
   const sentiment = overallSentiment(contact.noteLog);
   const similar = findSimilarProspects(contact, allContacts);
-  const timelineItems = buildTimeline(contact.noteLog, relevantLeads, tasks);
-  const openTasks = tasks.filter((t) => !t.done);
+  const timelineItems = buildTimeline(contact.noteLog, relevantLeads);
   const whyNow = calculateWhyNowScore(contact, allContacts, relevantLeads);
   const relationshipDNA = buildRelationshipDNA(contact);
 
@@ -386,7 +347,6 @@ export default function ContactProfilePage() {
             }`}
           >
             {tab}
-            {tab === "Tasks" && openTasks.length > 0 ? ` (${openTasks.length})` : ""}
           </button>
         ))}
       </div>
@@ -400,8 +360,7 @@ export default function ContactProfilePage() {
           <span className={`rounded-full border px-2 py-0.5 text-xs ${HEALTH_STYLES[relHealth.health]}`}>
             {relHealth.health}
           </span>{" "}
-          · known {formatTenure(relHealth.tenureDays)} · last contact {relHealth.daysSinceLastContact}d ago
-          {openTasks.length > 0 ? ` · ${openTasks.length} open task(s)` : ""}.
+          · known {formatTenure(relHealth.tenureDays)} · last contact {relHealth.daysSinceLastContact}d ago.
         </p>
         {contact.noteLog.length > 0 && (
           <p className="mt-1 text-sm text-gray-400">
@@ -764,59 +723,12 @@ export default function ContactProfilePage() {
       </>
       )}
 
-      {activeTab === "Tasks" && (
-      <section className="mt-0 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Tasks / Action Items ({openTasks.length} open)
-        </h2>
-        <ul className="mt-3 space-y-1.5">
-          {tasks.map((t) => (
-            <li key={t.id} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={t.done}
-                onChange={() => toggleTaskDone(t)}
-                className="h-4 w-4 accent-gold-500"
-              />
-              <span className={t.done ? "text-gray-600 line-through" : "text-gray-200"}>{t.title}</span>
-              {t.dueDate && (
-                <span className="text-xs text-gray-500">— due {formatDate(t.dueDate)}</span>
-              )}
-            </li>
-          ))}
-          {tasks.length === 0 && <p className="text-sm text-gray-600">No tasks yet.</p>}
-        </ul>
-        <div className="mt-3 flex gap-2">
-          <input
-            type="text"
-            value={taskTitleDraft}
-            onChange={(e) => setTaskTitleDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addTask()}
-            placeholder="New task (e.g. Call Friday, send article)..."
-            className="flex-1 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-          />
-          <input
-            type="date"
-            value={taskDueDraft}
-            onChange={(e) => setTaskDueDraft(e.target.value)}
-            className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
-          />
-          <button
-            onClick={addTask}
-            className="rounded-md bg-gold-500 px-3 py-1.5 text-sm font-medium text-charcoal-950 hover:bg-gold-400"
-          >
-            Add
-          </button>
-        </div>
-      </section>
-      )}
-
       {activeTab === "Activity" && (
       <>
       <section className="mt-0 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Timeline</h2>
         <p className="mt-1 text-xs text-gray-500">
-          Every interaction, merged and sorted — notes, relevant news, and tasks.
+          Every interaction, merged and sorted — notes and relevant news.
         </p>
         <div className="mt-3 max-h-96 space-y-2 overflow-y-auto">
           {timelineItems.slice(0, 40).map((item, i) => (

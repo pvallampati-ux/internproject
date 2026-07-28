@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import LeadCard from "@/components/LeadCard";
-import RegionMap from "@/components/RegionMap";
 import RelationshipMap from "@/components/RelationshipMap";
 import AddIndustryForm from "@/components/AddIndustryForm";
 import type { Lead } from "@/lib/store";
@@ -271,37 +270,25 @@ export default function IntelligencePage() {
           </section>
 
           <section className="mb-10">
-            <h2 className="font-serif text-lg text-gray-100">Regional Map</h2>
-            <p className="mt-1 text-xs text-gray-500">Where matched news leads are located.</p>
-            {plotted.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-600">No mappable leads in this window yet.</p>
-            ) : (
-              <div className="mt-3">
-                <RegionMap plotted={plotted} />
-                {unmapped > 0 && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    {unmapped} lead(s) not shown — only a generic region matched, not a specific
-                    town.
-                  </p>
-                )}
-              </div>
-            )}
-          </section>
-
-          <section className="mb-10">
-            <h2 className="font-serif text-lg text-gray-100">Prospect &amp; Client Map</h2>
-            <p className="mt-1 text-xs text-gray-500">Where your book of business actually is.</p>
-            {contactsPlotted.length === 0 ? (
+            <h2 className="font-serif text-lg text-gray-100">Prospect, Client &amp; Lead Map</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Where your book of business is, and where matched news leads are clustering — toggle
+              leads on to spot regions with news activity but no coverage yet.
+            </p>
+            {contactsPlotted.length === 0 && plotted.length === 0 ? (
               <p className="mt-3 text-sm text-gray-600">
-                No contacts with a mappable Location yet — add one on a contact&rsquo;s profile.
+                Nothing mappable yet — add a Location to a contact&rsquo;s profile, or refresh
+                feeds on Discovery.
               </p>
             ) : (
               <div className="mt-3">
-                <RelationshipMap prospects={prospectsPlotted} clients={clientsPlotted} />
-                {contactsUnmapped > 0 && (
+                <RelationshipMap prospects={prospectsPlotted} clients={clientsPlotted} leads={plotted} />
+                {(contactsUnmapped > 0 || unmapped > 0) && (
                   <p className="mt-2 text-xs text-gray-500">
-                    {contactsUnmapped} contact(s) not shown — location didn&rsquo;t match a
-                    plottable town.
+                    {contactsUnmapped > 0 && `${contactsUnmapped} contact(s)`}
+                    {contactsUnmapped > 0 && unmapped > 0 && " and "}
+                    {unmapped > 0 && `${unmapped} lead(s)`} not shown — only a generic region
+                    matched, not a specific town.
                   </p>
                 )}
               </div>
@@ -319,29 +306,38 @@ export default function IntelligencePage() {
               </p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {whiteSpace.map(({ contact, gap, relationshipStatus }) => (
-                  <li
-                    key={contact.id}
-                    className="flex items-center justify-between rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
-                  >
-                    <div>
-                      <a
-                        href={`/contacts/${contact.id}`}
-                        className="text-sm font-medium text-gray-100 hover:underline"
-                      >
-                        {contact.name}
-                      </a>
-                      <p className="text-xs text-gray-500">
-                        {contact.company ? `${contact.company} · ` : ""}
-                        {RELATIONSHIP_STATUS_LABELS[relationshipStatus]}
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm font-medium text-gold-400">{formatCurrency(gap)}</p>
-                      <p className="text-[10px] text-gray-500">not yet captured</p>
-                    </div>
-                  </li>
-                ))}
+                {whiteSpace.map(({ contact, gap, relationshipStatus }) => {
+                  const total = contact.estimatedValue ?? 0;
+                  const capturedPct = total > 0 ? Math.round(((contact.currentWalletShare ?? 0) / total) * 100) : null;
+                  return (
+                    <li
+                      key={contact.id}
+                      className="flex items-center justify-between rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
+                    >
+                      <div>
+                        <a
+                          href={`/contacts/${contact.id}`}
+                          className="text-sm font-medium text-gray-100 hover:underline"
+                        >
+                          {contact.name}
+                        </a>
+                        <p className="text-xs text-gray-500">
+                          {contact.company ? `${contact.company} · ` : ""}
+                          {RELATIONSHIP_STATUS_LABELS[relationshipStatus]}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-medium text-gold-400">
+                          {formatCurrency(total)} total
+                          {capturedPct !== null && (
+                            <span className="text-gray-500"> · {capturedPct}% captured</span>
+                          )}
+                        </p>
+                        <p className="text-[10px] text-gray-500">{formatCurrency(gap)} not yet captured</p>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

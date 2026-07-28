@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { touchpointCount, type Contact, type PipelineStage } from "@/lib/contactTypes";
 import type { DailyBrief as DailyBriefData, OverdueContact } from "@/lib/dailyBrief";
-import type { Task } from "@/lib/taskTypes";
 import type { Lead } from "@/lib/store";
 import DailyBrief from "@/components/DailyBrief";
 import EmailAction from "@/components/EmailAction";
@@ -12,7 +11,7 @@ import AiMeetingPrep from "@/components/AiMeetingPrep";
 import { calculateWhyNowScore } from "@/lib/whyNowScore";
 import { WEALTH_EVENT_CATEGORIES } from "@/lib/config";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
-import { PeopleIcon, CheckSquareIcon } from "@/components/icons";
+import { PeopleIcon } from "@/components/icons";
 
 const SCORE_BAND_STYLES: Record<string, string> = {
   High: "border-red-500/50 bg-red-500/10 text-red-400",
@@ -24,10 +23,6 @@ function scoreBand(score: number): "High" | "Medium" | "Low" {
   if (score >= 40) return "High";
   if (score >= 15) return "Medium";
   return "Low";
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function formatTime(iso: string): string {
@@ -57,9 +52,13 @@ const STAGE_BADGE: Record<PipelineStage, string> = {
   Cold: "border-gray-500/50 bg-gray-500/10 text-gray-400",
 };
 
-type AgendaItem =
-  | { kind: "contact"; priority: number; contact: Contact; score: number; action: string; reasoning: string[] }
-  | { kind: "task"; priority: number; task: Task };
+interface AgendaItem {
+  priority: number;
+  contact: Contact;
+  score: number;
+  action: string;
+  reasoning: string[];
+}
 
 export default function HomePage() {
   const [brief, setBrief] = useState<DailyBriefData | null>(null);
@@ -67,16 +66,9 @@ export default function HomePage() {
   const [showBrief, setShowBrief] = useState(false);
   const [emailOverrides, setEmailOverrides] = useState<Record<string, string>>({});
   const [meetingPrepContactId, setMeetingPrepContactId] = useState<string | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
-
-  async function loadTasks() {
-    const res = await fetch("/api/tasks");
-    const data = await res.json();
-    setTasks(data.tasks ?? []);
-  }
 
   async function loadContacts() {
     const res = await fetch("/api/contacts");
@@ -94,15 +86,6 @@ export default function HomePage() {
     const res = await fetch("/api/warm-intros");
     const data = await res.json();
     setWarmIntros(data.matches ?? []);
-  }
-
-  async function toggleTaskDone(task: Task) {
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)));
-    await fetch(`/api/tasks/${task.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ done: !task.done }),
-    });
   }
 
   async function fetchBrief(): Promise<DailyBriefData> {
@@ -123,7 +106,6 @@ export default function HomePage() {
         localStorage.setItem(BRIEF_SHOWN_KEY, todayKey());
       }
     })();
-    loadTasks();
     loadContacts();
     loadLeads();
     loadWarmIntros();
@@ -145,17 +127,14 @@ export default function HomePage() {
   const memoryByContactId = new Map((brief?.memoryReminders ?? []).map((m) => [m.contact.id, m.prompt]));
   const meetingPrepContact = meetingsToday.find((c) => c.id === meetingPrepContactId);
   const marketEvents = brief?.marketEvents ?? [];
-  const now = Date.now();
 
-  // One unified, prioritized list — contacts scored by Why Now, and
-  // standalone tasks (no linked contact) folded in by urgency, instead of
-  // two separate lists that mostly said the same thing.
-  const contactItems: AgendaItem[] = allContacts
+  // Contacts scored by Why Now, most urgent first — the single prospecting
+  // priority list for the day.
+  const agenda: AgendaItem[] = allContacts
     .filter((c) => c.stage !== "Cold")
     .map((c) => {
       const result = calculateWhyNowScore(c, allContacts, leads);
       return {
-        kind: "contact" as const,
         priority: result.score,
         contact: c,
         score: result.score,
@@ -163,23 +142,10 @@ export default function HomePage() {
         reasoning: result.reasoning,
       };
     })
-    .filter((x) => x.score > 0);
-
-  const taskItems: AgendaItem[] = tasks
-    .filter((t) => !t.done && !t.contactId)
-    .map((t) => {
-      let priority = 40;
-      if (t.dueDate) {
-        const daysUntil = (new Date(t.dueDate).getTime() - now) / (1000 * 60 * 60 * 24);
-        if (daysUntil < 0) priority = 100;
-        else priority = Math.max(30, 90 - daysUntil * 10);
-      }
-      return { kind: "task" as const, priority, task: t };
-    });
-
-  const agenda = [...contactItems, ...taskItems].sort((a, b) => b.priority - a.priority);
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.priority - a.priority);
   const todaysFocus = agenda.slice(0, 5);
-  const highPriorityCount = contactItems.filter((x) => x.kind === "contact" && x.score >= 40).length;
+  const highPriorityCount = agenda.filter((x) => x.score >= 40).length;
 
   const activeOpportunities = allContacts.filter((c) => c.stage !== "Client" && c.stage !== "Cold");
   const totalPipelineValue = activeOpportunities.reduce((sum, c) => sum + (c.estimatedValue ?? 0), 0);
@@ -233,83 +199,53 @@ export default function HomePage() {
                     rule-based
                   </p>
                 </div>
-                <Link href="/tasks" className="text-xs text-gold-400 hover:underline">
-                  View all →
+                <Link href="/pipeline" className="text-xs text-gold-400 hover:underline">
+                  Full pipeline →
                 </Link>
               </div>
               {todaysFocus.length === 0 ? (
                 <p className="mt-3 text-sm text-gray-600">Nothing urgent — everyone reads healthy right now.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
-                  {todaysFocus.map((item, i) =>
-                    item.kind === "contact" ? (
-                      <li
-                        key={`c-${item.contact.id}`}
-                        className="flex items-start gap-3 rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5"
-                      >
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gold-500/50 text-xs font-semibold text-gold-400">
-                          {i + 1}
-                        </span>
-                        <PeopleIcon className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
-                        <div className="min-w-0 flex-1">
-                          <Link
-                            href={`/contacts/${item.contact.id}`}
-                            className="text-sm font-medium text-gray-100 hover:underline"
-                          >
-                            {item.contact.name}
-                          </Link>
-                          <span className="ml-1 text-xs text-gray-500">
-                            {item.contact.company ?? ""}
-                          </span>
-                          <p className="mt-0.5 text-xs text-emerald-400">Why now</p>
-                          <ul className="mt-0.5 space-y-0.5">
-                            {item.reasoning.slice(0, 2).map((r, ri) => (
-                              <li key={ri} className="text-xs text-gray-400">
-                                • {r}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <span
-                          className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[scoreBand(item.score)]}`}
-                        >
-                          {item.score}
-                        </span>
+                  {todaysFocus.map((item, i) => (
+                    <li
+                      key={item.contact.id}
+                      className="flex items-start gap-3 rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5"
+                    >
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gold-500/50 text-xs font-semibold text-gold-400">
+                        {i + 1}
+                      </span>
+                      <PeopleIcon className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
+                      <div className="min-w-0 flex-1">
                         <Link
                           href={`/contacts/${item.contact.id}`}
-                          className="shrink-0 self-center rounded-md border border-gold-500/50 px-2.5 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                          className="text-sm font-medium text-gray-100 hover:underline"
                         >
-                          Open Profile →
+                          {item.contact.name}
                         </Link>
-                      </li>
-                    ) : (
-                      <li
-                        key={`t-${item.task.id}`}
-                        className="flex items-center gap-3 rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5"
+                        <span className="ml-1 text-xs text-gray-500">{item.contact.company ?? ""}</span>
+                        <p className="mt-0.5 text-xs text-emerald-400">Why now</p>
+                        <ul className="mt-0.5 space-y-0.5">
+                          {item.reasoning.slice(0, 2).map((r, ri) => (
+                            <li key={ri} className="text-xs text-gray-400">
+                              • {r}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[scoreBand(item.score)]}`}
                       >
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gold-500/50 text-xs font-semibold text-gold-400">
-                          {i + 1}
-                        </span>
-                        <CheckSquareIcon className="h-4 w-4 shrink-0 text-gray-500" />
-                        <input
-                          type="checkbox"
-                          checked={item.task.done}
-                          onChange={() => toggleTaskDone(item.task)}
-                          className="h-4 w-4 accent-gold-500"
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-200">{item.task.title}</p>
-                          {item.task.dueDate && (
-                            <p
-                              className={`text-xs ${new Date(item.task.dueDate).getTime() < now ? "text-amber-400" : "text-gray-500"}`}
-                            >
-                              Due {formatDate(item.task.dueDate)}
-                            </p>
-                          )}
-                        </div>
-                      </li>
-                    )
-                  )}
+                        {item.score}
+                      </span>
+                      <Link
+                        href={`/contacts/${item.contact.id}`}
+                        className="shrink-0 self-center rounded-md border border-gold-500/50 px-2.5 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                      >
+                        Open Profile →
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               )}
             </section>

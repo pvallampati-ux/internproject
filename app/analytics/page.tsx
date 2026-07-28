@@ -67,9 +67,9 @@ export default function AnalyticsPage() {
             />
             <KpiCard label="Captured wallet share" value={formatCurrency(data.totalCapturedWalletShare)} />
             <KpiCard
-              label="Open tasks"
-              value={String(data.openTasks)}
-              sub={data.overdueTasks > 0 ? `${data.overdueTasks} overdue` : undefined}
+              label="Needs outreach"
+              value={String(data.needsOutreach)}
+              sub="Overdue on their contact cadence"
             />
             <KpiCard
               label="Referrals"

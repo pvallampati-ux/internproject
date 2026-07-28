@@ -24,7 +24,3 @@ data/events.json
 
 # Audit log of real edits/notes — local-only, no sample seed (starts empty).
 data/auditLog.json
-
-# Real tasks stay local-only too. data/tasks.sample.json ships a couple of
-# demo tasks and seeds this on first run.
-data/tasks.json

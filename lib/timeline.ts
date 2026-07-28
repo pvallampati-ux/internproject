@@ -1,11 +1,10 @@
 import type { NoteEntry } from "./contactTypes";
 import type { Lead } from "./store";
-import type { Task } from "./taskTypes";
 
 // Pure merge/sort helper — no filesystem imports — so it's safe to call
 // from a client component with data it already fetched (notes come with
-// the contact, leads from /api/leads, tasks from /api/tasks).
-export type TimelineItemKind = "note" | "news" | "task";
+// the contact, leads from /api/leads).
+export type TimelineItemKind = "note" | "news";
 
 export interface TimelineItem {
   kind: TimelineItemKind;
@@ -16,7 +15,7 @@ export interface TimelineItem {
   noteType?: NoteEntry["type"];
 }
 
-export function buildTimeline(notes: NoteEntry[], relevantLeads: Lead[], tasks: Task[]): TimelineItem[] {
+export function buildTimeline(notes: NoteEntry[], relevantLeads: Lead[]): TimelineItem[] {
   const items: TimelineItem[] = [];
 
   for (const note of notes) {
@@ -36,15 +35,6 @@ export function buildTimeline(notes: NoteEntry[], relevantLeads: Lead[], tasks: 
       title: lead.title,
       detail: lead.source,
       href: lead.link,
-    });
-  }
-
-  for (const task of tasks) {
-    items.push({
-      kind: "task",
-      date: task.dueDate ?? task.createdAt,
-      title: task.title,
-      detail: task.done ? "Completed" : "Open task",
     });
   }
 
