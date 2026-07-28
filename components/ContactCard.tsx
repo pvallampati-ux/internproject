@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Link from "next/link";
 import {
   PIPELINE_STAGES,
   touchpointCount,
@@ -10,6 +9,7 @@ import {
 import { assessRelationshipHealth } from "@/lib/relationshipHealth";
 import { detectLifeStage } from "@/lib/lifeStages";
 import { calculateProspectScore } from "@/lib/prospectScore";
+import { useContactDrawer } from "@/lib/contactDrawerContext";
 
 const HEALTH_DOT: Record<string, string> = {
   Strong: "bg-emerald-400",
@@ -45,6 +45,7 @@ function formatCurrency(value: number): string {
 export default function ContactCard({ contact, onStageChange, onMarkContacted, onAddNote }: Props) {
   const [noteDraft, setNoteDraft] = useState("");
   const [showLog, setShowLog] = useState(false);
+  const { openDrawer } = useContactDrawer();
 
   function submitNote() {
     if (!noteDraft.trim()) return;
@@ -74,9 +75,9 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
           due. Everything else lives in the hover panel below so the board
           stays scannable without scrolling through every field. */}
       <div className="flex items-center justify-between gap-2">
-        <Link href={`/contacts/${contact.id}`} className="min-w-0 flex-1 hover:underline">
+        <button onClick={() => openDrawer(contact.id)} className="min-w-0 flex-1 text-left hover:underline">
           <p className="truncate font-serif text-base font-semibold text-gray-100">{contact.name}</p>
-        </Link>
+        </button>
         {overdue && (
           <span
             className="shrink-0 text-sm text-amber-400"
@@ -143,13 +144,15 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
               (contact.referredByContactId ? (
                 <span>
                   Referred by{" "}
-                  <Link
-                    href={`/contacts/${contact.referredByContactId}`}
-                    onClick={(e) => e.stopPropagation()}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDrawer(contact.referredByContactId!);
+                    }}
                     className="text-gold-400 hover:underline"
                   >
                     {contact.referredBy}
-                  </Link>
+                  </button>
                 </span>
               ) : (
                 <span>Referred by {contact.referredBy}</span>

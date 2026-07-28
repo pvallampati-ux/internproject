@@ -5,6 +5,7 @@ import NetworkGraph from "@/components/NetworkGraph";
 import type { Contact } from "@/lib/contactTypes";
 import type { NetworkEdge } from "@/lib/networkGraph";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
+import { useContactDrawer } from "@/lib/contactDrawerContext";
 
 // A "path" is a warm-intro match where one side is already a Client/COI
 // (someone who could plausibly make the intro) and the other is still a
@@ -38,6 +39,7 @@ export default function NetworkPage() {
   const [edges, setEdges] = useState<NetworkEdge[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const { openDrawer } = useContactDrawer();
 
   async function load() {
     setLoading(true);
@@ -116,24 +118,24 @@ export default function NetworkPage() {
                   >
                     <div className="min-w-0">
                       <p className="text-sm">
-                        <a href={`/contacts/${prospect.id}`} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
+                        <button onClick={() => openDrawer(prospect.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
                           {prospect.name}
-                        </a>
+                        </button>
                         <span className="text-gray-500"> via </span>
-                        <a href={`/contacts/${connector.id}`} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
+                        <button onClick={() => openDrawer(connector.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
                           {connector.name}
-                        </a>
+                        </button>
                       </p>
                       <p className="mt-0.5 text-xs text-gray-500">
                         Shared: {describeSharedTerms(match.sharedTerms)}
                       </p>
                     </div>
-                    <a
-                      href={`/contacts/${connector.id}`}
+                    <button
+                      onClick={() => openDrawer(connector.id)}
                       className="shrink-0 rounded-md border border-gold-500/50 px-2.5 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
                     >
                       View path →
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -162,17 +164,17 @@ export default function NetworkPage() {
             ) : (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {cois.map((c) => (
-                  <a
+                  <button
                     key={c.id}
-                    href={`/contacts/${c.id}`}
-                    className="block rounded-lg border border-gold-500/30 bg-gold-500/5 p-4 hover:border-gold-500/60"
+                    onClick={() => openDrawer(c.id)}
+                    className="block w-full rounded-lg border border-gold-500/30 bg-gold-500/5 p-4 text-left hover:border-gold-500/60"
                   >
                     <p className="font-serif text-base font-semibold text-gray-100">{c.name}</p>
                     {c.company && <p className="text-sm text-gray-400">{c.company}</p>}
                     <p className="mt-2 text-xs text-gray-500">
                       {referralCounts.get(c.id) ?? 0} referral(s) tracked
                     </p>
-                  </a>
+                  </button>
                 ))}
               </div>
             )}

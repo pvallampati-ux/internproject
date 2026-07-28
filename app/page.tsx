@@ -12,6 +12,7 @@ import { calculateWhyNowScore } from "@/lib/whyNowScore";
 import { WEALTH_EVENT_CATEGORIES } from "@/lib/config";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { PeopleIcon } from "@/components/icons";
+import { useContactDrawer } from "@/lib/contactDrawerContext";
 
 const SCORE_BAND_STYLES: Record<string, string> = {
   High: "border-red-500/50 bg-red-500/10 text-red-400",
@@ -69,6 +70,7 @@ export default function HomePage() {
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
+  const { openDrawer } = useContactDrawer();
 
   async function loadContacts() {
     const res = await fetch("/api/contacts");
@@ -144,7 +146,7 @@ export default function HomePage() {
     })
     .filter((x) => x.score > 0)
     .sort((a, b) => b.priority - a.priority);
-  const todaysFocus = agenda.slice(0, 5);
+  const todaysFocus = agenda.slice(0, 3);
   const highPriorityCount = agenda.filter((x) => x.score >= 40).length;
 
   const activeOpportunities = allContacts.filter((c) => c.stage !== "Client" && c.stage !== "Cold");
@@ -217,12 +219,12 @@ export default function HomePage() {
                       </span>
                       <PeopleIcon className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
                       <div className="min-w-0 flex-1">
-                        <Link
-                          href={`/contacts/${item.contact.id}`}
+                        <button
+                          onClick={() => openDrawer(item.contact.id)}
                           className="text-sm font-medium text-gray-100 hover:underline"
                         >
                           {item.contact.name}
-                        </Link>
+                        </button>
                         <span className="ml-1 text-xs text-gray-500">{item.contact.company ?? ""}</span>
                         <p className="mt-0.5 text-xs text-emerald-400">Why now</p>
                         <ul className="mt-0.5 space-y-0.5">
@@ -255,25 +257,25 @@ export default function HomePage() {
                 <h2 className="font-serif text-lg text-gray-100">
                   Needs a Touch {overdueContacts.length > 0 && `(${overdueContacts.length})`}
                 </h2>
-                <Link href="/pipeline" className="text-xs text-gold-400 hover:underline">
-                  Full pipeline →
+                <Link href="/engage" className="text-xs text-gold-400 hover:underline">
+                  View all →
                 </Link>
               </div>
               {overdueContacts.length === 0 ? (
                 <p className="mt-3 text-sm text-gray-600">Nobody&rsquo;s overdue for outreach right now.</p>
               ) : (
-                <ul className="mt-3 max-h-[26rem] space-y-2 overflow-y-auto pr-1">
-                  {overdueContacts.map(({ contact, daysOverdue }) => (
+                <ul className="mt-3 space-y-2">
+                  {overdueContacts.slice(0, 5).map(({ contact, daysOverdue }) => (
                     <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <Link
-                              href={`/contacts/${contact.id}`}
+                            <button
+                              onClick={() => openDrawer(contact.id)}
                               className="truncate text-sm font-medium text-gray-100 hover:underline"
                             >
                               {contact.name}
-                            </Link>
+                            </button>
                             <span
                               className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${STAGE_BADGE[contact.stage]}`}
                             >
@@ -365,9 +367,9 @@ export default function HomePage() {
                           {affectedContacts.map((c, i) => (
                             <span key={c.id}>
                               {i > 0 && ", "}
-                              <Link href={`/contacts/${c.id}`} className="text-gray-300 hover:text-gold-400 hover:underline">
+                              <button onClick={() => openDrawer(c.id)} className="text-gray-300 hover:text-gold-400 hover:underline">
                                 {c.name}
-                              </Link>
+                              </button>
                             </span>
                           ))}
                         </p>
@@ -389,19 +391,19 @@ export default function HomePage() {
                 <p className="mt-3 text-sm text-gray-600">Nothing on the calendar today.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
-                  {meetingsToday.map((contact) => (
+                  {meetingsToday.slice(0, 3).map((contact) => (
                     <li key={contact.id} className="rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <span className="h-2 w-2 shrink-0 rounded-full bg-gold-500" />
                         <span className="shrink-0 text-xs text-gray-400">
                           {contact.nextMeetingDate ? formatTime(contact.nextMeetingDate) : ""}
                         </span>
-                        <Link
-                          href={`/contacts/${contact.id}`}
+                        <button
+                          onClick={() => openDrawer(contact.id)}
                           className="truncate text-sm font-medium text-gray-100 hover:underline"
                         >
                           {contact.name}
-                        </Link>
+                        </button>
                       </div>
                       <p className="ml-4 text-xs text-gray-500">{contact.company ?? "No company on file"}</p>
                       {memoryByContactId.has(contact.id) && (
@@ -434,30 +436,30 @@ export default function HomePage() {
                 ) : (
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-sm">
-                      <Link
-                        href={`/contacts/${topWarmIntro.contactA.id}`}
+                      <button
+                        onClick={() => openDrawer(topWarmIntro.contactA.id)}
                         className="font-medium text-gray-100 hover:underline"
                       >
                         {topWarmIntro.contactA.name}
-                      </Link>
+                      </button>
                       <span className="text-gray-600">↔</span>
-                      <Link
-                        href={`/contacts/${topWarmIntro.contactB.id}`}
+                      <button
+                        onClick={() => openDrawer(topWarmIntro.contactB.id)}
                         className="font-medium text-gray-100 hover:underline"
                       >
                         {topWarmIntro.contactB.name}
-                      </Link>
+                      </button>
                     </div>
                     <p className="mt-2 text-xs text-gray-500">Shared: {describeSharedTerms(topWarmIntro.sharedTerms)}</p>
                     <p className="mt-2 text-[11px] text-gray-600">
                       Keyword-matched, not a confidence score — verify before acting.
                     </p>
-                    <Link
-                      href={`/contacts/${topWarmIntro.contactA.id}`}
+                    <button
+                      onClick={() => openDrawer(topWarmIntro.contactA.id)}
                       className="mt-3 inline-block rounded-md border border-gold-500/50 px-3 py-1.5 text-xs text-gold-400 hover:bg-gold-500/10"
                     >
                       View match →
-                    </Link>
+                    </button>
                   </div>
                 )}
               </section>
