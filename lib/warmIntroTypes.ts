@@ -3,7 +3,7 @@
 
 import type { Contact } from "./contactTypes";
 
-export type SharedTermSource = "tag" | "company" | "note" | "school" | "club" | "board";
+export type SharedTermSource = "company" | "note" | "school" | "club" | "board";
 
 export interface SharedTerm {
   term: string;
@@ -21,7 +21,6 @@ export interface WarmIntroMatch {
 // into the same misleading "both mention X" phrasing.
 export function describeSharedTerms(terms: SharedTerm[]): string {
   const bySource: Record<SharedTermSource, string[]> = {
-    tag: [],
     company: [],
     note: [],
     school: [],
@@ -31,7 +30,6 @@ export function describeSharedTerms(terms: SharedTerm[]): string {
   for (const t of terms) bySource[t.source].push(t.term);
 
   const parts: string[] = [];
-  if (bySource.tag.length > 0) parts.push(`both tagged ${bySource.tag.join(", ")}`);
   if (bySource.company.length > 0) parts.push(`both connected to ${bySource.company.join(", ")}`);
   if (bySource.school.length > 0) parts.push(`both went to ${bySource.school.join(", ")}`);
   if (bySource.club.length > 0) parts.push(`both members of ${bySource.club.join(", ")}`);

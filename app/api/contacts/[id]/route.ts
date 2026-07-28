@@ -36,6 +36,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       | "title"
       | "company"
       | "email"
+      | "phone"
       | "location"
       | "industry"
       | "businessOwnership"
@@ -62,6 +63,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (typeof body.title === "string") patch.title = body.title;
   if (typeof body.company === "string") patch.company = body.company;
   if (typeof body.email === "string") patch.email = body.email;
+  if (typeof body.phone === "string") patch.phone = body.phone;
   if (typeof body.location === "string") patch.location = body.location;
   if (typeof body.industry === "string") patch.industry = body.industry;
   if (typeof body.businessOwnership === "string") patch.businessOwnership = body.businessOwnership;

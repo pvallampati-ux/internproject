@@ -14,6 +14,12 @@ export interface FeedSource {
 const PRIMARY_REGION = REGION_TERMS[0]; // "columbus"
 const SECONDARY_REGION = REGION_TERMS[1]; // "central ohio"
 
+// Bare "Columbus" collides with Columbus, Georgia (Aflac, TSYS/Global
+// Payments, Fort Benning) in Google News results. Exclude its most common
+// disambiguators at the query level so we're not filtering it out after
+// the fact for every single theme.
+const EXCLUDE_OTHER_COLUMBUS = `-Georgia -"Fort Benning" -TSYS -Aflac -Synovus`;
+
 export function googleNewsRss(query: string): string {
   const params = new URLSearchParams({
     q: query,
@@ -120,7 +126,7 @@ export function buildSources(): FeedSource[] {
   const sources: FeedSource[] = THEMES.map((theme) => ({
     id: `google-news-${theme.id}`,
     label: `Google News: ${theme.label}`,
-    url: googleNewsRss(theme.query),
+    url: googleNewsRss(`${theme.query} ${EXCLUDE_OTHER_COLUMBUS}`),
     kind: "rss",
   }));
 

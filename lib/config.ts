@@ -101,6 +101,34 @@ export const REGION_TERMS: string[] = [
   "delaware county, ohio",
 ];
 
+// Bare "columbus" is ambiguous — several other US cities share the name,
+// most prominently Columbus, Georgia (Aflac, TSYS/Global Payments, Fort
+// Benning are there). If a story's only region signal is the bare
+// "columbus" term and it also contains one of these, it's almost always
+// a different Columbus, not ours — see lib/classify.ts.
+export const OTHER_COLUMBUS_SIGNALS: string[] = [
+  "georgia",
+  "fort benning",
+  "fort moore",
+  "muscogee county",
+  "tsys",
+  "aflac",
+  "synovus",
+  "columbus state university",
+  "columbus, indiana",
+  "columbus, in.",
+  "columbus, mississippi",
+  "columbus, ms.",
+  "columbus, nebraska",
+  "columbus, ne.",
+  "columbus, wisconsin",
+  "columbus, wi.",
+  "columbus, texas",
+  "columbus, tx.",
+  "columbus, north carolina",
+  "columbus, nc.",
+];
+
 // Keyword sets used for naive classification. A story can match more than
 // one category (e.g. an owner sells a company AND names a new CEO).
 export const CATEGORY_KEYWORDS: Record<Category, string[]> = {

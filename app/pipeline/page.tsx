@@ -82,6 +82,7 @@ export default function PipelinePage() {
     title?: string;
     company: string;
     email?: string;
+    phone?: string;
     location?: string;
     industry?: string;
     tags: string[];

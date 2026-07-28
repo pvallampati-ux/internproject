@@ -12,6 +12,7 @@ import { calculateWhyNowScore } from "@/lib/whyNowScore";
 import { calculateProspectScore } from "@/lib/prospectScore";
 import { assessRelationshipHealth } from "@/lib/relationshipHealth";
 import EmailAction from "@/components/EmailAction";
+import CallAction from "@/components/CallAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
 import { pushRecentContactId } from "@/lib/userPrefs";
 
@@ -43,6 +44,7 @@ export default function ContactDrawer() {
   const [showPrep, setShowPrep] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
   const [emailOverride, setEmailOverride] = useState<string | undefined>(undefined);
+  const [phoneOverride, setPhoneOverride] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!openContactId) return;
@@ -50,6 +52,7 @@ export default function ContactDrawer() {
     setShowPrep(false);
     setNoteDraft("");
     setEmailOverride(undefined);
+    setPhoneOverride(undefined);
     (async () => {
       const [contactRes, contactsRes, leadsRes, introsRes] = await Promise.all([
         fetch(`/api/contacts/${openContactId}`),
@@ -237,11 +240,16 @@ export default function ContactDrawer() {
               </select>
             </div>
 
-            <div className="mt-2">
+            <div className="mt-2 flex flex-col gap-2">
               <EmailAction
                 contactId={contact.id}
                 email={emailOverride ?? contact.email}
                 onEmailSaved={setEmailOverride}
+              />
+              <CallAction
+                contactId={contact.id}
+                phone={phoneOverride ?? contact.phone}
+                onPhoneSaved={setPhoneOverride}
               />
             </div>
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { touchpointCount, type Contact, type PipelineStage } from "@/lib/contactTypes";
 import type { DailyBrief as DailyBriefData, OverdueContact } from "@/lib/dailyBrief";
+import type { MeetingPrep } from "@/lib/meetingPrep";
 import type { Lead } from "@/lib/store";
 import DailyBrief from "@/components/DailyBrief";
 import EmailAction from "@/components/EmailAction";
@@ -67,6 +68,7 @@ export default function HomePage() {
   const [showBrief, setShowBrief] = useState(false);
   const [emailOverrides, setEmailOverrides] = useState<Record<string, string>>({});
   const [meetingPrepContactId, setMeetingPrepContactId] = useState<string | null>(null);
+  const [prepByContactId, setPrepByContactId] = useState<Record<string, MeetingPrep>>({});
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
@@ -182,7 +184,14 @@ export default function HomePage() {
                 &times;
               </button>
             </div>
-            <AiMeetingPrep contactId={meetingPrepContact.id} />
+            <AiMeetingPrep
+              key={meetingPrepContact.id}
+              contactId={meetingPrepContact.id}
+              initialPrep={prepByContactId[meetingPrepContact.id] ?? null}
+              onGenerated={(prep) =>
+                setPrepByContactId((prev) => ({ ...prev, [meetingPrepContact.id]: prep }))
+              }
+            />
           </div>
         </div>
       )}
@@ -382,7 +391,7 @@ export default function HomePage() {
 
             <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-serif text-lg text-gray-100">Today&rsquo;s Work</h2>
+                <h2 className="font-serif text-lg text-gray-100">Today&rsquo;s Meetings</h2>
                 <Link href="/calendar" className="text-xs text-gold-400 hover:underline">
                   View calendar →
                 </Link>
@@ -413,9 +422,13 @@ export default function HomePage() {
                       )}
                       <button
                         onClick={() => setMeetingPrepContactId(contact.id)}
-                        className="ml-4 mt-2 rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+                        className={
+                          prepByContactId[contact.id]
+                            ? "ml-4 mt-2 rounded-md border border-emerald-500/50 bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20"
+                            : "ml-4 mt-2 rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+                        }
                       >
-                        Open AI Meeting Prep →
+                        {prepByContactId[contact.id] ? "Prep ready — view →" : "Generate Prep →"}
                       </button>
                     </li>
                   ))}

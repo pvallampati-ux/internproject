@@ -16,6 +16,7 @@ import type { Lead } from "@/lib/store";
 import type { AuditEntry } from "@/lib/auditLog";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import EmailAction from "@/components/EmailAction";
+import CallAction from "@/components/CallAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
 import ContactPicker from "@/components/ContactPicker";
 import { assessRelationshipHealth, formatTenure } from "@/lib/relationshipHealth";
@@ -508,11 +509,16 @@ export default function ContactProfilePage() {
             />
           </div>
 
-          <div className="mt-4 border-t border-charcoal-700 pt-4">
+          <div className="mt-4 flex flex-col gap-2 border-t border-charcoal-700 pt-4">
             <EmailAction
               contactId={contact.id}
               email={contact.email}
               onEmailSaved={(email) => setContact({ ...contact, email })}
+            />
+            <CallAction
+              contactId={contact.id}
+              phone={contact.phone}
+              onPhoneSaved={(phone) => setContact({ ...contact, phone })}
             />
           </div>
         </section>

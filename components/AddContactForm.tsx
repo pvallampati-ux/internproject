@@ -9,6 +9,7 @@ interface Props {
     title?: string;
     company: string;
     email?: string;
+    phone?: string;
     location?: string;
     industry?: string;
     tags: string[];
@@ -25,6 +26,7 @@ export default function AddContactForm({ contacts, onAdd }: Props) {
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
   const [industry, setIndustry] = useState("");
   const [tags, setTags] = useState("");
@@ -42,6 +44,7 @@ export default function AddContactForm({ contacts, onAdd }: Props) {
       title: title.trim() || undefined,
       company: company.trim(),
       email: email.trim() || undefined,
+      phone: phone.trim() || undefined,
       location: location.trim() || undefined,
       industry: industry.trim() || undefined,
       tags: tags
@@ -58,6 +61,7 @@ export default function AddContactForm({ contacts, onAdd }: Props) {
     setTitle("");
     setCompany("");
     setEmail("");
+    setPhone("");
     setLocation("");
     setIndustry("");
     setTags("");
@@ -106,6 +110,13 @@ export default function AddContactForm({ contacts, onAdd }: Props) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email (optional)"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+        />
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Phone (optional)"
           className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
         />
         <input

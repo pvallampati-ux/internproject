@@ -11,6 +11,8 @@ import { detectLifeStage } from "@/lib/lifeStages";
 import { calculateProspectScore } from "@/lib/prospectScore";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
 import type { WhyNowResult } from "@/lib/whyNowScore";
+import EmailAction from "@/components/EmailAction";
+import CallAction from "@/components/CallAction";
 
 const HEALTH_DOT: Record<string, string> = {
   Strong: "bg-emerald-400",
@@ -59,6 +61,8 @@ function formatCurrency(value: number): string {
 export default function ContactCard({ contact, whyNow, onStageChange, onMarkContacted, onAddNote }: Props) {
   const [noteDraft, setNoteDraft] = useState("");
   const [showLog, setShowLog] = useState(false);
+  const [emailOverride, setEmailOverride] = useState<string | undefined>(undefined);
+  const [phoneOverride, setPhoneOverride] = useState<string | undefined>(undefined);
   const { openDrawer } = useContactDrawer();
 
   function submitNote() {
@@ -200,6 +204,21 @@ export default function ContactCard({ contact, whyNow, onStageChange, onMarkCont
         >
           Mark contacted
         </button>
+
+        <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <EmailAction
+            contactId={contact.id}
+            email={emailOverride ?? contact.email}
+            onEmailSaved={setEmailOverride}
+            compact
+          />
+          <CallAction
+            contactId={contact.id}
+            phone={phoneOverride ?? contact.phone}
+            onPhoneSaved={setPhoneOverride}
+            compact
+          />
+        </div>
 
         <button
           onClick={() => setShowLog(!showLog)}

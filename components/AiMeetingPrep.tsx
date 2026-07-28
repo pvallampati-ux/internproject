@@ -3,10 +3,12 @@ import type { MeetingPrep } from "@/lib/meetingPrep";
 
 interface Props {
   contactId: string;
+  initialPrep?: MeetingPrep | null;
+  onGenerated?: (prep: MeetingPrep) => void;
 }
 
-export default function AiMeetingPrep({ contactId }: Props) {
-  const [prep, setPrep] = useState<MeetingPrep | null>(null);
+export default function AiMeetingPrep({ contactId, initialPrep, onGenerated }: Props) {
+  const [prep, setPrep] = useState<MeetingPrep | null>(initialPrep ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +27,7 @@ export default function AiMeetingPrep({ contactId }: Props) {
         setError(data.error ?? "Something went wrong.");
       } else {
         setPrep(data);
+        onGenerated?.(data);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -42,7 +45,7 @@ export default function AiMeetingPrep({ contactId }: Props) {
           disabled={loading}
           className="rounded-md bg-gold-500 px-3 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
         >
-          {loading ? "Generating..." : "Generate"}
+          {loading ? "Generating..." : prep ? "Regenerate" : "Generate"}
         </button>
       </div>
 

@@ -1,4 +1,4 @@
-import { CATEGORIES, CATEGORY_KEYWORDS, REGION_TERMS, type Category } from "./config";
+import { CATEGORIES, CATEGORY_KEYWORDS, OTHER_COLUMBUS_SIGNALS, REGION_TERMS, type Category } from "./config";
 
 export interface ClassificationResult {
   categories: Category[];
@@ -28,7 +28,14 @@ export function classify(title: string, snippet: string): ClassificationResult {
     }
   }
 
-  const matchedRegionTerms = REGION_TERMS.filter((term) => haystack.includes(term));
+  let matchedRegionTerms = REGION_TERMS.filter((term) => haystack.includes(term));
+  // Bare "columbus" alone is ambiguous — if that's the *only* region signal
+  // and the story also mentions a disambiguator for a different Columbus
+  // (Georgia, Indiana, etc.), it's not actually about our region.
+  if (matchedRegionTerms.length === 1 && matchedRegionTerms[0] === "columbus") {
+    const isOtherColumbus = OTHER_COLUMBUS_SIGNALS.some((signal) => haystack.includes(signal));
+    if (isOtherColumbus) matchedRegionTerms = [];
+  }
   const regionMatch = matchedRegionTerms.length > 0;
 
   // Simple scoring: region relevance dominates, keyword density adds up.

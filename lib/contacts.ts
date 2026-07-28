@@ -72,6 +72,7 @@ export function createContact(input: {
   title?: string;
   company?: string;
   email?: string;
+  phone?: string;
   location?: string;
   industry?: string;
   businessOwnership?: string;
@@ -97,6 +98,7 @@ export function createContact(input: {
     title: input.title,
     company: input.company,
     email: input.email,
+    phone: input.phone,
     location: input.location,
     industry: input.industry,
     businessOwnership: input.businessOwnership,
@@ -135,6 +137,7 @@ export function updateContact(
       | "title"
       | "company"
       | "email"
+      | "phone"
       | "location"
       | "industry"
       | "businessOwnership"

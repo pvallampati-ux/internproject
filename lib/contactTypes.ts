@@ -52,6 +52,7 @@ export interface Contact {
   title?: string; // job title, e.g. "Founder & CEO"
   company?: string;
   email?: string;
+  phone?: string;
   location?: string; // free text, e.g. "Columbus, OH"
   industry?: string; // free text, e.g. "Healthcare", "Manufacturing"
   businessOwnership?: string; // free text, e.g. "Founder, 100% owner"

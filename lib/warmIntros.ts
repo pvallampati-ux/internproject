@@ -40,15 +40,17 @@ function extractPhrases(text: string): string[] {
     .filter((m) => m.length > 2 && !STOPWORDS.has(m.toLowerCase()));
 }
 
-// Keeps track of where each shared term came from (a tag, a company name,
-// a school/club/board, or note text) so the UI can describe the match in a
-// way that actually makes sense — "both tagged retail" reads very
-// differently from "both mention Ohio State University." Schools/clubs/
-// boards are structured fields (Client 360), so matches on them are
-// reliable — not naive extraction like the note-phrase matching.
+// Keeps track of where each shared term came from (a company name, a
+// school/club/board, or note text) so the UI can describe the match in a
+// way that actually makes sense. Schools/clubs/boards are structured
+// fields (Client 360), so matches on them are reliable — not naive
+// extraction like the note-phrase matching. Tags are deliberately excluded:
+// they're industry classification ("retail", "manufacturing"), not a
+// relationship signal — two prospects in the same industry don't know each
+// other just because of that, so "both tagged retail" was a false positive
+// masquerading as a warm-intro path.
 function collectTerms(contact: Contact): SharedTerm[] {
   const entries: SharedTerm[] = [];
-  for (const tag of contact.tags) entries.push({ term: tag.toLowerCase(), source: "tag" });
   if (contact.company) entries.push({ term: contact.company.toLowerCase(), source: "company" });
   for (const school of contact.schools ?? []) entries.push({ term: school.toLowerCase(), source: "school" });
   for (const club of contact.clubs ?? []) entries.push({ term: club.toLowerCase(), source: "club" });

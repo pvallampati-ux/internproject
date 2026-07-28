@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     title: typeof body.title === "string" ? body.title : undefined,
     company: typeof body.company === "string" ? body.company : undefined,
     email: typeof body.email === "string" ? body.email : undefined,
+    phone: typeof body.phone === "string" ? body.phone : undefined,
     location: typeof body.location === "string" ? body.location : undefined,
     industry: typeof body.industry === "string" ? body.industry : undefined,
     businessOwnership: typeof body.businessOwnership === "string" ? body.businessOwnership : undefined,
