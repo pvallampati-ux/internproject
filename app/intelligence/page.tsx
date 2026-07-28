@@ -8,7 +8,7 @@ import AddIndustryForm from "@/components/AddIndustryForm";
 import type { Lead } from "@/lib/store";
 import type { Contact } from "@/lib/contactTypes";
 import { pickMapPoint, pickPointForLocation } from "@/lib/geo";
-import { buildWhiteSpaceAnalysis } from "@/lib/whiteSpace";
+import { buildWhiteSpaceAnalysis, type WhiteSpaceEntry } from "@/lib/whiteSpace";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { INDUSTRIES, INDUSTRY_TOPICS } from "@/lib/industries";
 import type { CustomIndustry } from "@/lib/customIndustriesStore";
@@ -21,6 +21,12 @@ interface DisplayTopic {
   label: string;
   regionScoped: boolean;
 }
+
+const RELATIONSHIP_STATUS_LABELS: Record<WhiteSpaceEntry["relationshipStatus"], string> = {
+  None: "No existing relationship with the firm",
+  Partial: "Partial existing relationship with the firm",
+  Unknown: "Firm relationship not on file",
+};
 
 function timeAgo(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
@@ -324,10 +330,14 @@ export default function IntelligencePage() {
                         {contact.name}
                       </a>
                       <p className="text-xs text-gray-500">
-                        {contact.company ? `${contact.company} · ` : ""}Relationship: {relationshipStatus}
+                        {contact.company ? `${contact.company} · ` : ""}
+                        {RELATIONSHIP_STATUS_LABELS[relationshipStatus]}
                       </p>
                     </div>
-                    <span className="shrink-0 text-sm font-medium text-gold-400">{formatCurrency(gap)}</span>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-medium text-gold-400">{formatCurrency(gap)}</p>
+                      <p className="text-[10px] text-gray-500">not yet captured</p>
+                    </div>
                   </li>
                 ))}
               </ul>
