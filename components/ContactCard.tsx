@@ -70,7 +70,7 @@ export default function ContactCard({ contact, whyNow, onStageChange, onMarkCont
   const daysSinceContact = Math.floor(
     (Date.now() - new Date(contact.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)
   );
-  const overdue = daysSinceContact > contact.cadenceDays;
+  const overdue = contact.stage !== "Cold" && daysSinceContact > contact.cadenceDays;
   const health = assessRelationshipHealth(contact).health;
   const lifeStage = detectLifeStage(contact);
   const wealthGap = estimateWealthGap(contact);
