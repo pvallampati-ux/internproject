@@ -64,6 +64,7 @@ export default function PipelinePage() {
   async function handleAddContact(input: {
     name: string;
     company: string;
+    email?: string;
     tags: string[];
     cadenceDays: number;
     estimatedValue?: number;

@@ -4,6 +4,7 @@ interface Props {
   onAdd: (input: {
     name: string;
     company: string;
+    email?: string;
     tags: string[];
     cadenceDays: number;
     estimatedValue?: number;
@@ -14,8 +15,9 @@ interface Props {
 export default function AddContactForm({ onAdd }: Props) {
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
+  const [email, setEmail] = useState("");
   const [tags, setTags] = useState("");
-  const [cadenceDays, setCadenceDays] = useState(30);
+  const [cadenceDays, setCadenceDays] = useState(10);
   const [estimatedValue, setEstimatedValue] = useState("");
   const [referredBy, setReferredBy] = useState("");
   const [open, setOpen] = useState(false);
@@ -25,6 +27,7 @@ export default function AddContactForm({ onAdd }: Props) {
     onAdd({
       name: name.trim(),
       company: company.trim(),
+      email: email.trim() || undefined,
       tags: tags
         .split(",")
         .map((t) => t.trim())
@@ -35,8 +38,9 @@ export default function AddContactForm({ onAdd }: Props) {
     });
     setName("");
     setCompany("");
+    setEmail("");
     setTags("");
-    setCadenceDays(30);
+    setCadenceDays(10);
     setEstimatedValue("");
     setReferredBy("");
     setOpen(false);
@@ -66,6 +70,13 @@ export default function AddContactForm({ onAdd }: Props) {
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           placeholder="Company (optional)"
+          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+        />
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email (optional)"
           className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
         />
         <input

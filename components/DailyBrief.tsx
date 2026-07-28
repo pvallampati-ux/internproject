@@ -1,4 +1,7 @@
+import { useState } from "react";
+import { touchpointCount } from "@/lib/contactTypes";
 import type { DailyBrief as DailyBriefData } from "@/lib/dailyBrief";
+import EmailAction from "@/components/EmailAction";
 
 interface Props {
   data: DailyBriefData;
@@ -14,6 +17,7 @@ function timeAgo(iso: string): string {
 }
 
 export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
+  const [emailOverrides, setEmailOverrides] = useState<Record<string, string>>({});
   const { overdueContacts, followUps, coolingLeads, marketEvents, warmIntros } = data;
   const isEmpty =
     overdueContacts.length === 0 &&
@@ -56,23 +60,35 @@ export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
             <h3 className="font-serif text-lg text-gray-100">People to call</h3>
             <ul className="mt-2 space-y-2">
               {overdueContacts.map(({ contact, daysOverdue }) => (
-                <li
-                  key={contact.id}
-                  className="flex items-center justify-between rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-100">{contact.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {contact.company ? `${contact.company} · ` : ""}
-                      {daysOverdue} days overdue (every {contact.cadenceDays}d)
-                    </p>
+                <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <a href={`/contacts/${contact.id}`} className="text-sm font-medium text-gray-100 hover:underline">
+                        {contact.name}
+                      </a>
+                      <p className="text-xs text-gray-500">
+                        {contact.company ? `${contact.company} · ` : ""}
+                        {daysOverdue} days overdue (every {contact.cadenceDays}d) ·{" "}
+                        {touchpointCount(contact)} touchpoint(s)
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <EmailAction
+                        contactId={contact.id}
+                        email={emailOverrides[contact.id] ?? contact.email}
+                        onEmailSaved={(email) =>
+                          setEmailOverrides((prev) => ({ ...prev, [contact.id]: email }))
+                        }
+                        compact
+                      />
+                      <button
+                        onClick={() => onMarkContacted(contact.id)}
+                        className="rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                      >
+                        Mark contacted
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => onMarkContacted(contact.id)}
-                    className="rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
-                  >
-                    Mark contacted
-                  </button>
                 </li>
               ))}
             </ul>

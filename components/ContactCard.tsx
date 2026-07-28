@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { PIPELINE_STAGES, type Contact, type PipelineStage } from "@/lib/contactTypes";
+import Link from "next/link";
+import { PIPELINE_STAGES, touchpointCount, type Contact, type PipelineStage } from "@/lib/contactTypes";
 
 interface Props {
   contact: Contact;
@@ -35,23 +36,22 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
 
   return (
     <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-serif text-base font-semibold text-gray-100">{contact.name}</p>
-          {contact.company && <p className="text-sm text-gray-400">{contact.company}</p>}
-        </div>
-        <select
-          value={contact.stage}
-          onChange={(e) => onStageChange(contact.id, e.target.value as PipelineStage)}
-          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 focus:border-gold-500 focus:outline-none"
-        >
-          {PIPELINE_STAGES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Link href={`/contacts/${contact.id}`} className="block hover:underline">
+        <p className="font-serif text-base font-semibold text-gray-100">{contact.name}</p>
+      </Link>
+      {contact.company && <p className="text-sm text-gray-400">{contact.company}</p>}
+
+      <select
+        value={contact.stage}
+        onChange={(e) => onStageChange(contact.id, e.target.value as PipelineStage)}
+        className="mt-2 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 focus:border-gold-500 focus:outline-none"
+      >
+        {PIPELINE_STAGES.map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
 
       {contact.tags.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
@@ -72,18 +72,20 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
         </div>
       )}
 
-      <div className="mt-3 flex items-center justify-between text-xs">
-        <span className={overdue ? "text-amber-400" : "text-gray-500"}>
+      <div className="mt-3 text-xs">
+        <p className={overdue ? "text-amber-400" : "text-gray-500"}>
           Last contact {formatDate(contact.lastContactedAt)} · every {contact.cadenceDays}d
           {overdue ? ` (${daysSinceContact - contact.cadenceDays}d overdue)` : ""}
-        </span>
-        <button
-          onClick={() => onMarkContacted(contact.id)}
-          className="rounded-md border border-gold-500/50 px-2 py-1 text-gold-400 hover:bg-gold-500/10"
-        >
-          Mark contacted
-        </button>
+        </p>
+        <p className="mt-1 text-gray-500">{touchpointCount(contact)} touchpoint(s) so far</p>
       </div>
+
+      <button
+        onClick={() => onMarkContacted(contact.id)}
+        className="mt-2 w-full rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+      >
+        Mark contacted
+      </button>
 
       <button
         onClick={() => setShowLog(!showLog)}

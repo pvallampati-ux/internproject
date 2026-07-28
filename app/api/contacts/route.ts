@@ -16,8 +16,9 @@ export async function POST(request: Request) {
   const contact = createContact({
     name: body.name,
     company: typeof body.company === "string" ? body.company : undefined,
+    email: typeof body.email === "string" ? body.email : undefined,
     tags: Array.isArray(body.tags) ? body.tags : [],
-    cadenceDays: typeof body.cadenceDays === "number" ? body.cadenceDays : 30,
+    cadenceDays: typeof body.cadenceDays === "number" ? body.cadenceDays : 10,
     stage,
     initialNote: typeof body.initialNote === "string" ? body.initialNote : undefined,
     estimatedValue: typeof body.estimatedValue === "number" ? body.estimatedValue : undefined,

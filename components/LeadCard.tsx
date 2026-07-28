@@ -28,20 +28,24 @@ interface Props {
 export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
   const [noteDraft, setNoteDraft] = useState(lead.note ?? "");
   const [added, setAdded] = useState(false);
+  const [addingContact, setAddingContact] = useState(false);
+  const [contactName, setContactName] = useState("");
 
-  async function addAsContact() {
+  async function submitAddContact() {
+    if (!contactName.trim()) return;
     await fetch("/api/contacts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: lead.title,
+        name: contactName.trim(),
         tags: [],
-        cadenceDays: 30,
+        cadenceDays: 10,
         stage: "Prospect",
         initialNote: `Sourced from lead: ${lead.title} (${lead.link})`,
       }),
     });
     setAdded(true);
+    setAddingContact(false);
   }
 
   return (
@@ -100,13 +104,40 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
         </div>
       )}
 
-      <button
-        onClick={addAsContact}
-        disabled={added}
-        className="mt-2 text-xs text-gray-500 hover:text-gold-400 disabled:text-gold-400"
-      >
-        {added ? "✓ Added to pipeline" : "+ Add as contact"}
-      </button>
+      {added ? (
+        <p className="mt-2 text-xs text-gold-400">✓ Added to pipeline</p>
+      ) : addingContact ? (
+        <div className="mt-2 flex gap-2">
+          <input
+            type="text"
+            autoFocus
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitAddContact()}
+            placeholder="Person's name..."
+            className="flex-1 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+          />
+          <button
+            onClick={submitAddContact}
+            className="rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+          >
+            Add
+          </button>
+          <button
+            onClick={() => setAddingContact(false)}
+            className="text-xs text-gray-500 hover:text-gray-300"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAddingContact(true)}
+          className="mt-2 text-xs text-gray-500 hover:text-gold-400"
+        >
+          + Add as contact
+        </button>
+      )}
 
       {lead.saved && (
         <input

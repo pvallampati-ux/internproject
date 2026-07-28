@@ -40,9 +40,14 @@ function makeContactId(): string {
   return `contact_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
+export function getContact(id: string): Contact | null {
+  return loadContacts().find((c) => c.id === id) ?? null;
+}
+
 export function createContact(input: {
   name: string;
   company?: string;
+  email?: string;
   tags: string[];
   cadenceDays: number;
   stage?: PipelineStage;
@@ -56,6 +61,7 @@ export function createContact(input: {
     id: makeContactId(),
     name: input.name,
     company: input.company,
+    email: input.email,
     tags: input.tags,
     lastContactedAt: now,
     cadenceDays: input.cadenceDays,
@@ -74,7 +80,15 @@ export function updateContact(
   patch: Partial<
     Pick<
       Contact,
-      "name" | "company" | "tags" | "cadenceDays" | "stage" | "lastContactedAt" | "estimatedValue" | "referredBy"
+      | "name"
+      | "company"
+      | "email"
+      | "tags"
+      | "cadenceDays"
+      | "stage"
+      | "lastContactedAt"
+      | "estimatedValue"
+      | "referredBy"
     >
   >
 ): Contact | null {

@@ -25,6 +25,7 @@ export interface Contact {
   id: string;
   name: string;
   company?: string;
+  email?: string;
   // Keywords matched (case-insensitive substring) against lead title/snippet
   // to decide whether a news item is relevant to this contact.
   tags: string[];
@@ -34,4 +35,11 @@ export interface Contact {
   noteLog: NoteEntry[];
   estimatedValue?: number; // rough opportunity size, e.g. estimated investable assets ($)
   referredBy?: string; // free text: who/what referred this contact
+}
+
+// "Touchpoints" is simply the number of logged notes — every meaningful
+// interaction should get a note entry, so this stays derived rather than a
+// separately-tracked counter that could drift out of sync.
+export function touchpointCount(contact: Contact): number {
+  return contact.noteLog.length;
 }
