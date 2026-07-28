@@ -26,6 +26,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       | "lastContactedAt"
       | "estimatedValue"
       | "referredBy"
+      | "referredByContactId"
       | "nextMeetingDate"
       | "isCOI"
     >
@@ -39,6 +40,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (PIPELINE_STAGES.includes(body.stage)) patch.stage = body.stage;
   if (typeof body.estimatedValue === "number") patch.estimatedValue = body.estimatedValue;
   if (typeof body.referredBy === "string") patch.referredBy = body.referredBy;
+  if (typeof body.referredByContactId === "string" || body.referredByContactId === null) {
+    patch.referredByContactId = body.referredByContactId ?? undefined;
+  }
   if (typeof body.nextMeetingDate === "string" || body.nextMeetingDate === null) {
     patch.nextMeetingDate = body.nextMeetingDate ?? undefined;
   }

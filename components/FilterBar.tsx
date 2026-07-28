@@ -1,4 +1,4 @@
-import { CATEGORIES, type Category } from "@/lib/config";
+import { CATEGORIES, CATEGORY_GROUPS, CATEGORY_GROUP_ORDER, type Category } from "@/lib/config";
 
 interface Props {
   activeCategory: Category | null;
@@ -28,8 +28,8 @@ export default function FilterBar({
   refreshing,
 }: Props) {
   return (
-    <div className="flex flex-col gap-3 border-b border-charcoal-700 pb-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-wrap gap-2">
+    <div className="flex flex-col gap-3 border-b border-charcoal-700 pb-4">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => onCategoryChange(null)}
           className={`rounded-full border px-3 py-1 text-sm ${
@@ -40,19 +40,6 @@ export default function FilterBar({
         >
           All
         </button>
-        {CATEGORIES.map((c) => (
-          <button
-            key={c}
-            onClick={() => onCategoryChange(c)}
-            className={`rounded-full border px-3 py-1 text-sm ${
-              activeCategory === c
-                ? "border-gold-500 bg-gold-500/10 text-gold-400"
-                : "border-charcoal-700 text-gray-400 hover:border-gray-500"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
         <button
           onClick={() => onSavedOnlyChange(!savedOnly)}
           className={`rounded-full border px-3 py-1 text-sm ${
@@ -64,6 +51,28 @@ export default function FilterBar({
           ★ Saved
         </button>
       </div>
+
+      {CATEGORY_GROUP_ORDER.map((group) => {
+        const groupCategories = CATEGORIES.filter((c) => CATEGORY_GROUPS[c] === group);
+        return (
+          <div key={group} className="flex flex-wrap items-center gap-2">
+            <span className="w-24 shrink-0 text-xs uppercase tracking-wide text-gray-600">{group}</span>
+            {groupCategories.map((c) => (
+              <button
+                key={c}
+                onClick={() => onCategoryChange(c)}
+                className={`rounded-full border px-3 py-1 text-sm ${
+                  activeCategory === c
+                    ? "border-gold-500 bg-gold-500/10 text-gold-400"
+                    : "border-charcoal-700 text-gray-400 hover:border-gray-500"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        );
+      })}
 
       <div className="flex flex-wrap items-center gap-2">
         <input

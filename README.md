@@ -118,8 +118,36 @@ Edit `lib/config.ts`:
 - `REGION_TERMS` — city/suburb names used to decide whether a story is "in
   region." Widen this to cover more of Ohio, or narrow it to just Columbus
   proper.
-- `CATEGORY_KEYWORDS` — the keyword lists that drive classification into the
-  four buckets. Add terms as you notice false negatives/positives.
+- `CATEGORY_KEYWORDS` — the keyword lists that drive classification into
+  each category. Add terms as you notice false negatives/positives.
+- `CATEGORY_GROUPS` — which of Business / Personal / Corporate / Market
+  Signal each category belongs to (drives badge color and the grouped
+  filter chips).
+
+## Wealth Event Detection
+
+The classifier (`lib/classify.ts`) runs continuously as part of every
+refresh, scanning each headline/snippet for 17 categories grouped into:
+
+- **Business** — IPO, M&A, PE Investment, Founder Exit, Executive Hiring,
+  Stock Sale
+- **Personal** — Foundation Created, Divorce, Estate Filing, Real Estate
+  Purchase, Charitable Donation
+- **Corporate** — Earnings, Funding, Debt Issuance, Spin-off, Executive
+  Compensation Change
+- **Market Signal** — New Firm / Expansion (a company-level signal, not an
+  individual wealth trigger, kept separate from the three groups above)
+
+Each category has its own Google News RSS query (`lib/sources.ts`), scoped
+to the region, so this is still free/keyword-based — no new API cost. A
+lead can match multiple categories (e.g. a founder sells a stake AND a new
+CEO is named in the same story). The Intelligence page's "Wealth Events"
+section shows anything matching Business, Personal, or Corporate; the
+FilterBar groups all 17 categories under their group heading. As with the
+warm-intro finder, this is naive keyword matching, not NLP — false
+positives happen, and the Personal group in particular (divorce, estate
+filings) should be treated as a research prompt to verify, handled with
+discretion, not a confirmed fact to act on directly.
 
 ## Managing contacts / the client pipeline
 
@@ -261,10 +289,11 @@ The **Network** graph (`components/NetworkGraph.tsx`) is a self-contained
 SVG visualization, not a real graph library — plain circular layout, no
 physics simulation. It draws two kinds of edges (`lib/networkGraph.ts`):
 
-- **Referral** (solid gold) — when a contact's free-text `referredBy` field
-  matches another contact's name exactly (case-insensitive). This is
-  string matching, not a structured link, so it only draws a line if you
-  typed the referrer's name the same way in both places.
+- **Referral** (solid gold) — drawn from a contact's structured
+  `referredByContactId` link when set (reliable, no string matching
+  involved). For older contacts that only have a free-text `referredBy`
+  value, it falls back to matching that text against another contact's name
+  exactly (case-insensitive).
 - **Possible warm intro** (dashed gray) — the same naive keyword-overlap
   matches from the warm intro finder, deduped against referral edges so a
   pair already linked one way doesn't also get a second line.
@@ -342,10 +371,26 @@ pinpointed to a town and are called out as unmapped rather than guessed at.
 ## Deal value and referral source (Pipeline tab)
 
 Contacts optionally carry `estimatedValue` (a number, e.g. estimated
-investable assets) and `referredBy` (free text). Set them when adding a
-contact or editing one; the Pipeline funnel header rolls them up into a
-per-stage total and an "Active pipeline value" figure. These two fields are
-also what a future Analytics module would report on — see below.
+investable assets) and a referral source. Set them when adding a contact or
+editing one; the Pipeline funnel header rolls them up into a per-stage
+total and an "Active pipeline value" figure. These two fields are also what
+a future Analytics module would report on — see below.
+
+### Referral source: linked contacts, not just flat text
+
+The "Referred by" field (`components/ContactPicker.tsx`, used on the
+contact profile page and the "add contact" form) is a searchable picker,
+not a plain text box: start typing and it autocompletes against your
+existing contacts. Pick a match and the referral becomes a real structured
+link (`referredByContactId`) — rendered everywhere as a clickable link to
+that person's profile (contact cards, the Pipeline board) and used to draw
+a reliable edge on the COI/Network graph. If the referrer isn't a tracked
+contact yet (an organization like "Columbus Chamber of Commerce," or
+someone you haven't added), just leave it as typed free text — it still
+displays, just without a link. Contact names shown elsewhere in the app
+(warm-intro matches in the daily brief, Pipeline, and Intelligence pages;
+"Affects: ..." on market events in the daily brief) are also clickable
+links to that contact's profile, not inert text.
 
 ## Market Insights (Healthcare / Business Owners) — the Intelligence "Focus" filter
 
@@ -448,11 +493,18 @@ in-app rather than populated with placeholder numbers.
   rather than showing garbage in that case). These are the only features in
   this app that aren't free and aren't deterministic — everything else you
   can trace back to an exact keyword match; these you can't.
-- The Network graph's referral edges only draw when `referredBy` is an
-  exact (case-insensitive) match to another contact's `name` — a typo, a
-  nickname, or "Dr. Chen" vs. "Robert Chen" won't link. It's also a plain
-  circular layout, not a force-directed graph, so it won't automatically
-  cluster related people together as the network grows.
+- The Network graph's referral edges are reliable when a contact was linked
+  via the "Referred by" picker (`referredByContactId`). Only contacts with
+  just an old free-text `referredBy` value fall back to exact
+  (case-insensitive) name matching against another contact's `name` — a
+  typo, a nickname, or "Dr. Chen" vs. "Robert Chen" won't link in that
+  fallback case. The graph is also a plain circular layout, not a
+  force-directed graph, so it won't automatically cluster related people
+  together as the network grows.
+- Wealth Event Detection is still keyword-based, not NLP, and the Personal
+  category group (Divorce, Estate Filing) is inherently sensitive — treat
+  every match as an unverified public-news mention to confirm, not a fact,
+  and use discretion in how (and whether) you act on it.
 - The CSV schedule upload is a minimal parser, not a full CSV spec
   implementation — stick to simple values (no embedded newlines) in each
   cell for reliable results.

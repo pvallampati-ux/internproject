@@ -1,6 +1,9 @@
 import { useState } from "react";
+import ContactPicker from "@/components/ContactPicker";
+import type { Contact } from "@/lib/contactTypes";
 
 interface Props {
+  contacts: Contact[];
   onAdd: (input: {
     name: string;
     company: string;
@@ -9,17 +12,19 @@ interface Props {
     cadenceDays: number;
     estimatedValue?: number;
     referredBy?: string;
+    referredByContactId?: string;
   }) => void;
 }
 
-export default function AddContactForm({ onAdd }: Props) {
+export default function AddContactForm({ contacts, onAdd }: Props) {
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [tags, setTags] = useState("");
   const [cadenceDays, setCadenceDays] = useState(10);
   const [estimatedValue, setEstimatedValue] = useState("");
-  const [referredBy, setReferredBy] = useState("");
+  const [referredBy, setReferredBy] = useState<string | undefined>(undefined);
+  const [referredByContactId, setReferredByContactId] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState(false);
 
   function submit() {
@@ -34,7 +39,8 @@ export default function AddContactForm({ onAdd }: Props) {
         .filter(Boolean),
       cadenceDays,
       estimatedValue: estimatedValue ? Number(estimatedValue) : undefined,
-      referredBy: referredBy.trim() || undefined,
+      referredBy,
+      referredByContactId,
     });
     setName("");
     setCompany("");
@@ -42,7 +48,8 @@ export default function AddContactForm({ onAdd }: Props) {
     setTags("");
     setCadenceDays(10);
     setEstimatedValue("");
-    setReferredBy("");
+    setReferredBy(undefined);
+    setReferredByContactId(undefined);
     setOpen(false);
   }
 
@@ -99,11 +106,14 @@ export default function AddContactForm({ onAdd }: Props) {
           placeholder="Estimated opportunity value ($, optional)"
           className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
         />
-        <input
-          value={referredBy}
-          onChange={(e) => setReferredBy(e.target.value)}
-          placeholder="Referred by (optional)"
-          className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+        <ContactPicker
+          contacts={contacts}
+          referredBy={referredBy}
+          referredByContactId={referredByContactId}
+          onChange={(p) => {
+            setReferredBy(p.referredBy);
+            setReferredByContactId(p.referredByContactId);
+          }}
         />
       </div>
       <div className="mt-3 flex gap-2">

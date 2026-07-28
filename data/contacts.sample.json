@@ -49,6 +49,7 @@
     "stage": "Contacted",
     "estimatedValue": 900000,
     "referredBy": "Robert Chen",
+    "referredByContactId": "contact_demo_8",
     "noteLog": [
       {
         "date": "2026-07-05T14:00:00.000Z",
@@ -97,6 +98,7 @@
     "stage": "Proposal",
     "estimatedValue": 5000000,
     "referredBy": "David Park",
+    "referredByContactId": "contact_demo_4",
     "noteLog": [
       {
         "date": "2026-05-15T14:00:00.000Z",

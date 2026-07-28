@@ -1,12 +1,15 @@
 import { useState } from "react";
 import type { Lead } from "@/lib/store";
-import type { Category } from "@/lib/config";
+import { CATEGORY_GROUPS, type Category, type CategoryGroup } from "@/lib/config";
 
-const CATEGORY_STYLES: Record<Category, string> = {
-  "Liquidity Event": "bg-emerald-900/50 text-emerald-300 border-emerald-700/50",
-  "Executive Change": "bg-sky-900/50 text-sky-300 border-sky-700/50",
-  "M&A / Buyout": "bg-purple-900/50 text-purple-300 border-purple-700/50",
-  "New Firm / Expansion": "bg-amber-900/50 text-amber-300 border-amber-700/50",
+// Badge color follows the wealth-event group (Business/Personal/Corporate)
+// rather than the specific category, so the 17 categories stay visually
+// legible instead of needing 17 distinct colors.
+const GROUP_STYLES: Record<CategoryGroup, string> = {
+  Business: "bg-emerald-900/50 text-emerald-300 border-emerald-700/50",
+  Personal: "bg-purple-900/50 text-purple-300 border-purple-700/50",
+  Corporate: "bg-sky-900/50 text-sky-300 border-sky-700/50",
+  "Market Signal": "bg-amber-900/50 text-amber-300 border-amber-700/50",
 };
 
 function timeAgo(iso: string): string {
@@ -55,7 +58,7 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
           {lead.categories.map((c) => (
             <span
               key={c}
-              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${CATEGORY_STYLES[c]}`}
+              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${GROUP_STYLES[CATEGORY_GROUPS[c]]}`}
             >
               {c}
             </span>

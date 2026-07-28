@@ -54,6 +54,7 @@ export function createContact(input: {
   initialNote?: string;
   estimatedValue?: number;
   referredBy?: string;
+  referredByContactId?: string;
 }): Contact {
   const contacts = loadContacts();
   const now = new Date().toISOString();
@@ -69,6 +70,7 @@ export function createContact(input: {
     noteLog: input.initialNote ? [{ date: now, text: input.initialNote }] : [],
     estimatedValue: input.estimatedValue,
     referredBy: input.referredBy,
+    referredByContactId: input.referredByContactId,
   };
   contacts.push(contact);
   saveContacts(contacts);
@@ -89,6 +91,7 @@ export function updateContact(
       | "lastContactedAt"
       | "estimatedValue"
       | "referredBy"
+      | "referredByContactId"
       | "nextMeetingDate"
       | "isCOI"
     >

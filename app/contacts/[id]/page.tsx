@@ -8,6 +8,7 @@ import type { Lead } from "@/lib/store";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
+import ContactPicker from "@/components/ContactPicker";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -18,6 +19,7 @@ export default function ContactProfilePage() {
   const contactId = params.id;
 
   const [contact, setContact] = useState<Contact | null>(null);
+  const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [relevantLeads, setRelevantLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -28,7 +30,6 @@ export default function ContactProfilePage() {
   const [tagsDraft, setTagsDraft] = useState("");
   const [cadenceDraft, setCadenceDraft] = useState("");
   const [valueDraft, setValueDraft] = useState("");
-  const [referredByDraft, setReferredByDraft] = useState("");
   const [nextMeetingDraft, setNextMeetingDraft] = useState("");
 
   async function loadContact() {
@@ -44,12 +45,16 @@ export default function ContactProfilePage() {
     setTagsDraft(data.tags.join(", "));
     setCadenceDraft(String(data.cadenceDays));
     setValueDraft(data.estimatedValue !== undefined ? String(data.estimatedValue) : "");
-    setReferredByDraft(data.referredBy ?? "");
     setNextMeetingDraft(data.nextMeetingDate ? data.nextMeetingDate.slice(0, 10) : "");
 
-    const leadsRes = await fetch("/api/leads?days=90");
+    const [leadsRes, contactsRes] = await Promise.all([
+      fetch("/api/leads?days=90"),
+      fetch("/api/contacts"),
+    ]);
     const leadsData = await leadsRes.json();
     setRelevantLeads(matchLeadsToContact(data, leadsData.leads ?? []));
+    const contactsData = await contactsRes.json();
+    setAllContacts(contactsData.contacts ?? []);
     setLoading(false);
   }
 
@@ -205,12 +210,15 @@ export default function ContactProfilePage() {
             </div>
             <div>
               <label className="text-xs text-gray-500">Referred by</label>
-              <input
-                value={referredByDraft}
-                onChange={(e) => setReferredByDraft(e.target.value)}
-                onBlur={() => referredByDraft !== (contact.referredBy ?? "") && patch({ referredBy: referredByDraft })}
-                className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-gray-200 focus:border-gold-500 focus:outline-none"
-              />
+              <div className="mt-1">
+                <ContactPicker
+                  contacts={allContacts}
+                  excludeId={contact.id}
+                  referredBy={contact.referredBy}
+                  referredByContactId={contact.referredByContactId}
+                  onChange={(p) => patch(p)}
+                />
+              </div>
             </div>
           </div>
         </section>

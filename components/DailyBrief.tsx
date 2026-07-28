@@ -135,7 +135,15 @@ export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
                     {lead.title}
                   </a>
                   <p className="mt-1 text-xs text-gray-500">
-                    Affects: {affectedContacts.map((c) => c.name).join(", ")}
+                    Affects:{" "}
+                    {affectedContacts.map((c, i) => (
+                      <span key={c.id}>
+                        {i > 0 && ", "}
+                        <a href={`/contacts/${c.id}`} className="text-gray-300 hover:text-gold-400 hover:underline">
+                          {c.name}
+                        </a>
+                      </span>
+                    ))}
                   </p>
                 </li>
               ))}
@@ -195,9 +203,14 @@ export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
             <ul className="mt-2 space-y-2">
               {warmIntros.map((m, i) => (
                 <li key={i} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2 text-sm text-gray-300">
-                  <span className="text-gray-100">{m.contactA.name}</span> &amp;{" "}
-                  <span className="text-gray-100">{m.contactB.name}</span> — both mention{" "}
-                  <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
+                  <a href={`/contacts/${m.contactA.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                    {m.contactA.name}
+                  </a>{" "}
+                  &amp;{" "}
+                  <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                    {m.contactB.name}
+                  </a>{" "}
+                  — both mention <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
                 </li>
               ))}
             </ul>

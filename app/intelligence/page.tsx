@@ -10,6 +10,7 @@ import type { WarmIntroMatch } from "@/lib/warmIntros";
 import { INDUSTRIES, INDUSTRY_TOPICS } from "@/lib/industries";
 import type { CustomIndustry } from "@/lib/customIndustriesStore";
 import type { MarketInsight } from "@/lib/marketInsightsStore";
+import { WEALTH_EVENT_CATEGORIES } from "@/lib/config";
 
 interface DisplayTopic {
   id: string;
@@ -125,7 +126,9 @@ export default function IntelligencePage() {
     }
   }
 
-  const wealthEvents = leads.filter((l) => l.categories.includes("Liquidity Event"));
+  const wealthEvents = leads.filter((l) =>
+    l.categories.some((c) => WEALTH_EVENT_CATEGORIES.includes(c))
+  );
 
   const plotted = leads
     .map((lead) => {
@@ -222,9 +225,14 @@ export default function IntelligencePage() {
                     key={i}
                     className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2 text-sm text-gray-300"
                   >
-                    <span className="text-gray-100">{m.contactA.name}</span> &amp;{" "}
-                    <span className="text-gray-100">{m.contactB.name}</span> — both mention{" "}
-                    <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
+                    <a href={`/contacts/${m.contactA.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                      {m.contactA.name}
+                    </a>{" "}
+                    &amp;{" "}
+                    <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                      {m.contactB.name}
+                    </a>{" "}
+                    — both mention <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
                   </li>
                 ))}
               </ul>
@@ -254,11 +262,13 @@ export default function IntelligencePage() {
           {focus === "All" ? (
             <section>
               <h2 className="font-serif text-lg text-gray-100">
-                Wealth &amp; Liquidity Events ({wealthEvents.length})
+                Wealth Events ({wealthEvents.length})
               </h2>
               <p className="mt-1 text-xs text-gray-500">
-                Leads classified as liquidity events — sales, IPOs, recapitalizations, and
-                similar.
+                Business, personal, and corporate wealth-triggering events detected from public
+                news — IPOs, M&amp;A, founder exits, divorces, estate filings, charitable gifts,
+                and more. Naive keyword matching; review before acting, and handle the Personal
+                group with discretion.
               </p>
               {wealthEvents.length === 0 ? (
                 <p className="mt-3 text-sm text-gray-600">None in the last 90 days.</p>

@@ -75,7 +75,21 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
           {contact.estimatedValue !== undefined && (
             <span className="text-gold-400">{formatCurrency(contact.estimatedValue)}</span>
           )}
-          {contact.referredBy && <span>Referred by {contact.referredBy}</span>}
+          {contact.referredBy &&
+            (contact.referredByContactId ? (
+              <span>
+                Referred by{" "}
+                <Link
+                  href={`/contacts/${contact.referredByContactId}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-gold-400 hover:underline"
+                >
+                  {contact.referredBy}
+                </Link>
+              </span>
+            ) : (
+              <span>Referred by {contact.referredBy}</span>
+            ))}
         </div>
       )}
 

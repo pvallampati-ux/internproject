@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     initialNote: typeof body.initialNote === "string" ? body.initialNote : undefined,
     estimatedValue: typeof body.estimatedValue === "number" ? body.estimatedValue : undefined,
     referredBy: typeof body.referredBy === "string" ? body.referredBy : undefined,
+    referredByContactId: typeof body.referredByContactId === "string" ? body.referredByContactId : undefined,
   });
 
   return NextResponse.json(contact, { status: 201 });

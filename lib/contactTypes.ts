@@ -34,7 +34,13 @@ export interface Contact {
   stage: PipelineStage;
   noteLog: NoteEntry[];
   estimatedValue?: number; // rough opportunity size, e.g. estimated investable assets ($)
-  referredBy?: string; // free text: who/what referred this contact — also used to draw referral edges on the Network graph when it matches another contact's name
+  // Who referred this contact. If the referrer is a tracked contact,
+  // referredByContactId is the real, reliable link (used for Network graph
+  // edges and rendered as a clickable link everywhere). referredBy is free
+  // text for referrers that aren't a tracked contact (an org, an event, a
+  // name you haven't added yet) — set referredByContactId to override it.
+  referredBy?: string;
+  referredByContactId?: string;
   nextMeetingDate?: string; // ISO date; surfaced in the daily brief so AI Meeting Prep is ready ahead of time
   isCOI?: boolean; // Center of Influence — a referral source, tracked on the COI/Network tab
 }

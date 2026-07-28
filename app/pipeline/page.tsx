@@ -77,6 +77,7 @@ export default function PipelinePage() {
     cadenceDays: number;
     estimatedValue?: number;
     referredBy?: string;
+    referredByContactId?: string;
   }) {
     const res = await fetch("/api/contacts", {
       method: "POST",
@@ -124,9 +125,14 @@ export default function PipelinePage() {
           <ul className="mt-2 space-y-1">
             {warmIntros.map((m, i) => (
               <li key={i} className="text-sm text-gray-300">
-                <span className="text-gray-100">{m.contactA.name}</span> &amp;{" "}
-                <span className="text-gray-100">{m.contactB.name}</span> — both mention{" "}
-                <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
+                <a href={`/contacts/${m.contactA.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                  {m.contactA.name}
+                </a>{" "}
+                &amp;{" "}
+                <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                  {m.contactB.name}
+                </a>{" "}
+                — both mention <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
               </li>
             ))}
           </ul>
@@ -134,7 +140,7 @@ export default function PipelinePage() {
       )}
 
       <div className="mb-4">
-        <AddContactForm onAdd={handleAddContact} />
+        <AddContactForm contacts={contacts} onAdd={handleAddContact} />
       </div>
 
       {loading ? (
