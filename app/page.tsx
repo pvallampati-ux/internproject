@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { touchpointCount } from "@/lib/contactTypes";
+import { touchpointCount, type PipelineStage } from "@/lib/contactTypes";
 import type { DailyBrief as DailyBriefData, OverdueContact } from "@/lib/dailyBrief";
 import DailyBrief from "@/components/DailyBrief";
 import EmailAction from "@/components/EmailAction";
@@ -13,6 +13,17 @@ const BRIEF_SHOWN_KEY = "dailyBriefShownDate";
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+// Same stage-color convention as the Network diagram (green = Client, blue
+// = still in the pipeline, gray = Cold) so it reads consistently app-wide.
+const STAGE_BADGE: Record<PipelineStage, string> = {
+  Client: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+  Prospect: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Contacted: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Meeting: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Proposal: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Cold: "border-gray-500/50 bg-gray-500/10 text-gray-400",
+};
 
 export default function HomePage() {
   const [brief, setBrief] = useState<DailyBriefData | null>(null);
@@ -158,12 +169,19 @@ export default function HomePage() {
                   <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <Link
-                          href={`/contacts/${contact.id}`}
-                          className="text-sm font-medium text-gray-100 hover:underline"
-                        >
-                          {contact.name}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/contacts/${contact.id}`}
+                            className="text-sm font-medium text-gray-100 hover:underline"
+                          >
+                            {contact.name}
+                          </Link>
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STAGE_BADGE[contact.stage]}`}
+                          >
+                            {contact.stage}
+                          </span>
+                        </div>
                         <p className="text-xs text-gray-500">
                           {contact.company ? `${contact.company} · ` : ""}
                           {daysOverdue} days overdue (every {contact.cadenceDays}d) ·{" "}
