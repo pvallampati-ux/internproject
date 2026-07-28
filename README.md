@@ -950,15 +950,20 @@ attention"), Pipeline ("where does each relationship stand"), Network
   performance). Added Calls/Emails this month (same computation as the
   existing Meetings stat) and Cooling Relationships.
 
-**Deliberately not built**, and why: an "Introduction Workflow" status
-tracker (Suggested/Requested/Accepted/Completed) and an "Active
-Outreach" status pipeline (Drafting/Sent/Waiting/Replied) would each
-need a new persisted data model — real scope, not a styling change, so
-they're left as a follow-up rather than half-built. An "Efficiency"
-Analytics section (time saved, adoption rate) was skipped outright —
-there's no real baseline in a single-user app to measure either
-number against, so anything shown there would be invented, not
-measured.
+**Follow-up build**: the Introduction Workflow status tracker
+(Suggested/Requested/Accepted/Completed, `data/introRequests.json` +
+`lib/introRequestsStore.ts` + `/api/intro-requests`) and Active
+Outreach status (Drafting/Sent/Waiting/Replied/Meeting Scheduled, a new
+`Contact.outreachStatus` field, settable from the Contact Drawer) —
+both needed a real data model rather than just UI, so they landed in a
+follow-up pass instead of being half-built in the first one. Network's
+"Best Introduction Paths" rows and Engage's new "Active Outreach"
+section both read/write these live now.
+
+**Still deliberately not built**: an "Efficiency" Analytics section
+(time saved, adoption rate) — skipped outright, not deferred. There's
+no real baseline in a single-user app to measure either number
+against, so anything shown there would be invented, not measured.
 
 ## Calendar (prospecting events)
 
