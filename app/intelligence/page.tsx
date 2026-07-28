@@ -6,11 +6,27 @@ import RegionMap from "@/components/RegionMap";
 import type { Lead } from "@/lib/store";
 import { pickMapPoint } from "@/lib/geo";
 import type { WarmIntroMatch } from "@/lib/warmIntros";
+import { INDUSTRIES, INDUSTRY_TOPICS, type Industry } from "@/lib/industries";
+import type { MarketInsight } from "@/lib/marketInsightsStore";
+
+type FocusFilter = "All" | Industry;
+
+function timeAgo(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 0) return "today";
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
+}
 
 export default function IntelligencePage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [focus, setFocus] = useState<FocusFilter>("All");
+  const [insights, setInsights] = useState<MarketInsight[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -26,6 +42,17 @@ export default function IntelligencePage() {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (focus === "All") return;
+    (async () => {
+      setInsightsLoading(true);
+      const res = await fetch(`/api/market-insights?industry=${encodeURIComponent(focus)}&days=30`);
+      const data = await res.json();
+      setInsights(data.items ?? []);
+      setInsightsLoading(false);
+    })();
+  }, [focus]);
 
   async function handleToggleSave(id: string, saved: boolean) {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, saved } : l)));
@@ -43,6 +70,31 @@ export default function IntelligencePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note }),
     });
+  }
+
+  async function handleRefreshInsights() {
+    setRefreshing(true);
+    setRefreshMessage(null);
+    try {
+      const res = await fetch("/api/market-insights/refresh", { method: "POST" });
+      const summary = await res.json();
+      if (summary.error) {
+        setRefreshMessage(`Refresh failed: ${summary.error}`);
+      } else {
+        setRefreshMessage(
+          `Checked ${summary.topicsChecked} topics, found ${summary.itemsKept} relevant items (${summary.added} new).`
+        );
+        if (focus !== "All") {
+          const res2 = await fetch(`/api/market-insights?industry=${encodeURIComponent(focus)}&days=30`);
+          const data2 = await res2.json();
+          setInsights(data2.items ?? []);
+        }
+      }
+    } catch (err) {
+      setRefreshMessage(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   const wealthEvents = leads.filter((l) => l.categories.includes("Liquidity Event"));
@@ -67,6 +119,33 @@ export default function IntelligencePage() {
           geography — last 90 days.
         </p>
       </header>
+
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <span className="text-xs uppercase tracking-wide text-gray-500">Focus:</span>
+        <button
+          onClick={() => setFocus("All")}
+          className={`rounded-full border px-3 py-1.5 text-sm ${
+            focus === "All"
+              ? "border-gold-500 bg-gold-500/10 text-gold-400"
+              : "border-charcoal-700 text-gray-400 hover:border-gray-500"
+          }`}
+        >
+          All
+        </button>
+        {INDUSTRIES.map((ind) => (
+          <button
+            key={ind}
+            onClick={() => setFocus(ind)}
+            className={`rounded-full border px-3 py-1.5 text-sm ${
+              focus === ind
+                ? "border-gold-500 bg-gold-500/10 text-gold-400"
+                : "border-charcoal-700 text-gray-400 hover:border-gray-500"
+            }`}
+          >
+            {ind}
+          </button>
+        ))}
+      </div>
 
       {loading ? (
         <p className="text-sm text-gray-500">Loading...</p>
@@ -118,28 +197,98 @@ export default function IntelligencePage() {
             )}
           </section>
 
-          <section>
-            <h2 className="font-serif text-lg text-gray-100">
-              Wealth &amp; Liquidity Events ({wealthEvents.length})
-            </h2>
-            <p className="mt-1 text-xs text-gray-500">
-              Leads classified as liquidity events — sales, IPOs, recapitalizations, and similar.
-            </p>
-            {wealthEvents.length === 0 ? (
-              <p className="mt-3 text-sm text-gray-600">None in the last 90 days.</p>
-            ) : (
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {wealthEvents.map((lead) => (
-                  <LeadCard
-                    key={lead.id}
-                    lead={lead}
-                    onToggleSave={handleToggleSave}
-                    onSaveNote={handleSaveNote}
-                  />
-                ))}
+          {focus === "All" ? (
+            <section>
+              <h2 className="font-serif text-lg text-gray-100">
+                Wealth &amp; Liquidity Events ({wealthEvents.length})
+              </h2>
+              <p className="mt-1 text-xs text-gray-500">
+                Leads classified as liquidity events — sales, IPOs, recapitalizations, and
+                similar.
+              </p>
+              {wealthEvents.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">None in the last 90 days.</p>
+              ) : (
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {wealthEvents.map((lead) => (
+                    <LeadCard
+                      key={lead.id}
+                      lead={lead}
+                      onToggleSave={handleToggleSave}
+                      onSaveNote={handleSaveNote}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : (
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-serif text-lg text-gray-100">{focus} Intelligence</h2>
+                <button
+                  onClick={handleRefreshInsights}
+                  disabled={refreshing}
+                  className="rounded-md bg-gold-500 px-3 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400 disabled:opacity-50"
+                >
+                  {refreshing ? "Refreshing..." : "Refresh feeds"}
+                </button>
               </div>
-            )}
-          </section>
+              {refreshMessage && <p className="mb-3 text-xs text-gray-500">{refreshMessage}</p>}
+              <p className="mb-4 text-xs text-gray-500">
+                Deal-type topics are Ohio-scoped; policy/regulatory topics are national.
+              </p>
+
+              {insightsLoading ? (
+                <p className="text-sm text-gray-500">Loading...</p>
+              ) : (
+                <div className="space-y-6">
+                  {INDUSTRY_TOPICS[focus].map((topic) => {
+                    const topicItems = insights.filter((i) => i.topicId === topic.id);
+                    return (
+                      <div key={topic.id}>
+                        <h3 className="text-sm font-semibold text-gray-200">
+                          {topic.label}{" "}
+                          <span className="text-xs font-normal text-gray-500">
+                            ({topicItems.length}) — {topic.regionScoped ? "Ohio-scoped" : "national"}
+                          </span>
+                        </h3>
+                        {topicItems.length === 0 ? (
+                          <p className="mt-1 text-sm text-gray-600">
+                            Nothing in the last 30 days.
+                          </p>
+                        ) : (
+                          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {topicItems.map((item) => (
+                              <a
+                                key={item.id}
+                                href={item.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block rounded-lg border border-charcoal-700 bg-charcoal-800 p-4 transition hover:border-gold-500/60"
+                              >
+                                <h4 className="font-serif text-sm font-semibold text-gray-100 hover:underline">
+                                  {item.title}
+                                </h4>
+                                {item.snippet && (
+                                  <p className="mt-1 line-clamp-2 text-xs text-gray-400">
+                                    {item.snippet}
+                                  </p>
+                                )}
+                                <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                                  <span>{item.source}</span>
+                                  <span>{timeAgo(item.publishedAt)}</span>
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
     </main>

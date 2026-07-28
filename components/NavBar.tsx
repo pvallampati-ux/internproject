@@ -8,7 +8,6 @@ const LINKS = [
   { href: "/intelligence", label: "Intelligence" },
   { href: "/engagement", label: "Engagement" },
   { href: "/pipeline", label: "Pipeline" },
-  { href: "/market-insights", label: "Market Insights" },
   { href: "/analytics", label: "Analytics" },
 ];
 

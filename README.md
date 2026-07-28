@@ -1,16 +1,18 @@
 # Private Client Prospecting Hub
 
-A Columbus / Central Ohio prospecting platform organized into six modules,
+A Columbus / Central Ohio prospecting platform organized into five modules,
 navigable via the top nav bar:
 
 | Tab | Route | What it does |
 |---|---|---|
 | Prospect Discovery | `/` | News-based lead sourcing, filtering, and scoring |
-| Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map |
+| Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map, and an industry-focus filter (Healthcare / Business Owners) for Market Insights |
 | Engagement | `/engagement` | Meeting prep (+ optional AI Meeting Prep), outreach queue, follow-ups/cooling leads |
 | Pipeline | `/pipeline` | Prospect → Client Kanban/funnel, deal value, referral source |
-| Market Insights | `/market-insights` | Industry-specific news: Healthcare and Business Owners verticals |
 | Analytics | `/analytics` | **Not built yet** — stub page, see below |
+
+Market Insights started as its own tab but got folded into Intelligence as a
+"Focus" filter instead — same underlying data/routes, one less nav item.
 
 This is a personal prototype built on free, public data sources. It is not
 connected to any JPMorgan internal system, licensed data feed, or CRM —
@@ -243,13 +245,19 @@ contact or editing one; the Pipeline funnel header rolls them up into a
 per-stage total and an "Active pipeline value" figure. These two fields are
 also what a future Analytics module would report on — see below.
 
-## Market Insights (Healthcare / Business Owners)
+## Market Insights (Healthcare / Business Owners) — the Intelligence "Focus" filter
 
-Unlike the rest of the app, Market Insights (`/market-insights`) is
-industry-scoped rather than region-scoped, sourced separately
-(`lib/industries.ts`, `lib/marketInsightsRefresh.ts`,
-`data/market-insights.json` — its own git-ignored store, same no-fake-data
-rule as leads/contacts) and refreshed with its own "Refresh feeds" button.
+Unlike the rest of the app, Market Insights is industry-scoped rather than
+region-scoped, sourced separately (`lib/industries.ts`,
+`lib/marketInsightsRefresh.ts`, `data/market-insights.json` — its own
+git-ignored store, same no-fake-data rule as leads/contacts) and refreshed
+with its own "Refresh feeds" button. It lives inside the **Intelligence**
+tab (`app/intelligence/page.tsx`) as a "Focus" filter — "All" shows the
+default region-scoped view (relationship mapping, map, wealth events);
+picking "Healthcare" or "Business Owners" swaps the bottom section for that
+vertical's topics instead. The underlying API routes
+(`/api/market-insights`, `/api/market-insights/refresh`) are unchanged from
+when this was its own tab, so nothing else needed to move.
 
 Two verticals ship today, each with its own sub-topics:
 
