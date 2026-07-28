@@ -6,7 +6,7 @@ import RegionMap from "@/components/RegionMap";
 import AddIndustryForm from "@/components/AddIndustryForm";
 import type { Lead } from "@/lib/store";
 import { pickMapPoint } from "@/lib/geo";
-import type { WarmIntroMatch } from "@/lib/warmIntros";
+import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { INDUSTRIES, INDUSTRY_TOPICS } from "@/lib/industries";
 import type { CustomIndustry } from "@/lib/customIndustriesStore";
 import type { MarketInsight } from "@/lib/marketInsightsStore";
@@ -232,7 +232,7 @@ export default function IntelligencePage() {
                     <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
                       {m.contactB.name}
                     </a>{" "}
-                    — both mention <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
+                    — <span className="text-gold-400">{describeSharedTerms(m.sharedTerms)}</span>
                   </li>
                 ))}
               </ul>

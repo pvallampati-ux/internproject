@@ -1,22 +1,44 @@
 # Private Client Prospecting Hub
 
-A Columbus / Central Ohio prospecting platform organized into seven modules,
+A Columbus / Central Ohio prospecting platform organized into eight modules,
 navigable via the top nav bar:
 
 | Tab | Route | What it does |
 |---|---|---|
-| Prospect Discovery | `/` | News-based lead sourcing, filtering, and scoring |
+| Home | `/` | Dashboard: today's meetings (AI Meeting Prep as a popup), and a persistent list of clients/prospects needing contact |
+| Prospect Discovery | `/discovery` | News-based lead sourcing, filtering, and scoring |
 | Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map, and an industry-focus filter (Healthcare / Business Owners / anything you add) for Market Insights |
 | Engagement | `/engagement` | Meeting prep (+ optional AI Meeting Prep), outreach queue, follow-ups/cooling leads |
 | Pipeline | `/pipeline` | Prospect → Client Kanban/funnel (drag-and-drop or dropdown), deal value, referral source |
 | COI / Network | `/coi` | Centers of Influence and a visual graph of referral/warm-intro connections |
-| Calendar | `/calendar` | Prospecting events (tailgates, networking nights), search, CSV schedule upload, tag prospects |
+| Calendar | `/calendar` | Prospecting events (tailgates, networking nights) — list or monthly grid view, search, CSV schedule upload, tag prospects |
 | Analytics | `/analytics` | **Not built yet** — stub page, see below |
 
 Every contact also has a profile page at `/contacts/[id]` — click any name in
 Pipeline or the daily brief to open it. That's the CRM-360 view: editable
 details, cadence/touchpoints, email actions, conversation log, and AI
 Meeting Prep in one place.
+
+### Home page (`/`)
+
+The landing page is a dashboard, not the news feed (that moved to
+`/discovery`). Two always-visible sections, both sourced from
+`/api/daily-brief`:
+
+- **Meetings today** — anyone with a `nextMeetingDate` of today. "Open AI
+  Meeting Prep" opens the prep panel as a popup right on this page, instead
+  of navigating to their profile first.
+- **Clients & prospects needing contact** — everyone overdue relative to
+  their own cadence, with quick Mark Contacted / email actions. This is
+  permanent, not a once-a-day dismissable notice — it stays visible every
+  time you load the page.
+
+The "Today's Brief" popup (`components/DailyBrief.tsx`) still auto-opens
+once per day here (tracked via `localStorage`, same as before), but now
+only for the softer, easier-to-miss nudges — market events affecting your
+clients, saved leads to follow up on or that have gone cooling, and
+possible warm intros. Meetings and overdue outreach moved to permanent
+sections above so they're not something you can dismiss and lose track of.
 
 Market Insights started as its own tab but got folded into Intelligence as a
 "Focus" filter instead — same underlying data/routes, one less nav item.
@@ -42,9 +64,10 @@ See "Known limitations" below for the full list of what's simulated vs. real.
    articles ("More coverage" on the lead card) so you can cross-reference
    before acting — capped at 20 lookups per refresh so one run doesn't turn
    into dozens of extra requests; anything past the cap backfills next run.
-3. The dashboard (`app/page.tsx`) reads leads via `/api/leads` and lets you
-   filter by category, date range, saved-only, and free-text search. The
-   "Refresh feeds" button calls `/api/refresh` to pull new stories on demand.
+3. The news feed (`app/discovery/page.tsx`) reads leads via `/api/leads` and
+   lets you filter by category, date range, saved-only, and free-text
+   search. The "Refresh feeds" button calls `/api/refresh` to pull new
+   stories on demand.
 4. Each lead can be starred (saved) and given a short freeform note, stored
    directly on the lead in `data/leads.json` (`PATCH /api/leads/[id]`).
 5. `data/contacts.json` holds the contacts/prospects you're tracking, each
@@ -55,6 +78,11 @@ See "Known limitations" below for the full list of what's simulated vs. real.
    + Kanban board by stage, add/edit contacts (including estimated deal
    value and referral source), log notes, mark contacted, and see possible
    warm intros. A separate **Cold** section holds contacts who've gone quiet.
+   Each card shows just name, company, and a ⚑ flag if a touchpoint is due
+   by default — hover a card to reveal everything else (stage, tags, deal
+   value, relationship health, notes) as an overlay, so a full board of
+   contacts doesn't turn into a wall of scrolling. See "Pipeline board: hover
+   for detail" below.
 7. The **Intelligence** page (`/intelligence`) surfaces liquidity-event
    leads, the warm-intro finder, and a static regional map plotting leads by
    matched town — no live/interactive map, no map API, no cost.
@@ -65,8 +93,21 @@ See "Known limitations" below for the full list of what's simulated vs. real.
    overdue for outreach, saved leads with no note yet ("follow up on"),
    saved leads with a stale note ("cooling"), recent leads matching a
    contact's tags ("market events affecting your clients"), and possible
-   warm intros. It pops up once per day (tracked via `localStorage`, so it's
-   per-browser) and can be reopened anytime with the "Today's Brief" button.
+   warm intros. The Home page (`/`) shows meetings-today and overdue-outreach
+   permanently and surfaces the rest of this as a once-a-day popup (tracked
+   via `localStorage`, so it's per-browser) — see "Home page" above.
+
+## Pipeline board: hover for detail
+
+`components/ContactCard.tsx` shows a compact default (name, company, and a
+⚑ touchpoint-needed flag if the contact is overdue relative to their own
+cadence) so a full board of contacts is scannable without scrolling through
+every field on every card. Hovering a card reveals everything else —
+relationship health, life stage, pipeline stage dropdown, tags, deal value
+and wealth gap, referral source, last-contact info, Mark Contacted, and the
+note log — as an overlay positioned below the card. It's a CSS overlay
+(`position: absolute`), not a layout push, so hovering doesn't shift
+neighboring cards around; it disappears the moment your cursor leaves.
 
 No sample/demo data ships in this repo — `data/leads.json` and
 `data/contacts.json` both start empty and are git-ignored (local-only).
@@ -81,8 +122,9 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. Click **Refresh feeds** to pull live news, or
-seed data with:
+Open http://localhost:3000 — that's the Home dashboard. Go to
+http://localhost:3000/discovery and click **Refresh feeds** to pull live
+news, or seed data from the command line with:
 
 ```bash
 npm run refresh
@@ -271,11 +313,18 @@ extra library.
 `lib/warmIntros.ts` scans every pair of contacts' tags/company/note text for
 shared terms (crude proper-noun extraction — sequences of capitalized
 words, filtered against a small stopword list) and flags a possible
-connection when two contacts mention the same thing (e.g. both notes
-mention "Ohio State University"). This is naive keyword overlap, not real
-NLP — expect false positives on generic terms, and treat every match as a
-prompt to double-check, not a confirmed connection. Results show up on the
-Pipeline page and as a short teaser in the daily brief.
+connection when two contacts share something. Each shared term keeps track
+of where it came from — a tag, a company name, or note text
+(`lib/warmIntroTypes.ts`) — so the description reads correctly regardless
+of source: "both tagged retail" for a shared tag, "both connected to Acme
+Corp" for a shared company, "both mention Ohio State University" for a
+shared note phrase. Earlier versions flattened all three into a single
+"both mention X" line, which read strangely for a shared tag like "both
+mention retail" — that's fixed. This is still naive keyword overlap, not
+real NLP — expect some false positives on generic terms even with the
+stopword list, and treat every match as a prompt to double-check, not a
+confirmed connection. Results show up on the Pipeline page and as a short
+teaser in the daily brief.
 
 ## COI / Network tab
 
@@ -515,6 +564,14 @@ look them up). Stored in `data/events.json` (git-ignored, your real
 schedule) seeded from `data/events.sample.json` (tracked — ships with three
 demo events, including an Ohio State football tailgate, as an example of
 the pattern rather than confidential data).
+
+Two views, toggled with the List/Month buttons at the top: **List** is the
+original flat, chronological list. **Month** is a grid for the current
+month (prev/next/Today navigation) with up to 2 event titles per day cell
+and a "+N more" overflow indicator; clicking any day shows that day's full
+event details (same cards as list view) below the grid. Both views read
+from the same `/api/events` fetch and respect the search box — search
+narrows what shows up in either view.
 
 **Upload schedule (CSV)** parses a simple CSV
 (`title,date,location,description` header, last two optional) and

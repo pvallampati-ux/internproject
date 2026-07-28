@@ -13,6 +13,14 @@ function formatDate(iso: string): string {
   });
 }
 
+// Local YYYY-MM-DD key, built from date parts rather than toISOString() so
+// it matches what the user sees in their own timezone.
+function dateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -20,6 +28,10 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [view, setView] = useState<"list" | "month">("list");
+  const today = new Date();
+  const [monthCursor, setMonthCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(dateKey(today));
 
   // Add-event form state
   const [showForm, setShowForm] = useState(false);
@@ -112,6 +124,81 @@ export default function CalendarPage() {
 
   function contactName(id: string): string {
     return contacts.find((c) => c.id === id)?.name ?? "Unknown";
+  }
+
+  const eventsByDate = new Map<string, CalendarEvent[]>();
+  for (const event of events) {
+    const key = dateKey(new Date(event.date));
+    const list = eventsByDate.get(key) ?? [];
+    list.push(event);
+    eventsByDate.set(key, list);
+  }
+
+  const monthLabel = monthCursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const firstOfMonth = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
+  const daysInMonth = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0).getDate();
+  const leadingBlanks = firstOfMonth.getDay();
+  const totalCells = Math.ceil((leadingBlanks + daysInMonth) / 7) * 7;
+  const gridDays: (Date | null)[] = Array.from({ length: totalCells }, (_, i) => {
+    const dayNum = i - leadingBlanks + 1;
+    return dayNum >= 1 && dayNum <= daysInMonth
+      ? new Date(monthCursor.getFullYear(), monthCursor.getMonth(), dayNum)
+      : null;
+  });
+  const selectedDayEvents = eventsByDate.get(selectedDate) ?? [];
+
+  function renderEventCard(event: CalendarEvent) {
+    return (
+      <div key={event.id} className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-serif text-base font-semibold text-gray-100">{event.title}</h3>
+            <p className="mt-1 text-xs text-gray-500">
+              {formatDate(event.date)}
+              {event.location ? ` · ${event.location}` : ""}
+            </p>
+            {event.description && <p className="mt-1 text-sm text-gray-400">{event.description}</p>}
+          </div>
+        </div>
+
+        {event.taggedContactIds.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {event.taggedContactIds.map((id) => (
+              <a
+                key={id}
+                href={`/contacts/${id}`}
+                className="rounded-full bg-charcoal-900 px-2 py-0.5 text-xs text-gold-400 hover:underline"
+              >
+                {contactName(id)}
+              </a>
+            ))}
+          </div>
+        )}
+
+        {contacts.length > 0 && (
+          <details className="mt-2">
+            <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-300">
+              Tag prospects
+            </summary>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {contacts.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => toggleTag(event.id, c.id, event.taggedContactIds)}
+                  className={`rounded-full border px-2 py-1 text-xs ${
+                    event.taggedContactIds.includes(c.id)
+                      ? "border-gold-500 bg-gold-500/10 text-gold-400"
+                      : "border-charcoal-700 text-gray-400"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -228,67 +315,122 @@ export default function CalendarPage() {
         </div>
       )}
 
+      <div className="mb-4 flex gap-1">
+        <button
+          onClick={() => setView("list")}
+          className={`rounded-md border px-3 py-1.5 text-sm ${
+            view === "list"
+              ? "border-gold-500 bg-gold-500/10 text-gold-400"
+              : "border-charcoal-700 text-gray-400 hover:border-gray-500"
+          }`}
+        >
+          List
+        </button>
+        <button
+          onClick={() => setView("month")}
+          className={`rounded-md border px-3 py-1.5 text-sm ${
+            view === "month"
+              ? "border-gold-500 bg-gold-500/10 text-gold-400"
+              : "border-charcoal-700 text-gray-400 hover:border-gray-500"
+          }`}
+        >
+          Month
+        </button>
+      </div>
+
       {loading ? (
         <p className="text-sm text-gray-500">Loading...</p>
-      ) : events.length === 0 ? (
-        <p className="text-sm text-gray-500">No events yet.</p>
+      ) : view === "list" ? (
+        events.length === 0 ? (
+          <p className="text-sm text-gray-500">No events yet.</p>
+        ) : (
+          <div className="space-y-3">{events.map((event) => renderEventCard(event))}</div>
+        )
       ) : (
-        <div className="space-y-3">
-          {events.map((event) => (
-            <div key={event.id} className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-serif text-base font-semibold text-gray-100">
-                    {event.title}
-                  </h3>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {formatDate(event.date)}
-                    {event.location ? ` · ${event.location}` : ""}
-                  </p>
-                  {event.description && (
-                    <p className="mt-1 text-sm text-gray-400">{event.description}</p>
-                  )}
-                </div>
-              </div>
-
-              {event.taggedContactIds.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {event.taggedContactIds.map((id) => (
-                    <a
-                      key={id}
-                      href={`/contacts/${id}`}
-                      className="rounded-full bg-charcoal-900 px-2 py-0.5 text-xs text-gold-400 hover:underline"
-                    >
-                      {contactName(id)}
-                    </a>
-                  ))}
-                </div>
-              )}
-
-              {contacts.length > 0 && (
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-300">
-                    Tag prospects
-                  </summary>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {contacts.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => toggleTag(event.id, c.id, event.taggedContactIds)}
-                        className={`rounded-full border px-2 py-1 text-xs ${
-                          event.taggedContactIds.includes(c.id)
-                            ? "border-gold-500 bg-gold-500/10 text-gold-400"
-                            : "border-charcoal-700 text-gray-400"
-                        }`}
-                      >
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                </details>
-              )}
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <button
+              onClick={() => setMonthCursor(new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1))}
+              className="rounded-md border border-charcoal-700 px-2 py-1 text-sm text-gray-400 hover:border-gray-500"
+            >
+              ‹
+            </button>
+            <div className="flex items-center gap-2">
+              <h2 className="font-serif text-lg text-gray-100">{monthLabel}</h2>
+              <button
+                onClick={() => {
+                  setMonthCursor(new Date(today.getFullYear(), today.getMonth(), 1));
+                  setSelectedDate(dateKey(today));
+                }}
+                className="rounded-md border border-charcoal-700 px-2 py-0.5 text-xs text-gray-400 hover:border-gray-500"
+              >
+                Today
+              </button>
             </div>
-          ))}
+            <button
+              onClick={() => setMonthCursor(new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1))}
+              className="rounded-md border border-charcoal-700 px-2 py-1 text-sm text-gray-400 hover:border-gray-500"
+            >
+              ›
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-500">
+            {WEEKDAY_LABELS.map((d) => (
+              <div key={d} className="py-1">
+                {d}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {gridDays.map((day, i) => {
+              if (!day) return <div key={i} className="min-h-[4.5rem] rounded-md bg-charcoal-900/30" />;
+              const key = dateKey(day);
+              const dayEvents = eventsByDate.get(key) ?? [];
+              const isToday = key === dateKey(today);
+              const isSelected = key === selectedDate;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setSelectedDate(key)}
+                  className={`min-h-[4.5rem] rounded-md border p-1 text-left align-top ${
+                    isSelected
+                      ? "border-gold-500 bg-gold-500/10"
+                      : "border-charcoal-800 bg-charcoal-900/60 hover:border-charcoal-600"
+                  }`}
+                >
+                  <span className={`text-xs ${isToday ? "font-semibold text-gold-400" : "text-gray-400"}`}>
+                    {day.getDate()}
+                  </span>
+                  <div className="mt-1 space-y-0.5">
+                    {dayEvents.slice(0, 2).map((e) => (
+                      <p key={e.id} className="truncate rounded bg-charcoal-800 px-1 text-[10px] text-gray-300">
+                        {e.title}
+                      </p>
+                    ))}
+                    {dayEvents.length > 2 && (
+                      <p className="text-[10px] text-gray-500">+{dayEvents.length - 2} more</p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-6">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </h3>
+            {selectedDayEvents.length === 0 ? (
+              <p className="text-sm text-gray-600">No events this day.</p>
+            ) : (
+              <div className="space-y-3">{selectedDayEvents.map((event) => renderEventCard(event))}</div>
+            )}
+          </div>
         </div>
       )}
     </main>

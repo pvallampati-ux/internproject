@@ -5,7 +5,7 @@ import ContactCard from "@/components/ContactCard";
 import AddContactForm from "@/components/AddContactForm";
 import PipelineFunnel from "@/components/PipelineFunnel";
 import { JOURNEY_STAGES, type Contact, type PipelineStage } from "@/lib/contactTypes";
-import type { WarmIntroMatch } from "@/lib/warmIntros";
+import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 
 export default function PipelinePage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -133,7 +133,7 @@ export default function PipelinePage() {
                 <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
                   {m.contactB.name}
                 </a>{" "}
-                — both mention <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
+                — <span className="text-gold-400">{describeSharedTerms(m.sharedTerms)}</span>
               </li>
             ))}
           </ul>

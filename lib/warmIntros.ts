@@ -1,12 +1,24 @@
 import { loadContacts, type Contact } from "./contacts";
+import type { SharedTerm, WarmIntroMatch } from "./warmIntroTypes";
 
-// Words too common to count as a meaningful shared connection.
+export type { SharedTermSource, SharedTerm, WarmIntroMatch } from "./warmIntroTypes";
+export { describeSharedTerms } from "./warmIntroTypes";
+
+// Words too common to count as a meaningful shared connection — includes
+// generic sentence-starters that get swept in only because they're
+// capitalized at the start of a sentence, not because they're a real name.
 const STOPWORDS = new Set([
   "the", "this", "that", "these", "those", "sample", "demo", "contact",
   "edit", "replace", "real", "client", "also", "met", "she", "her", "his",
   "he", "they", "them", "existing", "referred", "sent", "follow-up",
   "followup", "follow", "meeting", "call", "email", "notes", "note",
-  "discussed", "scheduled", "review", "reviewing",
+  "discussed", "scheduled", "review", "reviewing", "first", "second",
+  "third", "fourth", "next", "then", "after", "before", "during",
+  "additionally", "however", "meanwhile", "later", "recently", "today",
+  "yesterday", "tomorrow", "overall", "currently", "its", "our", "your",
+  "their", "we", "it", "if", "so", "but", "and", "or", "when", "while",
+  "since", "because", "although", "though", "still", "just", "now",
+  "here", "there", "very", "really", "has", "had", "will", "would",
 ]);
 
 // Crude proper-noun extraction: sequences of capitalized words. No real NLP,
@@ -19,20 +31,20 @@ function extractPhrases(text: string): string[] {
     .filter((m) => m.length > 2 && !STOPWORDS.has(m.toLowerCase()));
 }
 
-function keywordBag(contact: Contact): Set<string> {
-  const bag = new Set<string>();
-  for (const tag of contact.tags) bag.add(tag.toLowerCase());
-  if (contact.company) bag.add(contact.company.toLowerCase());
+// Keeps track of where each shared term came from (a tag, a company name,
+// or note text) so the UI can describe the match in a way that actually
+// makes sense — "both tagged retail" reads very differently from "both
+// mention Ohio State University."
+function collectTerms(contact: Contact): SharedTerm[] {
+  const entries: SharedTerm[] = [];
+  for (const tag of contact.tags) entries.push({ term: tag.toLowerCase(), source: "tag" });
+  if (contact.company) entries.push({ term: contact.company.toLowerCase(), source: "company" });
   for (const entry of contact.noteLog) {
-    for (const phrase of extractPhrases(entry.text)) bag.add(phrase.toLowerCase());
+    for (const phrase of extractPhrases(entry.text)) {
+      entries.push({ term: phrase.toLowerCase(), source: "note" });
+    }
   }
-  return bag;
-}
-
-export interface WarmIntroMatch {
-  contactA: Contact;
-  contactB: Contact;
-  sharedTerms: string[];
+  return entries;
 }
 
 // Naive keyword-overlap connection finder: flags two contacts as a possible
@@ -40,14 +52,23 @@ export interface WarmIntroMatch {
 // positives on generic terms — review before acting on a match.
 export function findWarmIntros(): WarmIntroMatch[] {
   const contacts = loadContacts();
-  const bags = contacts.map((c) => ({ contact: c, bag: keywordBag(c) }));
+  const termLists = contacts.map((c) => ({ contact: c, terms: collectTerms(c) }));
   const matches: WarmIntroMatch[] = [];
 
-  for (let i = 0; i < bags.length; i++) {
-    for (let j = i + 1; j < bags.length; j++) {
-      const sharedTerms = [...bags[i].bag].filter((term) => bags[j].bag.has(term));
+  for (let i = 0; i < termLists.length; i++) {
+    for (let j = i + 1; j < termLists.length; j++) {
+      const termsB = termLists[j].terms;
+      const seen = new Set<string>();
+      const sharedTerms: SharedTerm[] = [];
+      for (const a of termLists[i].terms) {
+        if (seen.has(a.term)) continue;
+        if (termsB.some((b) => b.term === a.term)) {
+          seen.add(a.term);
+          sharedTerms.push(a);
+        }
+      }
       if (sharedTerms.length > 0) {
-        matches.push({ contactA: bags[i].contact, contactB: bags[j].contact, sharedTerms });
+        matches.push({ contactA: termLists[i].contact, contactB: termLists[j].contact, sharedTerms });
       }
     }
   }

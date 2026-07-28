@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import FilterBar from "@/components/FilterBar";
-import LeadCard from "@/components/LeadCard";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { touchpointCount } from "@/lib/contactTypes";
+import type { DailyBrief as DailyBriefData, OverdueContact } from "@/lib/dailyBrief";
 import DailyBrief from "@/components/DailyBrief";
-import type { Lead } from "@/lib/store";
-import type { Category } from "@/lib/config";
-import type { DailyBrief as DailyBriefData } from "@/lib/dailyBrief";
+import EmailAction from "@/components/EmailAction";
+import AiMeetingPrep from "@/components/AiMeetingPrep";
 
 const BRIEF_SHOWN_KEY = "dailyBriefShownDate";
 
@@ -14,39 +14,18 @@ function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export default function Home() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
-  const [days, setDays] = useState(30);
-  const [search, setSearch] = useState("");
-  const [savedOnly, setSavedOnly] = useState(false);
+export default function HomePage() {
   const [brief, setBrief] = useState<DailyBriefData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showBrief, setShowBrief] = useState(false);
-
-  async function loadLeads() {
-    setLoading(true);
-    const params = new URLSearchParams({ days: String(days) });
-    if (category) params.set("category", category);
-    if (search) params.set("q", search);
-    if (savedOnly) params.set("saved", "true");
-    const res = await fetch(`/api/leads?${params.toString()}`);
-    const data = await res.json();
-    setLeads(data.leads ?? []);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    loadLeads();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, days, search, savedOnly]);
+  const [emailOverrides, setEmailOverrides] = useState<Record<string, string>>({});
+  const [meetingPrepContactId, setMeetingPrepContactId] = useState<string | null>(null);
 
   async function fetchBrief(): Promise<DailyBriefData> {
     const res = await fetch("/api/daily-brief");
     const data = await res.json();
     setBrief(data);
+    setLoading(false);
     return data;
   }
 
@@ -54,22 +33,16 @@ export default function Home() {
     (async () => {
       const data = await fetchBrief();
       const hasContent =
-        data.meetingsToday.length > 0 ||
-        data.overdueContacts.length > 0 ||
         data.followUps.length > 0 ||
-        data.marketEvents.length > 0;
+        data.coolingLeads.length > 0 ||
+        data.marketEvents.length > 0 ||
+        data.warmIntros.length > 0;
       if (hasContent && localStorage.getItem(BRIEF_SHOWN_KEY) !== todayKey()) {
         setShowBrief(true);
         localStorage.setItem(BRIEF_SHOWN_KEY, todayKey());
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  async function handleOpenBrief() {
-    await fetchBrief();
-    setShowBrief(true);
-  }
 
   async function handleMarkContacted(contactId: string) {
     await fetch(`/api/contacts/${contactId}`, {
@@ -80,57 +53,13 @@ export default function Home() {
     await fetchBrief();
   }
 
-  async function handleToggleSave(id: string, saved: boolean) {
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, saved } : l)));
-    await fetch(`/api/leads/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saved }),
-    });
-  }
-
-  async function handleSaveNote(id: string, note: string) {
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, note } : l)));
-    await fetch(`/api/leads/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ note }),
-    });
-  }
-
-  async function handleRefresh() {
-    setRefreshing(true);
-    setRefreshMessage(null);
-    try {
-      const res = await fetch("/api/refresh", { method: "POST" });
-      const summary = await res.json();
-      if (summary.error) {
-        setRefreshMessage(`Refresh failed: ${summary.error}`);
-      } else {
-        setRefreshMessage(
-          `Checked ${summary.sourcesChecked} sources, found ${summary.itemsKept} relevant items (${summary.added} new).`
-        );
-        await loadLeads();
-      }
-    } catch (err) {
-      setRefreshMessage(err instanceof Error ? err.message : String(err));
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
-  const counts = useMemo(() => {
-    const byCategory: Record<string, number> = {};
-    for (const lead of leads) {
-      for (const c of lead.categories) {
-        byCategory[c] = (byCategory[c] ?? 0) + 1;
-      }
-    }
-    return byCategory;
-  }, [leads]);
+  const meetingsToday = brief?.meetingsToday ?? [];
+  const overdueContacts: OverdueContact[] = brief?.overdueContacts ?? [];
+  const memoryByContactId = new Map((brief?.memoryReminders ?? []).map((m) => [m.contact.id, m.prompt]));
+  const meetingPrepContact = meetingsToday.find((c) => c.id === meetingPrepContactId);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main className="mx-auto max-w-4xl px-4 py-8">
       {showBrief && brief && (
         <DailyBrief
           data={brief}
@@ -139,71 +68,132 @@ export default function Home() {
         />
       )}
 
-      <header className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-gold-500">Prospect Discovery</p>
-          <h1 className="font-serif text-3xl font-semibold text-gray-100">
-            Sourcing, Filtering &amp; Ranking
-          </h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Auto-tracked signals: liquidity events, executive changes, M&amp;A / buyouts, and
-            new-firm expansions in the region — rule-based sourcing and relevance scoring, not
-            an LLM-driven model.
-          </p>
-        </div>
-        <button
-          onClick={handleOpenBrief}
-          className="shrink-0 rounded-md border border-gold-500/50 px-3 py-1.5 text-sm text-gold-400 hover:bg-gold-500/10"
+      {meetingPrepContact && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-6"
+          onClick={() => setMeetingPrepContactId(null)}
         >
-          Today&rsquo;s Brief
-        </button>
-      </header>
-
-      <FilterBar
-        activeCategory={category}
-        onCategoryChange={setCategory}
-        days={days}
-        onDaysChange={setDays}
-        search={search}
-        onSearchChange={setSearch}
-        savedOnly={savedOnly}
-        onSavedOnlyChange={setSavedOnly}
-        onRefresh={handleRefresh}
-        refreshing={refreshing}
-      />
-
-      {refreshMessage && (
-        <p className="mt-3 text-sm text-gray-400">{refreshMessage}</p>
+          <div
+            className="mt-10 w-full max-w-2xl rounded-lg border border-charcoal-700 bg-charcoal-900 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-gold-500">Meeting Today</p>
+                <h2 className="font-serif text-2xl font-semibold text-gray-100">
+                  {meetingPrepContact.name}
+                </h2>
+              </div>
+              <button
+                onClick={() => setMeetingPrepContactId(null)}
+                aria-label="Close"
+                className="text-2xl leading-none text-gray-500 hover:text-gray-300"
+              >
+                &times;
+              </button>
+            </div>
+            <AiMeetingPrep contactId={meetingPrepContact.id} />
+          </div>
+        </div>
       )}
 
-      <div className="mt-4 flex gap-4 text-xs text-gray-500">
-        <span>{leads.length} leads shown</span>
-        {Object.entries(counts).map(([c, n]) => (
-          <span key={c}>
-            {c}: {n}
-          </span>
-        ))}
-      </div>
+      <header className="mb-6">
+        <p className="text-xs uppercase tracking-widest text-gold-500">Home</p>
+        <h1 className="font-serif text-3xl font-semibold text-gray-100">
+          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+        </h1>
+      </header>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {loading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
-        ) : leads.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No leads yet. Click &ldquo;Refresh feeds&rdquo; to pull the latest news, or seed
-            sample data with <code className="text-gray-400">npm run refresh</code>.
-          </p>
-        ) : (
-          leads.map((lead) => (
-            <LeadCard
-              key={lead.id}
-              lead={lead}
-              onToggleSave={handleToggleSave}
-              onSaveNote={handleSaveNote}
-            />
-          ))
-        )}
-      </div>
+      {loading ? (
+        <p className="text-sm text-gray-500">Loading...</p>
+      ) : (
+        <>
+          <section className="mb-8">
+            <h2 className="font-serif text-lg text-gray-100">Meetings today</h2>
+            {meetingsToday.length === 0 ? (
+              <p className="mt-2 text-sm text-gray-600">Nothing on the calendar today.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {meetingsToday.map((contact) => (
+                  <li
+                    key={contact.id}
+                    className="rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Link
+                          href={`/contacts/${contact.id}`}
+                          className="text-sm font-medium text-gray-100 hover:underline"
+                        >
+                          {contact.name}
+                        </Link>
+                        <p className="text-xs text-gray-500">{contact.company ?? "No company on file"}</p>
+                      </div>
+                      <button
+                        onClick={() => setMeetingPrepContactId(contact.id)}
+                        className="rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+                      >
+                        Open AI Meeting Prep →
+                      </button>
+                    </div>
+                    {memoryByContactId.has(contact.id) && (
+                      <p className="mt-2 text-xs text-gray-400">
+                        <span className="text-gold-400">Relationship memory:</span>{" "}
+                        {memoryByContactId.get(contact.id)}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section>
+            <h2 className="font-serif text-lg text-gray-100">Clients &amp; prospects needing contact</h2>
+            {overdueContacts.length === 0 ? (
+              <p className="mt-2 text-sm text-gray-600">Nobody&rsquo;s overdue for outreach right now.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {overdueContacts.map(({ contact, daysOverdue }) => (
+                  <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Link
+                          href={`/contacts/${contact.id}`}
+                          className="text-sm font-medium text-gray-100 hover:underline"
+                        >
+                          {contact.name}
+                        </Link>
+                        <p className="text-xs text-gray-500">
+                          {contact.company ? `${contact.company} · ` : ""}
+                          {daysOverdue} days overdue (every {contact.cadenceDays}d) ·{" "}
+                          {touchpointCount(contact)} touchpoint(s)
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <EmailAction
+                          contactId={contact.id}
+                          email={emailOverrides[contact.id] ?? contact.email}
+                          onEmailSaved={(email) =>
+                            setEmailOverrides((prev) => ({ ...prev, [contact.id]: email }))
+                          }
+                          compact
+                        />
+                        <button
+                          onClick={() => handleMarkContacted(contact.id)}
+                          className="rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                        >
+                          Mark contacted
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
     </main>
   );
 }

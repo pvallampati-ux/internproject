@@ -1,7 +1,5 @@
-import { useState } from "react";
-import { touchpointCount } from "@/lib/contactTypes";
 import type { DailyBrief as DailyBriefData } from "@/lib/dailyBrief";
-import EmailAction from "@/components/EmailAction";
+import { describeSharedTerms } from "@/lib/warmIntroTypes";
 
 interface Props {
   data: DailyBriefData;
@@ -16,14 +14,12 @@ function timeAgo(iso: string): string {
   return `${days} days ago`;
 }
 
-export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
-  const [emailOverrides, setEmailOverrides] = useState<Record<string, string>>({});
-  const { meetingsToday, memoryReminders, overdueContacts, followUps, coolingLeads, marketEvents, warmIntros } =
-    data;
-  const memoryByContactId = new Map(memoryReminders.map((m) => [m.contact.id, m.prompt]));
+// Meetings today and overdue contacts live permanently on the Home page now
+// (not just in this once-a-day popup), so this stays focused on the softer,
+// easy-to-miss nudges: market events, follow-ups, cooling leads, warm intros.
+export default function DailyBrief({ data, onClose }: Props) {
+  const { followUps, coolingLeads, marketEvents, warmIntros } = data;
   const isEmpty =
-    meetingsToday.length === 0 &&
-    overdueContacts.length === 0 &&
     followUps.length === 0 &&
     coolingLeads.length === 0 &&
     marketEvents.length === 0 &&
@@ -56,78 +52,6 @@ export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
           <p className="mt-6 text-sm text-gray-400">
             Nothing urgent today. Nice and quiet.
           </p>
-        )}
-
-        {meetingsToday.length > 0 && (
-          <section className="mt-6">
-            <h3 className="font-serif text-lg text-gray-100">Meetings today</h3>
-            <ul className="mt-2 space-y-2">
-              {meetingsToday.map((contact) => (
-                <li key={contact.id} className="rounded-md border border-gold-500/30 bg-gold-500/5 px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <a href={`/contacts/${contact.id}`} className="text-sm font-medium text-gray-100 hover:underline">
-                        {contact.name}
-                      </a>
-                      <p className="text-xs text-gray-500">{contact.company ?? "No company on file"}</p>
-                    </div>
-                    <a
-                      href={`/contacts/${contact.id}`}
-                      className="rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
-                    >
-                      Open AI Meeting Prep →
-                    </a>
-                  </div>
-                  {memoryByContactId.has(contact.id) && (
-                    <p className="mt-2 text-xs text-gray-400">
-                      <span className="text-gold-400">Relationship memory:</span>{" "}
-                      {memoryByContactId.get(contact.id)}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {overdueContacts.length > 0 && (
-          <section className="mt-6">
-            <h3 className="font-serif text-lg text-gray-100">People to call</h3>
-            <ul className="mt-2 space-y-2">
-              {overdueContacts.map(({ contact, daysOverdue }) => (
-                <li key={contact.id} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <a href={`/contacts/${contact.id}`} className="text-sm font-medium text-gray-100 hover:underline">
-                        {contact.name}
-                      </a>
-                      <p className="text-xs text-gray-500">
-                        {contact.company ? `${contact.company} · ` : ""}
-                        {daysOverdue} days overdue (every {contact.cadenceDays}d) ·{" "}
-                        {touchpointCount(contact)} touchpoint(s)
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <EmailAction
-                        contactId={contact.id}
-                        email={emailOverrides[contact.id] ?? contact.email}
-                        onEmailSaved={(email) =>
-                          setEmailOverrides((prev) => ({ ...prev, [contact.id]: email }))
-                        }
-                        compact
-                      />
-                      <button
-                        onClick={() => onMarkContacted(contact.id)}
-                        className="rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
-                      >
-                        Mark contacted
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
         )}
 
         {marketEvents.length > 0 && (
@@ -220,7 +144,7 @@ export default function DailyBrief({ data, onClose, onMarkContacted }: Props) {
                   <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
                     {m.contactB.name}
                   </a>{" "}
-                  — both mention <span className="text-gold-400">{m.sharedTerms.join(", ")}</span>
+                  — <span className="text-gold-400">{describeSharedTerms(m.sharedTerms)}</span>
                 </li>
               ))}
             </ul>

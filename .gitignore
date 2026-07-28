@@ -3,6 +3,7 @@ node_modules/
 .env*
 !.env.example
 *.log
+tsconfig.tsbuildinfo
 
 # Real contact/meeting-note data stays local-only. data/contacts.sample.json
 # (empty by default) is still tracked and ships in the repo.

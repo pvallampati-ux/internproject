@@ -59,122 +59,138 @@ export default function ContactCard({ contact, onStageChange, onMarkContacted, o
         e.dataTransfer.setData("text/plain", contact.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      className="cursor-grab rounded-lg border border-charcoal-700 bg-charcoal-800 p-4 active:cursor-grabbing"
+      className="group relative cursor-grab rounded-lg border border-charcoal-700 bg-charcoal-800 p-3 active:cursor-grabbing"
     >
-      <div className="flex items-start justify-between gap-2">
-        <Link href={`/contacts/${contact.id}`} className="block hover:underline">
-          <p className="font-serif text-base font-semibold text-gray-100">{contact.name}</p>
+      {/* Compact default view — name, company, and a flag if a touchpoint is
+          due. Everything else lives in the hover panel below so the board
+          stays scannable without scrolling through every field. */}
+      <div className="flex items-center justify-between gap-2">
+        <Link href={`/contacts/${contact.id}`} className="min-w-0 flex-1 hover:underline">
+          <p className="truncate font-serif text-base font-semibold text-gray-100">{contact.name}</p>
         </Link>
-        <span
-          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${HEALTH_DOT[health]}`}
-          title={`Relationship health: ${health}`}
-        />
+        {overdue && (
+          <span
+            className="shrink-0 text-sm text-amber-400"
+            title={`Needs a touchpoint — ${daysSinceContact - contact.cadenceDays}d overdue`}
+          >
+            ⚑
+          </span>
+        )}
       </div>
-      {contact.company && <p className="text-sm text-gray-400">{contact.company}</p>}
-      {lifeStage && (
-        <span className="mt-1 inline-block rounded-full border border-gold-500/50 bg-gold-500/10 px-2 py-0.5 text-xs font-medium text-gold-400">
-          {lifeStage}
-        </span>
-      )}
+      {contact.company && <p className="truncate text-sm text-gray-400">{contact.company}</p>}
 
-      <select
-        value={contact.stage}
-        onChange={(e) => onStageChange(contact.id, e.target.value as PipelineStage)}
-        className="mt-2 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 focus:border-gold-500 focus:outline-none"
-      >
-        {PIPELINE_STAGES.map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
-      </select>
-
-      {contact.tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {contact.tags.map((tag) => (
-            <span key={tag} className="rounded-full bg-charcoal-900 px-2 py-0.5 text-xs text-gray-400">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {(contact.estimatedValue || contact.referredBy) && (
-        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-gray-500">
-          {contact.estimatedValue !== undefined && (
-            <span className="text-gold-400">
-              {formatCurrency(contact.estimatedValue)}
-              {wealthGap !== null && wealthGap > 0 && (
-                <span className="text-gray-500"> ({formatCurrency(wealthGap)} gap)</span>
-              )}
+      {/* Full detail — revealed on hover, positioned to overlay rather than
+          push the column layout around. */}
+      <div className="invisible absolute left-0 top-full z-20 w-full space-y-3 rounded-lg border border-gold-500/40 bg-charcoal-800 p-4 text-left opacity-0 shadow-xl transition-opacity duration-100 group-hover:visible group-hover:opacity-100">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`h-2 w-2 shrink-0 rounded-full ${HEALTH_DOT[health]}`} />
+          <span className="text-xs text-gray-500">Relationship health: {health}</span>
+          {lifeStage && (
+            <span className="rounded-full border border-gold-500/50 bg-gold-500/10 px-2 py-0.5 text-xs font-medium text-gold-400">
+              {lifeStage}
             </span>
           )}
-          {contact.referredBy &&
-            (contact.referredByContactId ? (
-              <span>
-                Referred by{" "}
-                <Link
-                  href={`/contacts/${contact.referredByContactId}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-gold-400 hover:underline"
-                >
-                  {contact.referredBy}
-                </Link>
-              </span>
-            ) : (
-              <span>Referred by {contact.referredBy}</span>
-            ))}
         </div>
-      )}
 
-      <div className="mt-3 text-xs">
-        <p className={overdue ? "text-amber-400" : "text-gray-500"}>
-          Last contact {formatDate(contact.lastContactedAt)} · every {contact.cadenceDays}d
-          {overdue ? ` (${daysSinceContact - contact.cadenceDays}d overdue)` : ""}
-        </p>
-        <p className="mt-1 text-gray-500">{touchpointCount(contact)} touchpoint(s) so far</p>
-      </div>
-
-      <button
-        onClick={() => onMarkContacted(contact.id)}
-        className="mt-2 w-full rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
-      >
-        Mark contacted
-      </button>
-
-      <button
-        onClick={() => setShowLog(!showLog)}
-        className="mt-3 text-xs text-gray-500 hover:text-gray-300"
-      >
-        {showLog ? "Hide" : "Show"} notes ({contact.noteLog.length})
-      </button>
-
-      {showLog && (
-        <div className="mt-2 space-y-2">
-          {[...contact.noteLog].reverse().map((entry, i) => (
-            <div key={i} className="rounded-md bg-charcoal-900 px-2 py-1.5 text-xs">
-              <span className="text-gray-500">{formatDate(entry.date)} — </span>
-              <span className="text-gray-300">{entry.text}</span>
-            </div>
+        <select
+          value={contact.stage}
+          onChange={(e) => onStageChange(contact.id, e.target.value as PipelineStage)}
+          className="w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 focus:border-gold-500 focus:outline-none"
+        >
+          {PIPELINE_STAGES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
           ))}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={noteDraft}
-              onChange={(e) => setNoteDraft(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submitNote()}
-              placeholder="Add a note..."
-              className="flex-1 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-            />
-            <button
-              onClick={submitNote}
-              className="rounded-md bg-gold-500 px-2 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
-            >
-              Add
-            </button>
+        </select>
+
+        {contact.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {contact.tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-charcoal-900 px-2 py-0.5 text-xs text-gray-400">
+                {tag}
+              </span>
+            ))}
           </div>
+        )}
+
+        {(contact.estimatedValue || contact.referredBy) && (
+          <div className="flex flex-wrap gap-x-3 text-xs text-gray-500">
+            {contact.estimatedValue !== undefined && (
+              <span className="text-gold-400">
+                {formatCurrency(contact.estimatedValue)}
+                {wealthGap !== null && wealthGap > 0 && (
+                  <span className="text-gray-500"> ({formatCurrency(wealthGap)} gap)</span>
+                )}
+              </span>
+            )}
+            {contact.referredBy &&
+              (contact.referredByContactId ? (
+                <span>
+                  Referred by{" "}
+                  <Link
+                    href={`/contacts/${contact.referredByContactId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-gold-400 hover:underline"
+                  >
+                    {contact.referredBy}
+                  </Link>
+                </span>
+              ) : (
+                <span>Referred by {contact.referredBy}</span>
+              ))}
+          </div>
+        )}
+
+        <div className="text-xs">
+          <p className={overdue ? "text-amber-400" : "text-gray-500"}>
+            Last contact {formatDate(contact.lastContactedAt)} · every {contact.cadenceDays}d
+            {overdue ? ` (${daysSinceContact - contact.cadenceDays}d overdue)` : ""}
+          </p>
+          <p className="mt-1 text-gray-500">{touchpointCount(contact)} touchpoint(s) so far</p>
         </div>
-      )}
+
+        <button
+          onClick={() => onMarkContacted(contact.id)}
+          className="w-full rounded-md border border-gold-500/50 px-2 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+        >
+          Mark contacted
+        </button>
+
+        <button
+          onClick={() => setShowLog(!showLog)}
+          className="text-xs text-gray-500 hover:text-gray-300"
+        >
+          {showLog ? "Hide" : "Show"} notes ({contact.noteLog.length})
+        </button>
+
+        {showLog && (
+          <div className="space-y-2">
+            {[...contact.noteLog].reverse().map((entry, i) => (
+              <div key={i} className="rounded-md bg-charcoal-900 px-2 py-1.5 text-xs">
+                <span className="text-gray-500">{formatDate(entry.date)} — </span>
+                <span className="text-gray-300">{entry.text}</span>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submitNote()}
+                placeholder="Add a note..."
+                className="flex-1 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+              />
+              <button
+                onClick={submitNote}
+                className="rounded-md bg-gold-500 px-2 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

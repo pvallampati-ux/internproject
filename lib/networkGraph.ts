@@ -52,7 +52,7 @@ export function buildNetworkGraph(): NetworkGraphData {
         fromId: match.contactA.id,
         toId: match.contactB.id,
         type: "warm-intro",
-        label: match.sharedTerms[0],
+        label: match.sharedTerms[0].term,
       });
     }
   }
