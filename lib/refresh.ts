@@ -3,6 +3,7 @@ import { classify } from "./classify";
 import { buildSources, googleNewsRss } from "./sources";
 import { loadLeads, upsertLeads, type Lead, type RelatedArticle } from "./store";
 import { FEED_REFRESH_LOOKBACK_DAYS } from "./config";
+import { looksLikeLeakedQuery, stableId } from "./feedUtils";
 
 const parser = new Parser();
 
@@ -12,24 +13,6 @@ const parser = new Parser();
 // next run (leads already missing relatedArticles are retried each time).
 const MAX_RELATED_LOOKUPS_PER_RUN = 20;
 const RELATED_ARTICLES_PER_LEAD = 3;
-
-// Some Google News RSS items come back with their <description> containing
-// our own search query instead of real article text (an occasional feed
-// quirk, not something we send). Detect and drop it rather than storing
-// query syntax as if it were a snippet.
-function looksLikeLeakedQuery(text: string): boolean {
-  const orCount = (text.match(/"\s*OR\s*"/g) ?? []).length;
-  return orCount >= 2 || /^\(/.test(text.trim());
-}
-
-function makeId(link: string): string {
-  // Cheap stable id derived from the link, no crypto dependency needed.
-  let hash = 0;
-  for (let i = 0; i < link.length; i++) {
-    hash = (hash * 31 + link.charCodeAt(i)) | 0;
-  }
-  return `lead_${Math.abs(hash)}`;
-}
 
 // Looks up other coverage of the same story via a title-based Google News
 // search, so a lead card can link out to a few more sources for research.
@@ -86,7 +69,7 @@ export async function runRefresh(): Promise<RefreshSummary> {
         if (!result.regionMatch || result.categories.length === 0) continue;
 
         keptLeads.push({
-          id: makeId(link),
+          id: stableId("lead", link),
           title,
           link,
           source: item.creator || feed.title || source.label,

@@ -9,7 +9,7 @@ navigable via the top nav bar:
 | Intelligence | `/intelligence` | Wealth/liquidity events, warm-intro relationship mapping, regional map |
 | Engagement | `/engagement` | Meeting prep (+ optional AI Meeting Prep), outreach queue, follow-ups/cooling leads |
 | Pipeline | `/pipeline` | Prospect → Client Kanban/funnel, deal value, referral source |
-| Market Insights | `/market-insights` | **Not built yet** — stub page, see below |
+| Market Insights | `/market-insights` | Industry-specific news: Healthcare and Business Owners verticals |
 | Analytics | `/analytics` | **Not built yet** — stub page, see below |
 
 This is a personal prototype built on free, public data sources. It is not
@@ -243,15 +243,38 @@ contact or editing one; the Pipeline funnel header rolls them up into a
 per-stage total and an "Active pipeline value" figure. These two fields are
 also what a future Analytics module would report on — see below.
 
-## Market Insights and Analytics (not built)
+## Market Insights (Healthcare / Business Owners)
 
-`/market-insights` and `/analytics` are intentionally stub pages, not fake
-dashboards. Market Insights would need an industry/sector dimension added
-to leads and contacts (nothing currently classifies by industry, only by
-event type). Analytics would need historical snapshots — everything today
-reflects only current state, nothing tracks change over time — plus real
-usage data to be meaningful. Both are flagged honestly in-app rather than
-populated with placeholder numbers.
+Unlike the rest of the app, Market Insights (`/market-insights`) is
+industry-scoped rather than region-scoped, sourced separately
+(`lib/industries.ts`, `lib/marketInsightsRefresh.ts`,
+`data/market-insights.json` — its own git-ignored store, same no-fake-data
+rule as leads/contacts) and refreshed with its own "Refresh feeds" button.
+
+Two verticals ship today, each with its own sub-topics:
+
+- **Healthcare**: DSO Acquisitions, Hospital Mergers, Physician Practice
+  Sales (all Ohio-scoped), plus CMS Reimbursement and FDA Approvals
+  (national).
+- **Business Owners**: SBA Changes, Capital Gains Tax, PE Dry Powder,
+  Industry Valuations (all national).
+
+Deal-type topics require an Ohio/Columbus mention because those are real
+regional transactions. Policy/regulatory topics are deliberately left
+national — almost no article about a federal reimbursement rule or a tax
+law change will mention "Columbus," and region-restricting those would
+just make the section permanently empty even though the news still matters
+to your clients. Add a vertical by adding an entry to `INDUSTRIES` and
+`INDUSTRY_TOPICS` in `lib/industries.ts` — no other code changes needed.
+
+## Analytics (not built)
+
+`/analytics` is intentionally a stub page, not a fake dashboard. It would
+need historical snapshots — everything today reflects only current state,
+nothing tracks change over time — plus real usage data (and now that Market
+Insights and Pipeline deal-value tracking exist, more of the raw material
+it would report on) before it could show anything real. Flagged honestly
+in-app rather than populated with placeholder numbers.
 
 ## Known limitations (prototype scope)
 

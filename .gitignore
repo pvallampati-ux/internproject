@@ -11,3 +11,4 @@ data/contacts.json
 # Real fetched news leads stay local-only too — no sample/demo data ships
 # in the repo. Starts empty and is populated entirely by real refreshes.
 data/leads.json
+data/market-insights.json
