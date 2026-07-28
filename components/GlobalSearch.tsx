@@ -7,12 +7,17 @@ import type { Contact } from "@/lib/contactTypes";
 interface Props {
   inputRef?: React.RefObject<HTMLInputElement>;
   shortcutHint?: string;
+  placeholder?: string;
+  onSelect?: (contactId: string) => void;
 }
 
 // Jump-to-a-contact search, available on every page via the app header.
 // Headline/event search already exist on their own pages (Discovery,
 // Calendar) — this fills the gap of finding a specific person quickly.
-export default function GlobalSearch({ inputRef, shortcutHint }: Props = {}) {
+// onSelect overrides the default "navigate to profile" behavior — e.g. the
+// Research page uses it to open the Contact Drawer instead, so there's one
+// entity deep-dive view, not two.
+export default function GlobalSearch({ inputRef, shortcutHint, placeholder, onSelect }: Props = {}) {
   const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [query, setQuery] = useState("");
@@ -75,7 +80,8 @@ export default function GlobalSearch({ inputRef, shortcutHint }: Props = {}) {
   function goToContact(id: string) {
     setQuery("");
     setOpen(false);
-    router.push(`/contacts/${id}`);
+    if (onSelect) onSelect(id);
+    else router.push(`/contacts/${id}`);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -99,7 +105,7 @@ export default function GlobalSearch({ inputRef, shortcutHint }: Props = {}) {
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Search clients, prospects, firms, or keywords..."
+          placeholder={placeholder ?? "Search clients, prospects, firms, or keywords..."}
           className="w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-1.5 pr-12 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
         />
         {shortcutHint && !query && (

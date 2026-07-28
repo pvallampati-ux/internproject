@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import LeadCard from "@/components/LeadCard";
 import RelationshipMap from "@/components/RelationshipMap";
 import AddIndustryForm from "@/components/AddIndustryForm";
+import GlobalSearch from "@/components/GlobalSearch";
+import { useContactDrawer } from "@/lib/contactDrawerContext";
 import type { Lead } from "@/lib/store";
 import type { Contact } from "@/lib/contactTypes";
 import { pickMapPoint, pickPointForLocation } from "@/lib/geo";
@@ -40,7 +42,8 @@ function formatCurrency(value: number): string {
   );
 }
 
-export default function IntelligencePage() {
+export default function ResearchPage() {
+  const { openDrawer } = useContactDrawer();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
@@ -192,6 +195,16 @@ export default function IntelligencePage() {
         <p className="mt-1 text-sm text-gray-400">Wealth events, warm intros, and geography — last 90 days.</p>
       </header>
 
+      <div className="mb-6 max-w-md">
+        <GlobalSearch
+          placeholder="Research a person or company..."
+          onSelect={(id) => openDrawer(id)}
+        />
+        <p className="mt-1 text-xs text-gray-600">
+          Opens the contact drawer — Why Now, notes, news, shared connections, and quick actions.
+        </p>
+      </div>
+
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <span className="text-xs uppercase tracking-wide text-gray-500">Focus:</span>
         <button
@@ -255,13 +268,13 @@ export default function IntelligencePage() {
                     key={i}
                     className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2 text-sm text-gray-300"
                   >
-                    <a href={`/contacts/${m.contactA.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                    <button onClick={() => openDrawer(m.contactA.id)} className="text-gray-100 hover:text-gold-400 hover:underline">
                       {m.contactA.name}
-                    </a>{" "}
+                    </button>{" "}
                     &amp;{" "}
-                    <a href={`/contacts/${m.contactB.id}`} className="text-gray-100 hover:text-gold-400 hover:underline">
+                    <button onClick={() => openDrawer(m.contactB.id)} className="text-gray-100 hover:text-gold-400 hover:underline">
                       {m.contactB.name}
-                    </a>{" "}
+                    </button>{" "}
                     — <span className="text-gold-400">{describeSharedTerms(m.sharedTerms)}</span>
                   </li>
                 ))}
@@ -315,12 +328,12 @@ export default function IntelligencePage() {
                       className="flex items-center justify-between rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2"
                     >
                       <div>
-                        <a
-                          href={`/contacts/${contact.id}`}
+                        <button
+                          onClick={() => openDrawer(contact.id)}
                           className="text-sm font-medium text-gray-100 hover:underline"
                         >
                           {contact.name}
-                        </a>
+                        </button>
                         <p className="text-xs text-gray-500">
                           {contact.company ? `${contact.company} · ` : ""}
                           {RELATIONSHIP_STATUS_LABELS[relationshipStatus]}
