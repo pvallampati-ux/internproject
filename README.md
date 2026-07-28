@@ -844,6 +844,20 @@ were also trimmed from multi-sentence paragraphs down to one short line
 each, keeping the material honesty disclosures (e.g. "not a predictive
 model") but cutting the rest.
 
+## Round 6: split the contact map into Prospect / Client, with a side-by-side and overlay view
+
+The old "Contact Heat Map" (`components/ContactHeatMap.tsx`, deleted)
+plotted every contact by Location regardless of pipeline stage. It's
+replaced by `components/RelationshipMap.tsx`, which buckets contacts by
+stage — Prospects (everything short of Client, excluding Cold) in sky
+blue, Clients in green, matching the color convention already used on the
+Network diagram — and gives you two ways to look at it: **side by side**
+(two separate maps, the default) or **overlay** (one map, both layers
+plotted on the same coordinates, so a town with both prospects and
+clients shows overlapping circles). Same static-SVG-scatter approach and
+click-to-see-names interaction as the other maps in this app — not a
+live/interactive map provider.
+
 ## Calendar (prospecting events)
 
 `/calendar` tracks social/sporting events used for prospecting — tailgates,

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import LeadCard from "@/components/LeadCard";
 import RegionMap from "@/components/RegionMap";
-import ContactHeatMap from "@/components/ContactHeatMap";
+import RelationshipMap from "@/components/RelationshipMap";
 import AddIndustryForm from "@/components/AddIndustryForm";
 import type { Lead } from "@/lib/store";
 import type { Contact } from "@/lib/contactTypes";
@@ -166,6 +166,8 @@ export default function IntelligencePage() {
     })
     .filter((x): x is { contact: Contact; point: { lat: number; lng: number } } => x !== null);
   const contactsUnmapped = contacts.filter((c) => c.location).length - contactsPlotted.length;
+  const prospectsPlotted = contactsPlotted.filter((x) => x.contact.stage !== "Client" && x.contact.stage !== "Cold");
+  const clientsPlotted = contactsPlotted.filter((x) => x.contact.stage === "Client");
 
   const whiteSpace = buildWhiteSpaceAnalysis(contacts).slice(0, 10);
 
@@ -287,7 +289,7 @@ export default function IntelligencePage() {
           </section>
 
           <section className="mb-10">
-            <h2 className="font-serif text-lg text-gray-100">Contact Heat Map</h2>
+            <h2 className="font-serif text-lg text-gray-100">Prospect &amp; Client Map</h2>
             <p className="mt-1 text-xs text-gray-500">Where your book of business actually is.</p>
             {contactsPlotted.length === 0 ? (
               <p className="mt-3 text-sm text-gray-600">
@@ -295,7 +297,7 @@ export default function IntelligencePage() {
               </p>
             ) : (
               <div className="mt-3">
-                <ContactHeatMap plotted={contactsPlotted} />
+                <RelationshipMap prospects={prospectsPlotted} clients={clientsPlotted} />
                 {contactsUnmapped > 0 && (
                   <p className="mt-2 text-xs text-gray-500">
                     {contactsUnmapped} contact(s) not shown — location didn&rsquo;t match a
