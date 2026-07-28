@@ -33,6 +33,19 @@ export interface FamilyMember {
   relationship: string; // free text: "Spouse", "Daughter", "Son", etc.
 }
 
+// Active Outreach status — a lightweight, user-set marker for "where is my
+// current outreach to this person," distinct from PipelineStage (which
+// tracks the relationship's overall stage, not a specific outreach attempt
+// in flight). Cleared back to undefined manually once outreach resolves.
+export type OutreachStatus = "Drafting" | "Sent" | "Waiting" | "Replied" | "Meeting Scheduled";
+export const OUTREACH_STATUSES: OutreachStatus[] = [
+  "Drafting",
+  "Sent",
+  "Waiting",
+  "Replied",
+  "Meeting Scheduled",
+];
+
 export interface Contact {
   id: string;
   name: string;
@@ -65,6 +78,7 @@ export interface Contact {
   referredByContactId?: string;
   nextMeetingDate?: string; // ISO date; surfaced in the daily brief so AI Meeting Prep is ready ahead of time
   isCOI?: boolean; // Center of Influence — a referral source, tracked on the COI/Network tab
+  outreachStatus?: OutreachStatus; // current outreach attempt in flight, if any — see OutreachStatus above
 }
 
 // "Touchpoints" is simply the number of logged notes — every meaningful

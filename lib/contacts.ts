@@ -153,6 +153,7 @@ export function updateContact(
       | "referredByContactId"
       | "nextMeetingDate"
       | "isCOI"
+      | "outreachStatus"
     >
   >
 ): Contact | null {

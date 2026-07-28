@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Contact } from "@/lib/contactTypes";
+import { OUTREACH_STATUSES, type Contact, type OutreachStatus } from "@/lib/contactTypes";
 import type { Lead } from "@/lib/store";
 import type { DailyBrief } from "@/lib/dailyBrief";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
+import { useContactDrawer } from "@/lib/contactDrawerContext";
+
+const OUTREACH_STATUS_STYLES: Record<OutreachStatus, string> = {
+  Drafting: "border-gray-500/50 bg-gray-500/10 text-gray-300",
+  Sent: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Waiting: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+  Replied: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+  "Meeting Scheduled": "border-gold-500/50 bg-gold-500/10 text-gold-400",
+};
 
 const COOLING_THRESHOLD_DAYS = 45;
 
@@ -20,10 +29,22 @@ export default function EngagementPage() {
   const [selectedContactId, setSelectedContactId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const prepRef = useRef<HTMLDivElement>(null);
+  const { openDrawer } = useContactDrawer();
 
   function openPrepFor(contactId: string) {
     setSelectedContactId(contactId);
     prepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function updateOutreachStatus(contactId: string, status: OutreachStatus | "") {
+    setContacts((prev) =>
+      prev.map((c) => (c.id === contactId ? { ...c, outreachStatus: status || undefined } : c))
+    );
+    await fetch(`/api/contacts/${contactId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ outreachStatus: status || null }),
+    });
   }
 
   useEffect(() => {
@@ -55,6 +76,7 @@ export default function EngagementPage() {
   const overdueContacts = brief?.overdueContacts ?? [];
   const needsATouch = overdueContacts.filter((x) => x.daysOverdue < COOLING_THRESHOLD_DAYS);
   const coolingRelationships = overdueContacts.filter((x) => x.daysOverdue >= COOLING_THRESHOLD_DAYS);
+  const activeOutreach = contacts.filter((c) => c.outreachStatus);
 
   return (
     <main className="mx-auto max-w-[1600px] px-6 py-8">
@@ -128,6 +150,47 @@ export default function EngagementPage() {
                       {contact.name}
                     </button>{" "}
                     <span className="text-red-400">— {daysOverdue}d overdue</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {activeOutreach.length > 0 && (
+            <section className="mb-10">
+              <h2 className="font-serif text-lg text-gray-100">
+                Active Outreach ({activeOutreach.length})
+              </h2>
+              <p className="mt-1 text-xs text-gray-500">People currently being contacted.</p>
+              <ul className="mt-2 space-y-2">
+                {activeOutreach.map((contact) => (
+                  <li
+                    key={contact.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <button
+                        onClick={() => openDrawer(contact.id)}
+                        className="text-gray-100 hover:text-gold-400 hover:underline"
+                      >
+                        {contact.name}
+                      </button>
+                      {contact.company && <span className="text-gray-500"> — {contact.company}</span>}
+                    </div>
+                    <select
+                      value={contact.outreachStatus ?? ""}
+                      onChange={(e) => updateOutreachStatus(contact.id, e.target.value as OutreachStatus | "")}
+                      className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium focus:outline-none ${
+                        contact.outreachStatus ? OUTREACH_STATUS_STYLES[contact.outreachStatus] : "border-charcoal-700 text-gray-400"
+                      }`}
+                    >
+                      <option value="">Clear status</option>
+                      {OUTREACH_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
                   </li>
                 ))}
               </ul>

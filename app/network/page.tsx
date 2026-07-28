@@ -6,6 +6,18 @@ import type { Contact } from "@/lib/contactTypes";
 import type { NetworkEdge } from "@/lib/networkGraph";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
+import { INTRO_STATUSES, type IntroRequest, type IntroStatus } from "@/lib/introRequestTypes";
+
+const INTRO_STATUS_STYLES: Record<IntroStatus, string> = {
+  Suggested: "border-charcoal-700 text-gray-400",
+  Requested: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Accepted: "border-amber-500/50 bg-amber-500/10 text-amber-400",
+  Completed: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+};
+
+function introKey(prospectId: string, connectorId: string): string {
+  return `${prospectId}:${connectorId}`;
+}
 
 // A "path" is a warm-intro match where one side is already a Client/COI
 // (someone who could plausibly make the intro) and the other is still a
@@ -38,21 +50,40 @@ export default function NetworkPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [edges, setEdges] = useState<NetworkEdge[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
+  const [introRequests, setIntroRequests] = useState<IntroRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const { openDrawer } = useContactDrawer();
 
   async function load() {
     setLoading(true);
-    const [networkRes, introsRes] = await Promise.all([
+    const [networkRes, introsRes, introReqRes] = await Promise.all([
       fetch("/api/network"),
       fetch("/api/warm-intros"),
+      fetch("/api/intro-requests"),
     ]);
     const data = await networkRes.json();
     const introsData = await introsRes.json();
+    const introReqData = await introReqRes.json();
     setContacts(data.contacts ?? []);
     setEdges(data.edges ?? []);
     setWarmIntros(introsData.matches ?? []);
+    setIntroRequests(introReqData.requests ?? []);
     setLoading(false);
+  }
+
+  async function updateIntroStatus(prospectId: string, connectorId: string, status: IntroStatus) {
+    setIntroRequests((prev) => {
+      const existing = prev.find((r) => r.prospectId === prospectId && r.connectorId === connectorId);
+      if (existing) {
+        return prev.map((r) => (r === existing ? { ...r, status } : r));
+      }
+      return [...prev, { id: `pending_${prospectId}_${connectorId}`, prospectId, connectorId, status, updatedAt: new Date().toISOString() }];
+    });
+    await fetch("/api/intro-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prospectId, connectorId, status }),
+    });
   }
 
   useEffect(() => {
@@ -60,6 +91,11 @@ export default function NetworkPage() {
   }, []);
 
   const introPaths = useMemo(() => buildIntroPaths(warmIntros), [warmIntros]);
+  const introStatusByKey = useMemo(() => {
+    const map = new Map<string, IntroStatus>();
+    for (const r of introRequests) map.set(introKey(r.prospectId, r.connectorId), r.status);
+    return map;
+  }, [introRequests]);
 
   async function toggleCOI(id: string, isCOI: boolean) {
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, isCOI } : c)));
@@ -111,33 +147,41 @@ export default function NetworkPage() {
               </p>
             ) : (
               <ul className="mt-3 space-y-2">
-                {introPaths.slice(0, 6).map(({ connector, prospect, match }, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center justify-between gap-3 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm">
-                        <button onClick={() => openDrawer(prospect.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
-                          {prospect.name}
-                        </button>
-                        <span className="text-gray-500"> via </span>
-                        <button onClick={() => openDrawer(connector.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
-                          {connector.name}
-                        </button>
-                      </p>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        Shared: {describeSharedTerms(match.sharedTerms)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => openDrawer(connector.id)}
-                      className="shrink-0 rounded-md border border-gold-500/50 px-2.5 py-1 text-xs text-gold-400 hover:bg-gold-500/10"
+                {introPaths.slice(0, 6).map(({ connector, prospect, match }, i) => {
+                  const status = introStatusByKey.get(introKey(prospect.id, connector.id)) ?? "Suggested";
+                  return (
+                    <li
+                      key={i}
+                      className="flex items-center justify-between gap-3 rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2.5"
                     >
-                      View path →
-                    </button>
-                  </li>
-                ))}
+                      <div className="min-w-0">
+                        <p className="text-sm">
+                          <button onClick={() => openDrawer(prospect.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
+                            {prospect.name}
+                          </button>
+                          <span className="text-gray-500"> via </span>
+                          <button onClick={() => openDrawer(connector.id)} className="font-medium text-gray-100 hover:text-gold-400 hover:underline">
+                            {connector.name}
+                          </button>
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                          Shared: {describeSharedTerms(match.sharedTerms)}
+                        </p>
+                      </div>
+                      <select
+                        value={status}
+                        onChange={(e) => updateIntroStatus(prospect.id, connector.id, e.target.value as IntroStatus)}
+                        className={`shrink-0 rounded-full border px-2 py-1 text-xs font-medium focus:outline-none ${INTRO_STATUS_STYLES[status]}`}
+                      >
+                        {INTRO_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

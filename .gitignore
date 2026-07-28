@@ -24,3 +24,7 @@ data/events.json
 
 # Audit log of real edits/notes — local-only, no sample seed (starts empty).
 data/auditLog.json
+
+# Introduction Workflow status per prospect+connector path — local-only,
+# no sample seed (starts empty).
+data/introRequests.json

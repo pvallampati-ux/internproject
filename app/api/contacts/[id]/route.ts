@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getContact, updateContact, PIPELINE_STAGES, type Contact } from "@/lib/contacts";
 import type { FamilyMember } from "@/lib/contactTypes";
+import { OUTREACH_STATUSES } from "@/lib/contactTypes";
 
 function parseStringArray(v: unknown): string[] | undefined {
   if (!Array.isArray(v)) return undefined;
@@ -53,6 +54,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       | "referredByContactId"
       | "nextMeetingDate"
       | "isCOI"
+      | "outreachStatus"
     >
   > = {};
   if (typeof body.lastContactedAt === "string") patch.lastContactedAt = body.lastContactedAt;
@@ -81,6 +83,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     patch.nextMeetingDate = body.nextMeetingDate ?? undefined;
   }
   if (typeof body.isCOI === "boolean") patch.isCOI = body.isCOI;
+  if (OUTREACH_STATUSES.includes(body.outreachStatus) || body.outreachStatus === null) {
+    patch.outreachStatus = body.outreachStatus ?? undefined;
+  }
 
   const updated = updateContact(id, patch);
   if (!updated) {

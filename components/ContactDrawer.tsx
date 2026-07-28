@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
-import { PIPELINE_STAGES, type Contact, type PipelineStage } from "@/lib/contactTypes";
+import { PIPELINE_STAGES, OUTREACH_STATUSES, type Contact, type PipelineStage, type OutreachStatus } from "@/lib/contactTypes";
 import type { Lead } from "@/lib/store";
 import type { WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { describeSharedTerms } from "@/lib/warmIntroTypes";
@@ -89,6 +89,10 @@ export default function ContactDrawer() {
     await patch({ stage });
   }
 
+  async function setOutreachStatus(status: OutreachStatus | "") {
+    await patch({ outreachStatus: status || null });
+  }
+
   async function addNote() {
     if (!contact || !noteDraft.trim()) return;
     const res = await fetch(`/api/contacts/${contact.id}/notes`, {
@@ -158,6 +162,11 @@ export default function ContactDrawer() {
                   ★ COI
                 </span>
               )}
+              {contact.outreachStatus && (
+                <span className="rounded-full border border-purple-500/50 bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-400">
+                  Outreach: {contact.outreachStatus}
+                </span>
+              )}
             </div>
 
             <div className="mt-3 text-sm text-gray-300">
@@ -207,6 +216,22 @@ export default function ContactDrawer() {
                 {PIPELINE_STAGES.map((s) => (
                   <option key={s} value={s}>
                     Move: {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-2">
+              <label className="text-xs text-gray-500">Active outreach status</label>
+              <select
+                value={contact.outreachStatus ?? ""}
+                onChange={(e) => setOutreachStatus(e.target.value as OutreachStatus | "")}
+                className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-xs text-gray-300 focus:border-gold-500 focus:outline-none"
+              >
+                <option value="">Not in active outreach</option>
+                {OUTREACH_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
                   </option>
                 ))}
               </select>
