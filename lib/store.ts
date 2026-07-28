@@ -14,6 +14,8 @@ export interface Lead {
   matchedTerms: string[];
   score: number;
   fetchedAt: string;
+  saved?: boolean;
+  note?: string;
 }
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -39,8 +41,9 @@ function saveLeads(leads: Lead[]): void {
   writeFileSync(DATA_FILE, JSON.stringify(leads, null, 2), "utf-8");
 }
 
-// Merge newly fetched leads into the store, de-duplicating by link and
-// keeping the highest-scored version of a duplicate.
+// Merge newly fetched leads into the store, de-duplicating by link. A
+// re-fetched duplicate keeps its existing saved/note state rather than
+// having those user-set fields wiped out by the fresh feed data.
 export function upsertLeads(newLeads: Lead[]): { added: number; updated: number; total: number } {
   const existing = loadLeads();
   const byLink = new Map(existing.map((l) => [l.link, l]));
@@ -48,12 +51,14 @@ export function upsertLeads(newLeads: Lead[]): { added: number; updated: number;
   let updated = 0;
 
   for (const lead of newLeads) {
-    if (byLink.has(lead.link)) {
+    const prev = byLink.get(lead.link);
+    if (prev) {
       updated += 1;
+      byLink.set(lead.link, { ...lead, saved: prev.saved, note: prev.note });
     } else {
       added += 1;
+      byLink.set(lead.link, lead);
     }
-    byLink.set(lead.link, lead);
   }
 
   const merged = [...byLink.values()].sort(
@@ -61,4 +66,14 @@ export function upsertLeads(newLeads: Lead[]): { added: number; updated: number;
   );
   saveLeads(merged);
   return { added, updated, total: merged.length };
+}
+
+// Patch a single lead's user-set fields (saved/note) and persist.
+export function updateLead(id: string, patch: Partial<Pick<Lead, "saved" | "note">>): Lead | null {
+  const leads = loadLeads();
+  const idx = leads.findIndex((l) => l.id === id);
+  if (idx === -1) return null;
+  leads[idx] = { ...leads[idx], ...patch };
+  saveLeads(leads);
+  return leads[idx];
 }

@@ -7,6 +7,8 @@ interface Props {
   onDaysChange: (d: number) => void;
   search: string;
   onSearchChange: (s: string) => void;
+  savedOnly: boolean;
+  onSavedOnlyChange: (v: boolean) => void;
   onRefresh: () => void;
   refreshing: boolean;
 }
@@ -20,6 +22,8 @@ export default function FilterBar({
   onDaysChange,
   search,
   onSearchChange,
+  savedOnly,
+  onSavedOnlyChange,
   onRefresh,
   refreshing,
 }: Props) {
@@ -49,6 +53,16 @@ export default function FilterBar({
             {c}
           </button>
         ))}
+        <button
+          onClick={() => onSavedOnlyChange(!savedOnly)}
+          className={`rounded-full border px-3 py-1 text-sm ${
+            savedOnly
+              ? "border-gold-500 bg-gold-500/10 text-gold-400"
+              : "border-charcoal-700 text-gray-400 hover:border-gray-500"
+          }`}
+        >
+          ★ Saved
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

@@ -7,11 +7,16 @@ export async function GET(request: Request) {
   const category = searchParams.get("category") as Category | null;
   const days = searchParams.get("days");
   const q = searchParams.get("q")?.toLowerCase();
+  const savedOnly = searchParams.get("saved") === "true";
 
   let leads = loadLeads();
 
   if (category) {
     leads = leads.filter((l) => l.categories.includes(category));
+  }
+
+  if (savedOnly) {
+    leads = leads.filter((l) => l.saved);
   }
 
   if (days) {

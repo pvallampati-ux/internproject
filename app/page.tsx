@@ -3,8 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import FilterBar from "@/components/FilterBar";
 import LeadCard from "@/components/LeadCard";
+import DailyBrief from "@/components/DailyBrief";
 import type { Lead } from "@/lib/store";
 import type { Category } from "@/lib/config";
+import type { DailyBrief as DailyBriefData } from "@/lib/dailyBrief";
+
+const BRIEF_SHOWN_KEY = "dailyBriefShownDate";
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export default function Home() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -14,12 +22,16 @@ export default function Home() {
   const [category, setCategory] = useState<Category | null>(null);
   const [days, setDays] = useState(30);
   const [search, setSearch] = useState("");
+  const [savedOnly, setSavedOnly] = useState(false);
+  const [brief, setBrief] = useState<DailyBriefData | null>(null);
+  const [showBrief, setShowBrief] = useState(false);
 
   async function loadLeads() {
     setLoading(true);
     const params = new URLSearchParams({ days: String(days) });
     if (category) params.set("category", category);
     if (search) params.set("q", search);
+    if (savedOnly) params.set("saved", "true");
     const res = await fetch(`/api/leads?${params.toString()}`);
     const data = await res.json();
     setLeads(data.leads ?? []);
@@ -29,7 +41,59 @@ export default function Home() {
   useEffect(() => {
     loadLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, days, search]);
+  }, [category, days, search, savedOnly]);
+
+  async function fetchBrief(): Promise<DailyBriefData> {
+    const res = await fetch("/api/daily-brief");
+    const data = await res.json();
+    setBrief(data);
+    return data;
+  }
+
+  useEffect(() => {
+    (async () => {
+      const data = await fetchBrief();
+      const hasContent =
+        data.overdueContacts.length > 0 || data.followUps.length > 0 || data.marketEvents.length > 0;
+      if (hasContent && localStorage.getItem(BRIEF_SHOWN_KEY) !== todayKey()) {
+        setShowBrief(true);
+        localStorage.setItem(BRIEF_SHOWN_KEY, todayKey());
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleOpenBrief() {
+    await fetchBrief();
+    setShowBrief(true);
+  }
+
+  async function handleMarkContacted(contactId: string) {
+    await fetch(`/api/contacts/${contactId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lastContactedAt: new Date().toISOString() }),
+    });
+    await fetchBrief();
+  }
+
+  async function handleToggleSave(id: string, saved: boolean) {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, saved } : l)));
+    await fetch(`/api/leads/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ saved }),
+    });
+  }
+
+  async function handleSaveNote(id: string, note: string) {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, note } : l)));
+    await fetch(`/api/leads/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note }),
+    });
+  }
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -64,17 +128,33 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gold-500">
-          Columbus / Central Ohio
-        </p>
-        <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          Private Client Prospecting Hub
-        </h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Auto-tracked signals: liquidity events, executive changes, M&amp;A / buyouts, and
-          new-firm expansions in the region.
-        </p>
+      {showBrief && brief && (
+        <DailyBrief
+          data={brief}
+          onClose={() => setShowBrief(false)}
+          onMarkContacted={handleMarkContacted}
+        />
+      )}
+
+      <header className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-gold-500">
+            Columbus / Central Ohio
+          </p>
+          <h1 className="font-serif text-3xl font-semibold text-gray-100">
+            Private Client Prospecting Hub
+          </h1>
+          <p className="mt-1 text-sm text-gray-400">
+            Auto-tracked signals: liquidity events, executive changes, M&amp;A / buyouts, and
+            new-firm expansions in the region.
+          </p>
+        </div>
+        <button
+          onClick={handleOpenBrief}
+          className="shrink-0 rounded-md border border-gold-500/50 px-3 py-1.5 text-sm text-gold-400 hover:bg-gold-500/10"
+        >
+          Today&rsquo;s Brief
+        </button>
       </header>
 
       <FilterBar
@@ -84,6 +164,8 @@ export default function Home() {
         onDaysChange={setDays}
         search={search}
         onSearchChange={setSearch}
+        savedOnly={savedOnly}
+        onSavedOnlyChange={setSavedOnly}
         onRefresh={handleRefresh}
         refreshing={refreshing}
       />
@@ -110,7 +192,14 @@ export default function Home() {
             sample data with <code className="text-gray-400">npm run refresh</code>.
           </p>
         ) : (
-          leads.map((lead) => <LeadCard key={lead.id} lead={lead} />)
+          leads.map((lead) => (
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              onToggleSave={handleToggleSave}
+              onSaveNote={handleSaveNote}
+            />
+          ))
         )}
       </div>
     </main>

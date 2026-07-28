@@ -18,11 +18,23 @@ data-handling and compliance policies before using it beyond a personal demo.
    the region or a category, and stores the rest in `data/leads.json`
    (`lib/store.ts`), de-duplicated by link.
 3. The dashboard (`app/page.tsx`) reads leads via `/api/leads` and lets you
-   filter by category, date range, and free-text search. The "Refresh feeds"
-   button calls `/api/refresh` to pull new stories on demand.
+   filter by category, date range, saved-only, and free-text search. The
+   "Refresh feeds" button calls `/api/refresh` to pull new stories on demand.
+4. Each lead can be starred (saved) and given a short freeform note, stored
+   directly on the lead in `data/leads.json` (`PATCH /api/leads/[id]`).
+5. `data/contacts.json` holds a small list of contacts you're tracking, each
+   with a contact cadence (e.g. "every 30 days") and a list of keyword tags
+   used to match them against incoming leads.
+6. `lib/dailyBrief.ts` combines all of the above into a "Today's Brief":
+   contacts overdue for outreach, saved leads with no note yet ("follow up
+   on"), and recent leads that match a contact's tags ("market events
+   affecting your clients"). It pops up once per day (tracked via
+   `localStorage`, so it's per-browser) and can be reopened anytime with the
+   "Today's Brief" button in the header.
 
-`data/leads.json` ships with a handful of sample leads so the dashboard has
-something to show before you run a real refresh.
+`data/leads.json` ships with a handful of sample leads, and `data/contacts.json`
+with a handful of sample contacts, so the dashboard and daily brief have
+something to show before you run a real refresh or add real contacts.
 
 ## Running it
 
@@ -67,6 +79,31 @@ Edit `lib/config.ts`:
 - `CATEGORY_KEYWORDS` — the keyword lists that drive classification into the
   four buckets. Add terms as you notice false negatives/positives.
 
+## Managing contacts for the daily brief
+
+Edit `data/contacts.json` directly (it's a flat array, no UI for this yet).
+Each contact looks like:
+
+```json
+{
+  "id": "contact_5",
+  "name": "Real Client Name",
+  "company": "Their Company",
+  "tags": ["their company name", "an alias it might be called in the news"],
+  "lastContactedAt": "2026-07-01T00:00:00.000Z",
+  "cadenceDays": 30,
+  "notes": "optional freeform notes"
+}
+```
+
+`tags` are matched as case-insensitive substrings against each lead's title +
+snippet — keep them specific enough to avoid false matches (e.g. a tag like
+"logistics" alone will match every logistics story, not just ones about that
+client). The sample contacts in this file are placeholders; replace them with
+real names locally. **Don't commit real client names/details to a shared
+GitHub repo** — treat `data/contacts.json` as local-only once you put real
+people in it (add it to `.gitignore` if this repo is ever shared).
+
 ## Extending data sources
 
 `lib/sources.ts` returns an array of `{ id, label, url, kind }` sources fed
@@ -89,3 +126,9 @@ rather than reusing the RSS path.
 - Storage is a flat JSON file, fine for personal/small-team use; move to a
   real database if this grows beyond a few thousand leads or gets concurrent
   writers.
+- The daily brief's "market events affecting your clients" match is also
+  simple substring matching on `data/contacts.json` tags — same
+  false-positive/negative caveats as the lead classifier.
+- The "shown once per day" behavior for the brief pop-up is tracked in
+  browser `localStorage`, so it resets if you clear browser data or open the
+  dashboard in a different browser/device.
