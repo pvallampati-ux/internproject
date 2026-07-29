@@ -20,8 +20,9 @@ export const ALL_BANKERS_ID = "all";
 
 export const BANKERS: Banker[] = [
   { id: YOU_BANKER_ID, name: "You" },
-  { id: "banker_alex_rivera", name: "Alex Rivera" },
-  { id: "banker_priya_nandi", name: "Priya Nandi" },
+  { id: "banker_jon_kokinchak", name: "Jon Kokinchak" },
+  { id: "banker_renee_milyiori", name: "Renee Milyiori" },
+  { id: "banker_patrick_hesketh", name: "Patrick Hesketh" },
 ];
 
 export function contactBankerId(bankerId: string | undefined): string {
