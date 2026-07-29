@@ -13,6 +13,15 @@ const GROUP_STYLES: Record<CategoryGroup, string> = {
   "Market Signal": "bg-amber-900/50 text-amber-300 border-amber-700/50",
 };
 
+// Text-only version for the "row" variant's inline byline — no chip
+// background/border, just a colored label like a newspaper section tag.
+const GROUP_TEXT: Record<CategoryGroup, string> = {
+  Business: "text-emerald-400",
+  Personal: "text-purple-400",
+  Corporate: "text-sky-400",
+  "Market Signal": "text-amber-400",
+};
+
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -27,9 +36,13 @@ interface Props {
   lead: Lead;
   onToggleSave: (id: string, saved: boolean) => void;
   onSaveNote: (id: string, note: string) => void;
+  // "card" (default) is the boxed grid tile used on Research. "row" is a
+  // dense, editorial list layout — headline-led, minimal chrome — used on
+  // Discover's news feed.
+  variant?: "card" | "row";
 }
 
-export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
+export default function LeadCard({ lead, onToggleSave, onSaveNote, variant = "card" }: Props) {
   const [noteDraft, setNoteDraft] = useState(lead.note ?? "");
   const [added, setAdded] = useState(!!lead.promotedToContactId);
   const [addingContact, setAddingContact] = useState(false);
@@ -57,6 +70,92 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
     });
     setAdded(true);
     setAddingContact(false);
+  }
+
+  const addContactControl = added ? (
+    <span className="text-xs text-gold-400">✓ Added to pipeline</span>
+  ) : addingContact ? (
+    <div className="flex items-center gap-2">
+      <input
+        type="text"
+        autoFocus
+        value={contactName}
+        onChange={(e) => setContactName(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && submitAddContact()}
+        placeholder="Person's name..."
+        className="w-40 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+      />
+      <button
+        onClick={submitAddContact}
+        className="rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
+      >
+        Add
+      </button>
+      <button onClick={() => setAddingContact(false)} className="text-xs text-gray-500 hover:text-gray-300">
+        Cancel
+      </button>
+    </div>
+  ) : (
+    <button onClick={() => setAddingContact(true)} className="text-xs text-gray-500 hover:text-gold-400">
+      + Add as contact
+    </button>
+  );
+
+  if (variant === "row") {
+    return (
+      <div className="border-b border-charcoal-800 py-4 first:pt-0 last:border-b-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-wide text-gray-500">
+            {lead.categories.map((c, i) => (
+              <span key={c} className={`font-semibold ${GROUP_TEXT[CATEGORY_GROUPS[c]]}`}>
+                {i > 0 && <span className="mr-2 text-gray-700">·</span>}
+                {c}
+              </span>
+            ))}
+            <span className="text-gray-700">·</span>
+            <span>{lead.source}</span>
+            <span className="text-gray-700">·</span>
+            <span>{timeAgo(lead.publishedAt)}</span>
+          </div>
+          <button
+            onClick={() => onToggleSave(lead.id, !lead.saved)}
+            aria-label={lead.saved ? "Unsave lead" : "Save lead"}
+            className={`shrink-0 text-base leading-none ${lead.saved ? "text-gold-400" : "text-gray-600 hover:text-gray-400"}`}
+          >
+            {lead.saved ? "★" : "☆"}
+          </button>
+        </div>
+
+        <a href={lead.link} target="_blank" rel="noopener noreferrer" className="block">
+          <h3 className="mt-1.5 font-serif text-xl font-semibold leading-snug text-gray-100 hover:underline">
+            {lead.title}
+          </h3>
+        </a>
+        {lead.snippet && <p className="mt-1 line-clamp-2 text-sm text-gray-400">{lead.snippet}</p>}
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-500">
+          {mentionedNames.length > 0 && (
+            <span>
+              Mentioned: <span className="text-gray-300">{mentionedNames.join(", ")}</span>
+            </span>
+          )}
+          {addContactControl}
+        </div>
+
+        {lead.saved && (
+          <input
+            type="text"
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            onBlur={() => {
+              if (noteDraft !== (lead.note ?? "")) onSaveNote(lead.id, noteDraft);
+            }}
+            placeholder="Add a note (e.g. reached out 7/29)..."
+            className="mt-2 w-full max-w-md rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+          />
+        )}
+      </div>
+    );
   }
 
   return (
@@ -124,40 +223,7 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote }: Props) {
         </div>
       )}
 
-      {added ? (
-        <p className="mt-2 text-xs text-gold-400">✓ Added to pipeline</p>
-      ) : addingContact ? (
-        <div className="mt-2 flex gap-2">
-          <input
-            type="text"
-            autoFocus
-            value={contactName}
-            onChange={(e) => setContactName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submitAddContact()}
-            placeholder="Person's name..."
-            className="flex-1 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-          />
-          <button
-            onClick={submitAddContact}
-            className="rounded-md bg-gold-500 px-2 py-1 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
-          >
-            Add
-          </button>
-          <button
-            onClick={() => setAddingContact(false)}
-            className="text-xs text-gray-500 hover:text-gray-300"
-          >
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => setAddingContact(true)}
-          className="mt-2 text-xs text-gray-500 hover:text-gold-400"
-        >
-          + Add as contact
-        </button>
-      )}
+      <div className="mt-2">{addContactControl}</div>
 
       {lead.saved && (
         <input

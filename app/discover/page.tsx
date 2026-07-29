@@ -107,15 +107,16 @@ export default function DiscoveryPage() {
 
   return (
     <main className="mx-auto max-w-[1600px] px-6 py-8">
-      <header className="mb-6 flex items-start justify-between gap-4">
+      <header className="mb-4 flex items-start justify-between gap-4 border-b border-charcoal-800 pb-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-gold-500">Discover</p>
           <h1 className="font-serif text-3xl font-semibold text-gray-100">
             Who should I pursue?
           </h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Liquidity events, executive changes, M&amp;A, and expansions — rule-based sourcing,
-            not an LLM model.
+          <p className="mt-1 text-sm text-gray-500">
+            {loading
+              ? "Loading..."
+              : `${leads.length} ${leads.length === 1 ? "story" : "stories"} · ${highPriority.length} high priority · ${matchedLeadIds.size} matched to your contacts — rule-based sourcing, not an LLM model.`}
           </p>
         </div>
         <button
@@ -142,25 +143,6 @@ export default function DiscoveryPage() {
         onSavedOnlyChange={setSavedOnly}
       />
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:max-w-xl">
-        <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-2.5 text-center">
-          <p className="font-serif text-lg text-gray-100">{leads.length}</p>
-          <p className="text-[11px] text-gray-500">New opportunities</p>
-        </div>
-        <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-2.5 text-center">
-          <p className="font-serif text-lg text-red-400">{highPriority.length}</p>
-          <p className="text-[11px] text-gray-500">High priority</p>
-        </div>
-        <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-2.5 text-center">
-          <p className="font-serif text-lg text-gray-100">{matchedLeadIds.size}</p>
-          <p className="text-[11px] text-gray-500">Matched contacts</p>
-        </div>
-        <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-2.5 text-center">
-          <p className="font-serif text-lg text-gray-100">{leads.length - matchedLeadIds.size}</p>
-          <p className="text-[11px] text-gray-500">Unmatched</p>
-        </div>
-      </div>
-
       {loading ? (
         <p className="mt-4 text-sm text-gray-500">Loading...</p>
       ) : leads.length === 0 ? (
@@ -170,32 +152,46 @@ export default function DiscoveryPage() {
           Nothing here is sample/fake data — this stays empty until a real fetch succeeds.
         </p>
       ) : (
-        <>
-          {highPriority.length > 0 && (
-            <section className="mt-6">
-              <h2 className="font-serif text-lg text-gray-100">
-                High-Priority Opportunities ({highPriority.length})
-              </h2>
-              <p className="mt-1 text-xs text-gray-500">
-                Wealth-event category with a name identified — worth acting on today.
-              </p>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {highPriority.map((lead) => (
-                  <LeadCard key={lead.id} lead={lead} onToggleSave={handleToggleSave} onSaveNote={handleSaveNote} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section className="mt-6">
-            <h2 className="font-serif text-lg text-gray-100">Opportunity Feed ({remainingLeads.length})</h2>
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {remainingLeads.map((lead) => (
-                <LeadCard key={lead.id} lead={lead} onToggleSave={handleToggleSave} onSaveNote={handleSaveNote} />
-              ))}
+        <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <section>
+            <h2 className="font-serif text-lg text-gray-100">
+              Top Stories {highPriority.length > 0 && `(${highPriority.length})`}
+            </h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Wealth-event category with a name identified — worth acting on today.
+            </p>
+            <div className="mt-1">
+              {highPriority.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">Nothing rises to top-story level right now.</p>
+              ) : (
+                highPriority.map((lead) => (
+                  <LeadCard
+                    key={lead.id}
+                    lead={lead}
+                    variant="row"
+                    onToggleSave={handleToggleSave}
+                    onSaveNote={handleSaveNote}
+                  />
+                ))
+              )}
             </div>
           </section>
-        </>
+
+          <aside className="lg:border-l lg:border-charcoal-800 lg:pl-8">
+            <h2 className="font-serif text-lg text-gray-100">More News ({remainingLeads.length})</h2>
+            <div className="mt-1">
+              {remainingLeads.map((lead) => (
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  variant="row"
+                  onToggleSave={handleToggleSave}
+                  onSaveNote={handleSaveNote}
+                />
+              ))}
+            </div>
+          </aside>
+        </div>
       )}
     </main>
   );
