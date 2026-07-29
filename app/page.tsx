@@ -13,6 +13,7 @@ import AiMeetingPrep from "@/components/AiMeetingPrep";
 import { calculateWhyNowScore } from "@/lib/whyNowScore";
 import { buildCopilotInsights } from "@/lib/bankerCopilot";
 import { findLikelyAttendees, findColleagueCalendarOverlap } from "@/lib/eventOptimizer";
+import { possessive } from "@/lib/bankers";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { PeopleIcon } from "@/components/icons";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
@@ -47,10 +48,6 @@ function endOfToday(): number {
 
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function possessive(bankerLabel: string): string {
-  return bankerLabel === "You" ? "your" : `${bankerLabel}’s`;
 }
 
 function formatReminderStatus(iso: string): string {
@@ -157,6 +154,15 @@ export default function HomePage() {
       body: JSON.stringify({ lastContactedAt: new Date().toISOString() }),
     });
     await fetchBrief();
+  }
+
+  async function handleDismissReminder(leadId: string) {
+    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, reminderDate: undefined } : l)));
+    await fetch(`/api/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reminderDate: null }),
+    });
   }
 
   const meetingsToday = [...(brief?.meetingsToday ?? [])].sort(
@@ -449,9 +455,19 @@ export default function HomePage() {
                         >
                           {lead.title}
                         </a>
-                        <span className="shrink-0 rounded-full border border-amber-500/50 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-                          {formatReminderStatus(lead.reminderDate!)}
-                        </span>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <span className="rounded-full border border-amber-500/50 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                            {formatReminderStatus(lead.reminderDate!)}
+                          </span>
+                          <button
+                            onClick={() => handleDismissReminder(lead.id)}
+                            aria-label="Dismiss reminder"
+                            title="Dismiss reminder"
+                            className="text-gray-600 hover:text-gray-300"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
                       {lead.note && <p className="mt-1 text-xs text-gray-400">{lead.note}</p>}
                     </li>
