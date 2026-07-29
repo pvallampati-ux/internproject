@@ -72,12 +72,18 @@ export default function PipelinePage() {
   }, []);
 
   async function handleStageChange(id: string, stage: PipelineStage) {
+    const previousStage = contacts.find((c) => c.id === id)?.stage;
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, stage } : c)));
-    await fetch(`/api/contacts/${id}`, {
+    const res = await fetch(`/api/contacts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stage }),
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setContacts((prev) => prev.map((c) => (c.id === id && previousStage ? { ...c, stage: previousStage } : c)));
+      alert(body.error ?? "Couldn't change this contact's stage.");
+    }
   }
 
   async function handleMarkContacted(id: string) {
@@ -121,6 +127,10 @@ export default function PipelinePage() {
       body: JSON.stringify({ ...input, bankerId: newContactBankerId }),
     });
     const created = await res.json();
+    if (!res.ok) {
+      alert(created.error ?? "Couldn't add this contact.");
+      return;
+    }
     setContacts((prev) => [...prev, created]);
   }
 

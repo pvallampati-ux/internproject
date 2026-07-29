@@ -93,9 +93,16 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     patch.bankerId = body.bankerId ?? undefined;
   }
 
-  const updated = updateContact(id, patch);
-  if (!updated) {
-    return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+  try {
+    const updated = updateContact(id, patch);
+    if (!updated) {
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+    }
+    return NextResponse.json(updated);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : String(err) },
+      { status: 409 }
+    );
   }
-  return NextResponse.json(updated);
 }

@@ -33,3 +33,13 @@ export function bankerName(bankerId: string | undefined): string {
   const id = contactBankerId(bankerId);
   return BANKERS.find((b) => b.id === id)?.name ?? "Unknown";
 }
+
+// "your book" instead of the grammatically wrong "You's book" when the
+// name in question is the viewer's own ("You").
+export function possessive(name: string): string {
+  return name === "You" ? "your" : `${name}’s`;
+}
+
+export function bankerPossessive(bankerId: string | undefined): string {
+  return possessive(bankerName(bankerId));
+}

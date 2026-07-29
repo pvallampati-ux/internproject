@@ -3,6 +3,7 @@ import path from "path";
 import { type Contact, type PipelineStage, type NoteType, type FamilyMember } from "./contactTypes";
 import { logAuditEntry } from "./auditLog";
 import { DATA_DIR, SOURCE_DATA_DIR } from "./dataDir";
+import { contactBankerId, bankerPossessive } from "./bankers";
 
 export type { PipelineStage, NoteEntry, NoteType, FamilyMember, Contact } from "./contactTypes";
 export { PIPELINE_STAGES } from "./contactTypes";
@@ -57,6 +58,29 @@ export function getContact(id: string): Contact | null {
   return loadContacts().find((c) => c.id === id) ?? null;
 }
 
+// Blocks tagging someone as a Prospect (in your book, or a colleague's) when
+// they're already a Client in a DIFFERENT banker's book — same real person,
+// name-matched, can't be simultaneously "our client" and "a new prospect"
+// for someone else at the firm. Returns the owning banker's name if blocked,
+// null if clear.
+function findClientConflict(
+  contacts: Contact[],
+  name: string,
+  newBankerId: string | undefined,
+  excludeId?: string
+): string | null {
+  const normalized = name.trim().toLowerCase();
+  if (!normalized) return null;
+  const conflict = contacts.find(
+    (c) =>
+      c.id !== excludeId &&
+      c.name.trim().toLowerCase() === normalized &&
+      c.stage === "Client" &&
+      contactBankerId(c.bankerId) !== contactBankerId(newBankerId)
+  );
+  return conflict ? bankerPossessive(conflict.bankerId) : null;
+}
+
 function formatAuditVal(v: unknown): string {
   if (v === undefined || v === null || v === "") return "(empty)";
   if (Array.isArray(v)) return v.length ? JSON.stringify(v) : "(empty)";
@@ -107,6 +131,15 @@ export function createContact(input: {
   bankerId?: string;
 }): Contact {
   const contacts = loadContacts();
+  const stage = input.stage ?? "Prospect";
+  if (stage === "Prospect") {
+    const conflictBanker = findClientConflict(contacts, input.name, input.bankerId);
+    if (conflictBanker) {
+      throw new Error(
+        `${input.name} is already a Client in ${conflictBanker} book — can't add them as a new Prospect.`
+      );
+    }
+  }
   const now = new Date().toISOString();
   const contact: Contact = {
     id: makeContactId(),
@@ -127,7 +160,7 @@ export function createContact(input: {
     tags: input.tags,
     lastContactedAt: now,
     cadenceDays: input.cadenceDays,
-    stage: input.stage ?? "Prospect",
+    stage,
     noteLog: input.initialNote ? [{ date: now, text: input.initialNote, type: "note" }] : [],
     estimatedValue: input.estimatedValue,
     currentWalletShare: input.currentWalletShare,
@@ -187,6 +220,19 @@ export function updateContact(
   const idx = contacts.findIndex((c) => c.id === id);
   if (idx === -1) return null;
   const before = contacts[idx];
+  if (patch.stage === "Prospect" && before.stage !== "Prospect") {
+    const conflictBanker = findClientConflict(
+      contacts,
+      patch.name ?? before.name,
+      patch.bankerId ?? before.bankerId,
+      id
+    );
+    if (conflictBanker) {
+      throw new Error(
+        `${before.name} is already a Client in ${conflictBanker} book — can't move them to Prospect.`
+      );
+    }
+  }
   const changeSummary = describeFieldChanges(before, patch);
   contacts[idx] = { ...before, ...patch };
   saveContacts(contacts);

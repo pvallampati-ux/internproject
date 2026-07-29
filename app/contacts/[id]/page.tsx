@@ -187,11 +187,15 @@ export default function ContactProfilePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const updated: Contact = await res.json();
-    setContact(updated);
+    const updated = await res.json();
+    if (!res.ok) {
+      alert(updated.error ?? "That change couldn't be saved.");
+      return undefined;
+    }
+    setContact(updated as Contact);
     setRelevantLeads(matchLeadsToContact(updated, relevantLeads));
     await loadAuditForContact();
-    return updated;
+    return updated as Contact;
   }
 
   async function handleStageChange(stage: PipelineStage) {

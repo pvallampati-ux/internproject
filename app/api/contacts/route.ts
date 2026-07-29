@@ -27,33 +27,39 @@ export async function POST(request: Request) {
 
   const stage: PipelineStage | undefined = PIPELINE_STAGES.includes(body.stage) ? body.stage : undefined;
 
-  const contact = createContact({
-    name: body.name,
-    title: typeof body.title === "string" ? body.title : undefined,
-    company: typeof body.company === "string" ? body.company : undefined,
-    email: typeof body.email === "string" ? body.email : undefined,
-    phone: typeof body.phone === "string" ? body.phone : undefined,
-    location: typeof body.location === "string" ? body.location : undefined,
-    industry: typeof body.industry === "string" ? body.industry : undefined,
-    businessOwnership: typeof body.businessOwnership === "string" ? body.businessOwnership : undefined,
-    existingRelationships: typeof body.existingRelationships === "string" ? body.existingRelationships : undefined,
-    familyMembers: parseFamilyMembers(body.familyMembers),
-    boardMemberships: parseStringArray(body.boardMemberships),
-    schools: parseStringArray(body.schools),
-    clubs: parseStringArray(body.clubs),
-    tags: Array.isArray(body.tags) ? body.tags : [],
-    cadenceDays: typeof body.cadenceDays === "number" ? body.cadenceDays : 10,
-    stage,
-    initialNote: typeof body.initialNote === "string" ? body.initialNote : undefined,
-    estimatedValue: typeof body.estimatedValue === "number" ? body.estimatedValue : undefined,
-    currentWalletShare: typeof body.currentWalletShare === "number" ? body.currentWalletShare : undefined,
-    referredBy: typeof body.referredBy === "string" ? body.referredBy : undefined,
-    referredByContactId: typeof body.referredByContactId === "string" ? body.referredByContactId : undefined,
-    sourceLeadTitle: typeof body.sourceLeadTitle === "string" ? body.sourceLeadTitle : undefined,
-    sourceLeadLink: typeof body.sourceLeadLink === "string" ? body.sourceLeadLink : undefined,
-    sourceLeadId: typeof body.sourceLeadId === "string" ? body.sourceLeadId : undefined,
-    bankerId: typeof body.bankerId === "string" ? body.bankerId : undefined,
-  });
-
-  return NextResponse.json(contact, { status: 201 });
+  try {
+    const contact = createContact({
+      name: body.name,
+      title: typeof body.title === "string" ? body.title : undefined,
+      company: typeof body.company === "string" ? body.company : undefined,
+      email: typeof body.email === "string" ? body.email : undefined,
+      phone: typeof body.phone === "string" ? body.phone : undefined,
+      location: typeof body.location === "string" ? body.location : undefined,
+      industry: typeof body.industry === "string" ? body.industry : undefined,
+      businessOwnership: typeof body.businessOwnership === "string" ? body.businessOwnership : undefined,
+      existingRelationships: typeof body.existingRelationships === "string" ? body.existingRelationships : undefined,
+      familyMembers: parseFamilyMembers(body.familyMembers),
+      boardMemberships: parseStringArray(body.boardMemberships),
+      schools: parseStringArray(body.schools),
+      clubs: parseStringArray(body.clubs),
+      tags: Array.isArray(body.tags) ? body.tags : [],
+      cadenceDays: typeof body.cadenceDays === "number" ? body.cadenceDays : 10,
+      stage,
+      initialNote: typeof body.initialNote === "string" ? body.initialNote : undefined,
+      estimatedValue: typeof body.estimatedValue === "number" ? body.estimatedValue : undefined,
+      currentWalletShare: typeof body.currentWalletShare === "number" ? body.currentWalletShare : undefined,
+      referredBy: typeof body.referredBy === "string" ? body.referredBy : undefined,
+      referredByContactId: typeof body.referredByContactId === "string" ? body.referredByContactId : undefined,
+      sourceLeadTitle: typeof body.sourceLeadTitle === "string" ? body.sourceLeadTitle : undefined,
+      sourceLeadLink: typeof body.sourceLeadLink === "string" ? body.sourceLeadLink : undefined,
+      sourceLeadId: typeof body.sourceLeadId === "string" ? body.sourceLeadId : undefined,
+      bankerId: typeof body.bankerId === "string" ? body.bankerId : undefined,
+    });
+    return NextResponse.json(contact, { status: 201 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : String(err) },
+      { status: 409 }
+    );
+  }
 }

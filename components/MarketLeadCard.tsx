@@ -59,7 +59,12 @@ export default function MarketLeadCard({ lead, onPromoted, bankerId }: Props) {
         bankerId,
       }),
     });
-    const created: Contact = await res.json();
+    const created: Contact & { error?: string } = await res.json();
+    if (!res.ok) {
+      setSubmitting(false);
+      alert(created.error ?? "Couldn't add this contact.");
+      return;
+    }
     await fetch(`/api/leads/${lead.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

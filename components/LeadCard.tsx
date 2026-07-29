@@ -68,6 +68,10 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote, onSetReminder
       }),
     });
     const created = await res.json();
+    if (!res.ok) {
+      alert(created.error ?? "Couldn't add this contact.");
+      return;
+    }
     await fetch(`/api/leads/${lead.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -155,6 +159,12 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote, onSetReminder
               onChange={(e) => setNoteDraft(e.target.value)}
               onBlur={() => {
                 if (noteDraft !== (lead.note ?? "")) onSaveNote(lead.id, noteDraft);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (noteDraft !== (lead.note ?? "")) onSaveNote(lead.id, noteDraft);
+                  e.currentTarget.blur();
+                }
               }}
               placeholder="Add a note (e.g. check quarterly earnings)..."
               className="w-full max-w-md rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
@@ -252,6 +262,9 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote, onSetReminder
             onChange={(e) => setNoteDraft(e.target.value)}
             onBlur={() => {
               if (noteDraft !== (lead.note ?? "")) onSaveNote(lead.id, noteDraft);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
             }}
             placeholder="Add a note (e.g. check quarterly earnings)..."
             className="w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"

@@ -87,8 +87,12 @@ export default function ContactDrawer() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const updated: Contact = await res.json();
-    setContact(updated);
+    const updated = await res.json();
+    if (!res.ok) {
+      alert(updated.error ?? "That change couldn't be saved.");
+      return;
+    }
+    setContact(updated as Contact);
   }
 
   async function markContacted() {
