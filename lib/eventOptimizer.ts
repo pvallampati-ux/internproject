@@ -3,6 +3,74 @@ import type { CalendarEvent } from "./eventsStore";
 import { detectLifeStage } from "./lifeStages";
 import { assessRelationshipHealth } from "./relationshipHealth";
 
+// Minimum substring length before two strings count as "the same
+// organization" — short strings (e.g. "gala", "club") would otherwise match
+// almost anything and produce noise.
+const MIN_ORG_MATCH_LENGTH = 6;
+
+function textMentions(haystack: string, needle: string): boolean {
+  if (needle.trim().length < MIN_ORG_MATCH_LENGTH) return false;
+  return haystack.toLowerCase().includes(needle.toLowerCase().trim());
+}
+
+// Event titles in this app follow a "Subject — Event Type" convention (e.g.
+// "Columbus Chamber of Commerce — Networking Night"), same as the seeded
+// sample events. Splitting on the dash gets the organization/subject name
+// on its own, so it can be matched against a contact's notes even when the
+// full title also contains generic event-type words. Falls back to the
+// whole title when there's no dash.
+function coreEventSubject(event: Pick<CalendarEvent, "title" | "description">): string {
+  const beforeDash = event.title.split(/[-–—]/)[0]?.trim() ?? "";
+  return beforeDash.length >= MIN_ORG_MATCH_LENGTH ? beforeDash : event.title.trim();
+}
+
+export interface AttendeeMatch {
+  contact: Contact;
+  reasons: string[];
+}
+
+// Finds contacts who are plausibly connected to whatever's hosting this
+// event — not a prediction of who will attend (nothing here knows a real
+// attendee list), just a cross-reference: does the event's org/subject show
+// up in a contact's board memberships, clubs, or their own note history?
+// Keyword-matched, same honesty standard as the rest of the app's
+// relationship matching — surfaced as "worth checking," not a fact.
+export function findLikelyAttendees(
+  event: Pick<CalendarEvent, "title" | "description">,
+  contacts: Contact[],
+  excludeIds: string[] = []
+): AttendeeMatch[] {
+  const subject = coreEventSubject(event);
+  const eventText = `${event.title} ${event.description ?? ""}`;
+
+  return contacts
+    .filter((c) => !excludeIds.includes(c.id) && c.stage !== "Cold")
+    .map((c) => {
+      const reasons: string[] = [];
+
+      for (const membership of c.boardMemberships ?? []) {
+        if (textMentions(eventText, membership) || textMentions(membership, subject)) {
+          reasons.push(`Board member: ${membership}`);
+        }
+      }
+      for (const club of c.clubs ?? []) {
+        if (textMentions(eventText, club) || textMentions(club, subject)) {
+          reasons.push(`Club: ${club}`);
+        }
+      }
+      for (const note of c.noteLog) {
+        if (textMentions(note.text, subject)) {
+          const snippet = note.text.length > 90 ? `${note.text.slice(0, 90)}...` : note.text;
+          reasons.push(`Note mentions it: "${snippet}"`);
+          break;
+        }
+      }
+
+      return { contact: c, reasons };
+    })
+    .filter((x) => x.reasons.length > 0);
+}
+
 // Rule-based invite suggestions for a calendar event — not an AI
 // recommendation, a weighted score over industry/tag keyword matches on
 // the event text, life stage, COI status, and relationship health. Every

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CalendarEvent } from "@/lib/eventsStore";
 import type { Contact } from "@/lib/contactTypes";
-import { suggestInvitees } from "@/lib/eventOptimizer";
+import { suggestInvitees, findLikelyAttendees } from "@/lib/eventOptimizer";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
 
 function formatDate(iso: string): string {
@@ -198,6 +198,32 @@ export default function CalendarPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              );
+            })()}
+
+            {(() => {
+              const attendeeMatches = findLikelyAttendees(event, contacts, event.taggedContactIds);
+              if (attendeeMatches.length === 0) return null;
+              return (
+                <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+                  <p className="text-xs font-medium text-amber-400">May already be connected here — have a pitch ready</p>
+                  <ul className="mt-1 space-y-1">
+                    {attendeeMatches.map(({ contact, reasons }) => (
+                      <li key={contact.id} className="text-xs text-gray-300">
+                        <button
+                          onClick={() => openDrawer(contact.id)}
+                          className="font-medium hover:text-gold-400 hover:underline"
+                        >
+                          {contact.name}
+                        </button>
+                        <span className="text-gray-500"> — {reasons[0]}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-1 text-[11px] text-gray-600">
+                    Keyword-matched against notes/board/club data — not confirmed, verify before acting.
+                  </p>
                 </div>
               );
             })()}
