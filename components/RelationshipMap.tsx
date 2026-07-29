@@ -1,8 +1,12 @@
-import { useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import type { Contact } from "@/lib/contactTypes";
 import type { Lead } from "@/lib/store";
-import { REGION_COORDINATES } from "@/lib/geo";
 
 interface PlottedContact {
   contact: Contact;
@@ -20,31 +24,21 @@ interface Props {
   leads?: PlottedLead[];
 }
 
-const LAT_MIN = 39.9;
-const LAT_MAX = 40.2;
-const LNG_MIN = -83.2;
-const LNG_MAX = -82.75;
-const WIDTH = 700;
-const HEIGHT = 500;
-const PADDING = 40;
-
-function project(lat: number, lng: number): { x: number; y: number } {
-  const x = PADDING + ((lng - LNG_MIN) / (LNG_MAX - LNG_MIN)) * (WIDTH - 2 * PADDING);
-  const y = PADDING + ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * (HEIGHT - 2 * PADDING);
-  return { x, y };
-}
+// Center of the Columbus, OH metro — matches lib/geo.ts's REGION_COORDINATES.
+const CENTER: [number, number] = [39.99, -83.0];
+const DEFAULT_ZOOM = 10;
 
 interface Cluster {
   key: string;
-  x: number;
-  y: number;
+  lat: number;
+  lng: number;
   contacts: Contact[];
 }
 
 interface LeadCluster {
   key: string;
-  x: number;
-  y: number;
+  lat: number;
+  lng: number;
   leads: Lead[];
 }
 
@@ -52,12 +46,11 @@ function buildClusters(plotted: PlottedContact[]): Cluster[] {
   const clusters = new Map<string, Cluster>();
   for (const { contact, point } of plotted) {
     const key = `${point.lat.toFixed(3)},${point.lng.toFixed(3)}`;
-    const { x, y } = project(point.lat, point.lng);
     const existing = clusters.get(key);
     if (existing) {
       existing.contacts.push(contact);
     } else {
-      clusters.set(key, { key, x, y, contacts: [contact] });
+      clusters.set(key, { key, lat: point.lat, lng: point.lng, contacts: [contact] });
     }
   }
   return [...clusters.values()];
@@ -67,165 +60,173 @@ function buildLeadClusters(plotted: PlottedLead[]): LeadCluster[] {
   const clusters = new Map<string, LeadCluster>();
   for (const { lead, point } of plotted) {
     const key = `${point.lat.toFixed(3)},${point.lng.toFixed(3)}`;
-    const { x, y } = project(point.lat, point.lng);
     const existing = clusters.get(key);
     if (existing) {
       existing.leads.push(lead);
     } else {
-      clusters.set(key, { key, x, y, leads: [lead] });
+      clusters.set(key, { key, lat: point.lat, lng: point.lng, leads: [lead] });
     }
   }
   return [...clusters.values()];
 }
 
-function townDots() {
-  return Object.entries(REGION_COORDINATES).map(([name, coords]) => {
-    const { x, y } = project(coords.lat, coords.lng);
-    return (
-      <g key={name}>
-        <circle cx={x} cy={y} r={2} fill="#444" />
-        <text x={x + 6} y={y + 3} fontSize={10} fill="#666">
-          {name.split(",")[0]}
-        </text>
-      </g>
-    );
-  });
-}
-
 // One color per stage bucket, matching the Network diagram convention
 // established elsewhere in the app: Client = green, in-pipeline = blue.
 // News leads reuse the gold accent used for leads everywhere else in the
-// app, and render as diamonds instead of circles so they stay visually
-// distinct from prospect/client clusters even when co-located.
+// app and render as a diamond divIcon instead of a circle so they stay
+// visually distinct from prospect/client clusters even when co-located.
 const PROSPECT_COLOR = "#38bdf8";
 const CLIENT_COLOR = "#34d399";
 const LEAD_COLOR = "#c39a4f";
 
-function LeadDiamonds({ clusters, onSelect }: { clusters: LeadCluster[]; onSelect: (c: LeadCluster) => void }) {
+function leadDivIcon(count: number): L.DivIcon {
+  const size = Math.min(16 + Math.sqrt(count) * 6, 40);
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:${size}px;height:${size}px;transform:rotate(45deg);background:${LEAD_COLOR}55;border:1.5px solid ${LEAD_COLOR};display:flex;align-items:center;justify-content:center;">
+      <span style="transform:rotate(-45deg);color:#f4f1ea;font-size:11px;font-weight:600;">${count}</span>
+    </div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+function ContactPopup({ contacts }: { contacts: Contact[] }) {
+  return (
+    <div className="min-w-[160px]">
+      <p className="text-xs font-medium text-gray-100">{contacts.length} contact(s) here</p>
+      <ul className="mt-1 space-y-0.5">
+        {contacts.map((contact) => (
+          <li key={contact.id}>
+            <Link href={`/contacts/${contact.id}`} className="text-xs text-gray-300 hover:text-gold-400 hover:underline">
+              {contact.name}
+              {contact.company && <span className="text-gray-500"> — {contact.company}</span>}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function LeadPopup({ leads }: { leads: Lead[] }) {
+  return (
+    <div className="min-w-[160px]">
+      <p className="text-xs font-medium text-gray-100">{leads.length} lead(s) here</p>
+      <ul className="mt-1 space-y-0.5">
+        {leads.map((lead) => (
+          <li key={lead.id}>
+            <a
+              href={lead.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-300 hover:text-gold-400 hover:underline"
+            >
+              {lead.title}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ContactCircleMarkers({ clusters, color }: { clusters: Cluster[]; color: string }) {
   return (
     <>
       {clusters.map((cluster) => {
-        const r = Math.min(8 + Math.sqrt(cluster.leads.length) * 3, 20);
+        const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
         return (
-          <g key={`l-${cluster.key}`} onClick={() => onSelect(cluster)} className="cursor-pointer">
-            <rect
-              x={cluster.x - r / 1.4}
-              y={cluster.y - r / 1.4}
-              width={(r / 1.4) * 2}
-              height={(r / 1.4) * 2}
-              fill={LEAD_COLOR}
-              fillOpacity={0.3}
-              stroke={LEAD_COLOR}
-              transform={`rotate(45 ${cluster.x} ${cluster.y})`}
-            />
-            <text x={cluster.x} y={cluster.y + 3} fontSize={10} fill="#f4f1ea" textAnchor="middle" fontWeight={600}>
-              {cluster.leads.length}
-            </text>
-          </g>
+          <CircleMarker
+            key={cluster.key}
+            center={[cluster.lat, cluster.lng]}
+            radius={r}
+            pathOptions={{ color, fillColor: color, fillOpacity: 0.35, weight: 1.5 }}
+          >
+            <Popup>
+              <ContactPopup contacts={cluster.contacts} />
+            </Popup>
+          </CircleMarker>
         );
       })}
     </>
   );
 }
 
-// Lives in the fixed-width side panel next to the map (not below it) so
-// clicking a cluster never pushes the page taller / forces scrolling.
-function SidePanel({
-  selected,
-  selectedLeads,
-  onCloseContacts,
-  onCloseLeads,
-}: {
-  selected: Cluster | null;
-  selectedLeads: LeadCluster | null;
-  onCloseContacts: () => void;
-  onCloseLeads: () => void;
-}) {
-  if (!selected && !selectedLeads) {
-    return (
-      <div className="flex h-full min-h-[200px] items-center justify-center rounded-lg border border-dashed border-charcoal-700 p-4 text-center text-xs text-gray-600">
-        Click a cluster on the map to see who's there.
-      </div>
-    );
-  }
-
+function LeadMarkers({ clusters }: { clusters: LeadCluster[] }) {
   return (
-    <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-      {selected && (
-        <>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-100">{selected.contacts.length} contact(s) here</p>
-            <button onClick={onCloseContacts} className="text-gray-500 hover:text-gray-300">
-              &times;
-            </button>
-          </div>
-          <ul className="mt-2 space-y-1">
-            {selected.contacts.map((contact) => (
-              <li key={contact.id}>
-                <Link href={`/contacts/${contact.id}`} className="text-sm text-gray-300 hover:text-gold-400 hover:underline">
-                  {contact.name}
-                  {contact.company && <span className="text-gray-500"> — {contact.company}</span>}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {selectedLeads && (
-        <>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-100">{selectedLeads.leads.length} lead(s) here</p>
-            <button onClick={onCloseLeads} className="text-gray-500 hover:text-gray-300">
-              &times;
-            </button>
-          </div>
-          <ul className="mt-2 space-y-1">
-            {selectedLeads.leads.map((lead) => (
-              <li key={lead.id}>
-                <a
-                  href={lead.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-gray-300 hover:text-gold-400 hover:underline"
-                >
-                  {lead.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+    <>
+      {clusters.map((cluster) => (
+        <Marker key={`l-${cluster.key}`} position={[cluster.lat, cluster.lng]} icon={leadDivIcon(cluster.leads.length)}>
+          <Popup>
+            <LeadPopup leads={cluster.leads} />
+          </Popup>
+        </Marker>
+      ))}
+    </>
+  );
+}
+
+// Keeps Leaflet's internal tile grid in sync when the container is resized
+// (the "Make bigger" toggle, or the browser's own resize-handle drag) —
+// Leaflet sizes itself once on mount and otherwise has no way to notice a
+// CSS-driven size change on its own.
+function ResizeSync({ watch }: { watch: unknown }) {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+  useEffect(() => {
+    map.invalidateSize();
+  }, [map, watch]);
+  return null;
+}
+
+const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+function LiveMap({
+  heightClass,
+  expanded,
+  children,
+}: {
+  heightClass: string;
+  expanded: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`w-full ${heightClass} resize-y overflow-hidden rounded-lg border border-charcoal-700`}
+      style={{ minHeight: 260 }}
+    >
+      <MapContainer center={CENTER} zoom={DEFAULT_ZOOM} scrollWheelZoom className="h-full w-full bg-charcoal-800">
+        <TileLayer attribution={ATTRIBUTION} url={TILE_URL} />
+        <ResizeSync watch={expanded} />
+        {children}
+      </MapContainer>
     </div>
   );
 }
 
 // Splits the old single "Contact Heat Map" into a prospect map and a client
-// map — same static-SVG-scatter approach, but bucketed by pipeline stage so
-// you can see book-of-business geography for each separately. Side-by-side
-// is the default; overlay plots both layers on one shared set of axes (same
-// project() function for both, so a town with both prospects and clients
-// naturally shows overlapping circles). News leads (formerly a separate
-// "Regional Map") are an optional third layer, toggled on top of either
-// mode, so you can see where matched news is clustering relative to your
-// actual book of business — the thing the standalone map couldn't answer.
+// map, bucketed by pipeline stage so you can see book-of-business geography
+// for each separately. Side-by-side is the default; overlay plots both
+// layers on one shared real map. News leads are an optional third layer,
+// toggled on top of either mode. Backed by react-leaflet + OpenStreetMap
+// tiles (free, no API key) instead of a hand-drawn static SVG scatter, so
+// it actually pans/zooms/scrolls like a real map.
 export default function RelationshipMap({ prospects, clients, leads = [] }: Props) {
   const [mode, setMode] = useState<"side" | "overlay">("side");
   const [showLeads, setShowLeads] = useState(leads.length > 0);
-  const [selected, setSelected] = useState<Cluster | null>(null);
-  const [selectedLeads, setSelectedLeads] = useState<LeadCluster | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const prospectClusters = buildClusters(prospects);
   const clientClusters = buildClusters(clients);
   const leadClusters = buildLeadClusters(leads);
-
-  function selectLeadCluster(cluster: LeadCluster) {
-    setSelected(null);
-    setSelectedLeads(cluster);
-  }
-  function selectContactCluster(cluster: Cluster) {
-    setSelectedLeads(null);
-    setSelected(cluster);
-  }
+  const heightClass = expanded ? "h-[700px]" : "h-[420px]";
 
   return (
     <div>
@@ -250,119 +251,56 @@ export default function RelationshipMap({ prospects, clients, leads = [] }: Prop
             <span className="text-gray-400">News leads ({leads.length})</span>
           </label>
         )}
-        <div className="ml-auto flex gap-1 rounded-full border border-charcoal-700 p-0.5">
+        <div className="ml-auto flex items-center gap-2">
           <button
-            onClick={() => setMode("side")}
-            className={`rounded-full px-3 py-1 ${mode === "side" ? "bg-gold-500/10 text-gold-400" : "text-gray-500 hover:text-gray-300"}`}
+            onClick={() => setExpanded((v) => !v)}
+            className="rounded-full border border-charcoal-700 px-3 py-1 text-gray-400 hover:text-gray-200"
           >
-            Side by side
+            {expanded ? "Smaller" : "Make bigger"}
           </button>
-          <button
-            onClick={() => setMode("overlay")}
-            className={`rounded-full px-3 py-1 ${mode === "overlay" ? "bg-gold-500/10 text-gold-400" : "text-gray-500 hover:text-gray-300"}`}
-          >
-            Overlay
-          </button>
+          <div className="flex gap-1 rounded-full border border-charcoal-700 p-0.5">
+            <button
+              onClick={() => setMode("side")}
+              className={`rounded-full px-3 py-1 ${mode === "side" ? "bg-gold-500/10 text-gold-400" : "text-gray-500 hover:text-gray-300"}`}
+            >
+              Side by side
+            </button>
+            <button
+              onClick={() => setMode("overlay")}
+              className={`rounded-full px-3 py-1 ${mode === "overlay" ? "bg-gold-500/10 text-gold-400" : "text-gray-500 hover:text-gray-300"}`}
+            >
+              Overlay
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          {mode === "side" ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <p className="mb-1 text-xs text-gray-500">Prospects ({prospects.length})</p>
-                <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
-                  <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#1e1e1e" />
-                  {townDots()}
-                  {showLeads && <LeadDiamonds clusters={leadClusters} onSelect={selectLeadCluster} />}
-                  {prospectClusters.map((cluster) => {
-                    const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
-                    return (
-                      <g key={cluster.key} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
-                        <circle cx={cluster.x} cy={cluster.y} r={r} fill={PROSPECT_COLOR} fillOpacity={0.28} stroke={PROSPECT_COLOR} />
-                        <text x={cluster.x} y={cluster.y + 4} fontSize={12} fill="#f4f1ea" textAnchor="middle" fontWeight={600}>
-                          {cluster.contacts.length}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
-              <div>
-                <p className="mb-1 text-xs text-gray-500">Clients ({clients.length})</p>
-                <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
-                  <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#1e1e1e" />
-                  {townDots()}
-                  {showLeads && <LeadDiamonds clusters={leadClusters} onSelect={selectLeadCluster} />}
-                  {clientClusters.map((cluster) => {
-                    const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
-                    return (
-                      <g key={cluster.key} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
-                        <circle cx={cluster.x} cy={cluster.y} r={r} fill={CLIENT_COLOR} fillOpacity={0.28} stroke={CLIENT_COLOR} />
-                        <text x={cluster.x} y={cluster.y + 4} fontSize={12} fill="#f4f1ea" textAnchor="middle" fontWeight={600}>
-                          {cluster.contacts.length}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
-            </div>
-          ) : (
-            <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
-              <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#1e1e1e" />
-              {townDots()}
-              {showLeads && <LeadDiamonds clusters={leadClusters} onSelect={selectLeadCluster} />}
-              {/* Overlay mode: fixed small radius (not scaled by count) and
-                  offset left/right of the shared location, instead of full
-                  concentric overlap — a town with both prospects and clients
-                  reads as two small adjacent badges, not a stacked blob. */}
-              {prospectClusters.map((cluster) => (
-                <g key={`p-${cluster.key}`} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
-                  <circle cx={cluster.x - 9} cy={cluster.y} r={11} fill={PROSPECT_COLOR} fillOpacity={0.3} stroke={PROSPECT_COLOR} />
-                  <text
-                    x={cluster.x - 9}
-                    y={cluster.y + 4}
-                    fontSize={11}
-                    fill="#f4f1ea"
-                    textAnchor="middle"
-                    fontWeight={600}
-                    className="pointer-events-none"
-                  >
-                    {cluster.contacts.length}
-                  </text>
-                </g>
-              ))}
-              {clientClusters.map((cluster) => (
-                <g key={`c-${cluster.key}`} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
-                  <circle cx={cluster.x + 9} cy={cluster.y} r={11} fill={CLIENT_COLOR} fillOpacity={0.3} stroke={CLIENT_COLOR} />
-                  <text
-                    x={cluster.x + 9}
-                    y={cluster.y + 4}
-                    fontSize={11}
-                    fill="#f4f1ea"
-                    textAnchor="middle"
-                    fontWeight={600}
-                    className="pointer-events-none"
-                  >
-                    {cluster.contacts.length}
-                  </text>
-                </g>
-              ))}
-            </svg>
-          )}
-        </div>
+      <p className="mb-2 text-[11px] text-gray-600">Drag to pan, scroll to zoom, or drag the bottom-right corner to resize.</p>
 
-        <div className="w-full shrink-0 lg:w-64">
-          <SidePanel
-            selected={selected}
-            selectedLeads={selectedLeads}
-            onCloseContacts={() => setSelected(null)}
-            onCloseLeads={() => setSelectedLeads(null)}
-          />
+      {mode === "side" ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <p className="mb-1 text-xs text-gray-500">Prospects ({prospects.length})</p>
+            <LiveMap heightClass={heightClass} expanded={expanded}>
+              {showLeads && <LeadMarkers clusters={leadClusters} />}
+              <ContactCircleMarkers clusters={prospectClusters} color={PROSPECT_COLOR} />
+            </LiveMap>
+          </div>
+          <div>
+            <p className="mb-1 text-xs text-gray-500">Clients ({clients.length})</p>
+            <LiveMap heightClass={heightClass} expanded={expanded}>
+              {showLeads && <LeadMarkers clusters={leadClusters} />}
+              <ContactCircleMarkers clusters={clientClusters} color={CLIENT_COLOR} />
+            </LiveMap>
+          </div>
         </div>
-      </div>
+      ) : (
+        <LiveMap heightClass={heightClass} expanded={expanded}>
+          {showLeads && <LeadMarkers clusters={leadClusters} />}
+          <ContactCircleMarkers clusters={prospectClusters} color={PROSPECT_COLOR} />
+          <ContactCircleMarkers clusters={clientClusters} color={CLIENT_COLOR} />
+        </LiveMap>
+      )}
     </div>
   );
 }

@@ -10,12 +10,15 @@
     "refresh": "tsx scripts/refresh.ts"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "next": "16.2.12",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
     "rss-parser": "^3.13.0"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

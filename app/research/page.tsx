@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import LeadCard from "@/components/LeadCard";
-import RelationshipMap from "@/components/RelationshipMap";
+
+// Leaflet touches `window` at module load, so it can't be server-rendered —
+// loaded client-only via next/dynamic.
+const RelationshipMap = dynamic(() => import("@/components/RelationshipMap"), { ssr: false });
 import AddIndustryForm from "@/components/AddIndustryForm";
 import GlobalSearch from "@/components/GlobalSearch";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
