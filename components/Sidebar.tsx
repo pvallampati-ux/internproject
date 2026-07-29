@@ -53,9 +53,6 @@ export default function Sidebar() {
           <br />
           Intelligence Hub
         </p>
-        <p className="mt-1 text-[11px] uppercase tracking-widest text-gold-500">
-          Columbus / Central Ohio
-        </p>
       </div>
 
       <nav className="mt-6 flex-1 space-y-0.5 overflow-y-auto">

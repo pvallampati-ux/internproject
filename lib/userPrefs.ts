@@ -8,9 +8,11 @@ const RECENT_KEY = "recentContactIds";
 const RECENT_LIMIT = 5;
 const VIEW_BANKER_KEY = "viewBankerId";
 
+const DEFAULT_NAME = "Pooja Vallampati";
+
 export function getDisplayName(): string {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem(NAME_KEY) ?? "";
+  if (typeof window === "undefined") return DEFAULT_NAME;
+  return localStorage.getItem(NAME_KEY) ?? DEFAULT_NAME;
 }
 
 export function setDisplayName(name: string): void {

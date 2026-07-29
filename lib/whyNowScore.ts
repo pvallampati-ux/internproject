@@ -84,7 +84,7 @@ export function calculateWhyNowScore(
   // Referral warmth.
   if (contact.referredByContactId) {
     score += 5;
-    reasoning.push("Warm referral from a tracked contact");
+    reasoning.push(`Warm referral from ${contact.referredBy || "a tracked contact"}`);
   }
 
   score = Math.min(100, score);
