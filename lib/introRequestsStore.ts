@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import type { IntroRequest, IntroStatus } from "./introRequestTypes";
+import { DATA_DIR } from "./dataDir";
 
 export type { IntroRequest, IntroStatus } from "./introRequestTypes";
 export { INTRO_STATUSES } from "./introRequestTypes";
@@ -12,7 +13,6 @@ export { INTRO_STATUSES } from "./introRequestTypes";
 // same path on the Network page finds its existing status instead of
 // starting over.
 
-const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "introRequests.json");
 
 function ensureDataFile(): void {

@@ -2,13 +2,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { type Contact, type PipelineStage, type NoteType, type FamilyMember } from "./contactTypes";
 import { logAuditEntry } from "./auditLog";
+import { DATA_DIR, SOURCE_DATA_DIR } from "./dataDir";
 
 export type { PipelineStage, NoteEntry, NoteType, FamilyMember, Contact } from "./contactTypes";
 export { PIPELINE_STAGES } from "./contactTypes";
 
-const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "contacts.json");
-const SAMPLE_FILE = path.join(DATA_DIR, "contacts.sample.json");
+const SAMPLE_FILE = path.join(SOURCE_DATA_DIR, "contacts.sample.json");
 
 // data/contacts.json holds real contact/meeting-note data and is gitignored.
 // data/contacts.sample.json ships in the repo with placeholder data only.

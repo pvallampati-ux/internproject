@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
+import { DATA_DIR, SOURCE_DATA_DIR } from "./dataDir";
 
 export interface CalendarEvent {
   id: string;
@@ -10,9 +11,8 @@ export interface CalendarEvent {
   taggedContactIds: string[];
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "events.json");
-const SAMPLE_FILE = path.join(DATA_DIR, "events.sample.json");
+const SAMPLE_FILE = path.join(SOURCE_DATA_DIR, "events.sample.json");
 
 // data/events.json holds your real calendar and is gitignored.
 // data/events.sample.json ships in the repo as the seed template — same

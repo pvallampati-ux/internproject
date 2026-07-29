@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
+import { DATA_DIR } from "./dataDir";
 
 // User-added industry verticals for Market Insights, on top of the two
 // built-in ones in lib/industries.ts. Local-only (gitignored) — same
@@ -19,7 +20,6 @@ export interface CustomIndustry {
   topics: CustomTopic[];
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "custom-industries.json");
 
 function ensureDataFile(): void {

@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
+import { DATA_DIR } from "./dataDir";
 
 // Single-user app, no auth — "actor" is always "You" today, but the field
 // exists so this doesn't need reshaping if a real multi-user system ever
@@ -14,7 +15,6 @@ export interface AuditEntry {
   summary: string; // human-readable description of what changed
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "auditLog.json");
 
 // Caps file growth — this is a rolling recent-history log, not a permanent

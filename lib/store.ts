@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import type { Category } from "./config";
+import { DATA_DIR } from "./dataDir";
 
 export interface RelatedArticle {
   title: string;
@@ -31,7 +32,6 @@ export interface Lead {
   promotedToContactId?: string;
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "leads.json");
 
 function ensureDataFile(): void {
