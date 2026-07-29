@@ -187,20 +187,26 @@ export function updateContact(
   return contacts[idx];
 }
 
+function makeNoteId(): string {
+  return `note_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
 export function addNoteEntry(
   id: string,
   text: string,
-  options?: { type?: NoteType; fileUrl?: string }
+  options?: { type?: NoteType; fileUrl?: string; commitment?: boolean }
 ): Contact | null {
   const contacts = loadContacts();
   const idx = contacts.findIndex((c) => c.id === id);
   if (idx === -1) return null;
   const type = options?.type ?? "note";
   contacts[idx].noteLog.push({
+    id: makeNoteId(),
     date: new Date().toISOString(),
     text,
     type,
     fileUrl: options?.fileUrl,
+    commitment: options?.commitment || undefined,
   });
   saveContacts(contacts);
   logAuditEntry({
@@ -209,5 +215,16 @@ export function addNoteEntry(
     action: "note_added",
     summary: `Added a ${type}: ${text.slice(0, 80)}${text.length > 80 ? "…" : ""}`,
   });
+  return contacts[idx];
+}
+
+export function resolveCommitment(contactId: string, noteId: string, resolved: boolean): Contact | null {
+  const contacts = loadContacts();
+  const idx = contacts.findIndex((c) => c.id === contactId);
+  if (idx === -1) return null;
+  const note = contacts[idx].noteLog.find((n) => n.id === noteId);
+  if (!note) return null;
+  note.commitmentResolved = resolved || undefined;
+  saveContacts(contacts);
   return contacts[idx];
 }

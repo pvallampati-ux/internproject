@@ -186,7 +186,7 @@ export default function HomePage() {
             </div>
             <AiMeetingPrep
               key={meetingPrepContact.id}
-              contactId={meetingPrepContact.id}
+              contact={meetingPrepContact}
               initialPrep={prepByContactId[meetingPrepContact.id] ?? null}
               onGenerated={(prep) =>
                 setPrepByContactId((prev) => ({ ...prev, [meetingPrepContact.id]: prep }))

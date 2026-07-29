@@ -107,6 +107,7 @@ export default function ContactProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTab>("Overview");
   const [noteDraft, setNoteDraft] = useState("");
   const [noteTypeDraft, setNoteTypeDraft] = useState<NoteType>("note");
+  const [noteIsCommitment, setNoteIsCommitment] = useState(false);
 
   // Field drafts for onBlur-save editing.
   const [titleDraft, setTitleDraft] = useState("");
@@ -210,12 +211,23 @@ export default function ContactProfilePage() {
     const res = await fetch(`/api/contacts/${contactId}/notes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: noteDraft.trim(), type: noteTypeDraft }),
+      body: JSON.stringify({ text: noteDraft.trim(), type: noteTypeDraft, commitment: noteIsCommitment || undefined }),
     });
     const updated: Contact = await res.json();
     setContact(updated);
     setNoteDraft("");
+    setNoteIsCommitment(false);
     await loadAuditForContact();
+  }
+
+  async function resolveCommitment(noteId: string, resolved: boolean) {
+    const res = await fetch(`/api/contacts/${contactId}/notes`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ noteId, commitmentResolved: resolved }),
+    });
+    const updated: Contact = await res.json();
+    setContact(updated);
   }
 
   function addFamilyMember() {
@@ -776,6 +788,17 @@ export default function ContactProfilePage() {
         <div className="mt-3 space-y-2">
           {[...contact.noteLog].reverse().map((entry, i) => (
             <div key={i} className="rounded-md bg-charcoal-900 px-3 py-2 text-sm">
+              {entry.commitment && (
+                <label className="mb-1 flex items-center gap-1.5 text-[11px] text-gold-400">
+                  <input
+                    type="checkbox"
+                    checked={!!entry.commitmentResolved}
+                    onChange={(e) => entry.id && resolveCommitment(entry.id, e.target.checked)}
+                    disabled={!entry.id}
+                  />
+                  {entry.commitmentResolved ? "Commitment resolved" : "Open commitment"}
+                </label>
+              )}
               <span className="text-xs text-gray-500">{formatDate(entry.date)} — </span>
               <span
                 className={`mr-1 rounded-full px-1.5 py-0.5 text-[10px] uppercase ${NOTE_TYPE_STYLES[entry.type ?? "note"]}`}
@@ -826,6 +849,14 @@ export default function ContactProfilePage() {
             Add
           </button>
         </div>
+        <label className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500">
+          <input
+            type="checkbox"
+            checked={noteIsCommitment}
+            onChange={(e) => setNoteIsCommitment(e.target.checked)}
+          />
+          This is a commitment — something I promised {contact.name.split(" ")[0]}
+        </label>
       </section>
 
       {memories.length > 0 && (
@@ -909,7 +940,7 @@ export default function ContactProfilePage() {
       )}
 
       <section className="mt-6 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-        <AiMeetingPrep contactId={contact.id} />
+        <AiMeetingPrep contact={contact} onCommitmentResolved={resolveCommitment} />
       </section>
       </>
       )}

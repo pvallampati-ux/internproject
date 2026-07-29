@@ -43,6 +43,7 @@ export default function ContactDrawer() {
   const [loading, setLoading] = useState(false);
   const [showPrep, setShowPrep] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
+  const [noteIsCommitment, setNoteIsCommitment] = useState(false);
   const [emailOverride, setEmailOverride] = useState<string | undefined>(undefined);
   const [phoneOverride, setPhoneOverride] = useState<string | undefined>(undefined);
   const [prospectScoreWeights, setProspectScoreWeights] =
@@ -107,11 +108,23 @@ export default function ContactDrawer() {
     const res = await fetch(`/api/contacts/${contact.id}/notes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: noteDraft.trim() }),
+      body: JSON.stringify({ text: noteDraft.trim(), commitment: noteIsCommitment || undefined }),
     });
     const updated: Contact = await res.json();
     setContact(updated);
     setNoteDraft("");
+    setNoteIsCommitment(false);
+  }
+
+  async function resolveCommitment(noteId: string, resolved: boolean) {
+    if (!contact) return;
+    const res = await fetch(`/api/contacts/${contact.id}/notes`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ noteId, commitmentResolved: resolved }),
+    });
+    const updated: Contact = await res.json();
+    setContact(updated);
   }
 
   if (!openContactId) return null;
@@ -272,7 +285,7 @@ export default function ContactDrawer() {
 
             {showPrep && (
               <div className="mt-3 rounded-md border border-charcoal-700 bg-charcoal-800 p-3">
-                <AiMeetingPrep contactId={contact.id} />
+                <AiMeetingPrep contact={contact} onCommitmentResolved={resolveCommitment} />
               </div>
             )}
 
@@ -294,6 +307,14 @@ export default function ContactDrawer() {
                   Add
                 </button>
               </div>
+              <label className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500">
+                <input
+                  type="checkbox"
+                  checked={noteIsCommitment}
+                  onChange={(e) => setNoteIsCommitment(e.target.checked)}
+                />
+                This is a commitment — something I promised {contact.name.split(" ")[0]}
+              </label>
             </div>
 
             {contact.noteLog.length > 0 && (
@@ -301,10 +322,21 @@ export default function ContactDrawer() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Recent notes</p>
                 <div className="mt-1.5 space-y-1.5">
                   {[...contact.noteLog].reverse().slice(0, 3).map((n, i) => (
-                    <p key={i} className="rounded-md bg-charcoal-800 px-2 py-1.5 text-xs text-gray-300">
+                    <div key={i} className="rounded-md bg-charcoal-800 px-2 py-1.5 text-xs text-gray-300">
+                      {n.commitment && (
+                        <label className="mb-1 flex items-center gap-1.5 text-[11px] text-gold-400">
+                          <input
+                            type="checkbox"
+                            checked={!!n.commitmentResolved}
+                            onChange={(e) => n.id && resolveCommitment(n.id, e.target.checked)}
+                            disabled={!n.id}
+                          />
+                          {n.commitmentResolved ? "Commitment resolved" : "Open commitment"}
+                        </label>
+                      )}
                       <span className="text-gray-500">{formatDate(n.date)} — </span>
                       {n.text}
-                    </p>
+                    </div>
                   ))}
                 </div>
               </div>

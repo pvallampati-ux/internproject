@@ -265,6 +265,11 @@ export default function ContactCard({
           <div className="space-y-2">
             {[...contact.noteLog].reverse().map((entry, i) => (
               <div key={i} className="rounded-md bg-charcoal-900 px-2 py-1.5 text-xs">
+                {entry.commitment && (
+                  <p className="mb-0.5 text-[11px] font-medium text-gold-400">
+                    {entry.commitmentResolved ? "Commitment resolved" : "Open commitment"}
+                  </p>
+                )}
                 <span className="text-gray-500">{formatDate(entry.date)} — </span>
                 <span className="text-gray-300">{entry.text}</span>
               </div>

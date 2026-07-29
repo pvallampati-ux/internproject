@@ -264,7 +264,7 @@ export default function EngagementPage() {
                   </div>
                 )}
 
-                {selectedContact && <AiMeetingPrep key={selectedContact.id} contactId={selectedContact.id} />}
+                {selectedContact && <AiMeetingPrep key={selectedContact.id} contact={selectedContact} />}
               </>
             )}
           </section>

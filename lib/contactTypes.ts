@@ -22,10 +22,13 @@ export type NoteType = "meeting" | "call" | "email" | "note";
 export const NOTE_TYPES: NoteType[] = ["meeting", "call", "email", "note"];
 
 export interface NoteEntry {
+  id?: string; // stable id — only entries logged after commitment tracking shipped have one
   date: string; // ISO
   text: string;
   type?: NoteType;
   fileUrl?: string; // link to an external doc (Drive/SharePoint/etc) — this app doesn't host file uploads itself
+  commitment?: boolean; // true if this note is something you promised the contact, not just a record
+  commitmentResolved?: boolean; // true once an open commitment has been fulfilled
 }
 
 export interface FamilyMember {

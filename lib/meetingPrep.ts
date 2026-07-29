@@ -4,11 +4,13 @@ import type { Lead } from "./store";
 export interface MeetingPrep {
   executiveSummary: string;
   likelyNeeds: string[];
+  suggestedAgenda: string[];
   suggestedQuestions: {
     openEnded: string[];
     relationshipBuilding: string[];
     technical: string[];
   };
+  crossSellOpportunities: string[];
   risks: string[];
   citations: string[];
 }
@@ -20,15 +22,19 @@ Ground rules — follow these exactly:
 - If you don't have enough information for a section, say so plainly (e.g. "Not enough information available") instead of guessing specifics.
 - Any financial figure (net worth, deal size, etc.) must be phrased as a rough, clearly-hedged range with explicit uncertainty language (e.g. "publicly estimated in the $X-$Y range, unverified"), never a single confident number.
 - Under "risks", only include something if there is clear, specific public information supporting it. Do not speculate or infer controversy from silence, ambiguity, or the mere existence of competitors.
+- Under "crossSellOpportunities", only suggest services grounded in what "Existing relationship at the firm" says is NOT already in place, or in a specific note/news item — e.g. don't suggest trust/estate services if notes say a trust is already established. If existing relationship is unclear, say so instead of guessing.
+- Under "suggestedAgenda", give a short ordered list of talking points for this specific meeting (not generic banker advice) grounded in the notes and news provided.
 - Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this shape:
 {
   "executiveSummary": "string, 3-5 sentences",
   "likelyNeeds": ["string", ...],
+  "suggestedAgenda": ["string", ...],
   "suggestedQuestions": {
     "openEnded": ["string", ...],
     "relationshipBuilding": ["string", ...],
     "technical": ["string", ...]
   },
+  "crossSellOpportunities": ["string", ...],
   "risks": ["string", ...]
 }`;
 
@@ -44,6 +50,7 @@ function buildUserPrompt(contact: Contact, relevantLeads: Lead[]): string {
   return `Contact: ${contact.name}${contact.company ? ` — ${contact.company}` : ""}
 Pipeline stage: ${contact.stage}
 Tags: ${contact.tags.join(", ") || "(none)"}
+Existing relationship at the firm: ${contact.existingRelationships || "(not on file)"}
 
 Internal notes on file:
 ${noteText}
