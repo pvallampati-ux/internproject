@@ -52,6 +52,7 @@ export async function POST(request: Request) {
     sourceLeadTitle: typeof body.sourceLeadTitle === "string" ? body.sourceLeadTitle : undefined,
     sourceLeadLink: typeof body.sourceLeadLink === "string" ? body.sourceLeadLink : undefined,
     sourceLeadId: typeof body.sourceLeadId === "string" ? body.sourceLeadId : undefined,
+    bankerId: typeof body.bankerId === "string" ? body.bankerId : undefined,
   });
 
   return NextResponse.json(contact, { status: 201 });

@@ -11,6 +11,8 @@ import { JOURNEY_STAGES, type Contact, type PipelineStage } from "@/lib/contactT
 import { EMPTY_CONTACT_FILTERS, applyContactFilters, isFiltersActive, type ContactFilters } from "@/lib/contactFilters";
 import { calculateWhyNowScore, type WhyNowResult } from "@/lib/whyNowScore";
 import type { Lead } from "@/lib/store";
+import { BANKERS, YOU_BANKER_ID, contactBankerId } from "@/lib/bankers";
+import { getViewBankerId, setViewBankerId } from "@/lib/userPrefs";
 
 function formatCurrency(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
@@ -24,6 +26,16 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
   const [filters, setFilters] = useState<ContactFilters>(EMPTY_CONTACT_FILTERS);
+  const [viewBankerId, setViewBankerIdState] = useState(YOU_BANKER_ID);
+
+  useEffect(() => {
+    setViewBankerIdState(getViewBankerId());
+  }, []);
+
+  function changeViewBanker(bankerId: string) {
+    setViewBankerIdState(bankerId);
+    setViewBankerId(bankerId);
+  }
 
   function handleDrop(e: React.DragEvent, stage: PipelineStage) {
     e.preventDefault();
@@ -96,7 +108,10 @@ export default function PipelinePage() {
     const res = await fetch("/api/contacts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        ...input,
+        bankerId: viewBankerId === YOU_BANKER_ID ? undefined : viewBankerId,
+      }),
     });
     const created = await res.json();
     setContacts((prev) => [...prev, created]);
@@ -112,7 +127,8 @@ export default function PipelinePage() {
     .sort((a, b) => b.score - a.score || new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     .slice(0, 8);
 
-  const filteredContacts = applyContactFilters(contacts, filters);
+  const scopedContacts = contacts.filter((c) => contactBankerId(c.bankerId) === viewBankerId);
+  const filteredContacts = applyContactFilters(scopedContacts, filters);
   const coldContacts = filteredContacts.filter((c) => c.stage === "Cold");
 
   const whyNowByContactId = useMemo(() => {
@@ -146,15 +162,41 @@ export default function PipelinePage() {
 
   return (
     <main className="mx-auto max-w-[1600px] px-6 py-8">
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gold-500">Client Pipeline</p>
-        <h1 className="font-serif text-3xl font-semibold text-gray-100">Prospect to Client</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Track relationships through each stage and log meeting notes. Warm intros:{" "}
-          <Link href="/network" className="text-gold-400 hover:underline">
-            Network →
-          </Link>
-        </p>
+      <header className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-gold-500">Client Pipeline</p>
+          <h1 className="font-serif text-3xl font-semibold text-gray-100">Prospect to Client</h1>
+          <p className="mt-1 text-sm text-gray-400">
+            Track relationships through each stage and log meeting notes. Warm intros:{" "}
+            <Link href="/network" className="text-gold-400 hover:underline">
+              Network →
+            </Link>
+            {" · "}
+            Team overlaps:{" "}
+            <Link href="/network#team-overlaps" className="text-gold-400 hover:underline">
+              Network →
+            </Link>
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <label className="text-xs text-gray-500">Viewing</label>
+          <select
+            value={viewBankerId}
+            onChange={(e) => changeViewBanker(e.target.value)}
+            className="mt-1 block rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+          >
+            {BANKERS.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.id === YOU_BANKER_ID ? "My Book (You)" : `${b.name}'s Book`}
+              </option>
+            ))}
+          </select>
+          {viewBankerId !== YOU_BANKER_ID && (
+            <p className="mt-1 max-w-[220px] text-[11px] text-gray-600">
+              Simulated view, not a real login — no per-user access control.
+            </p>
+          )}
+        </div>
       </header>
 
       <div className="mb-4">
@@ -171,7 +213,7 @@ export default function PipelinePage() {
         <>
           {isFiltersActive(filters) && (
             <p className="mb-3 text-xs text-gray-500">
-              Showing {filteredContacts.length} of {contacts.length} contacts matching the active filters.
+              Showing {filteredContacts.length} of {scopedContacts.length} contacts matching the active filters.
             </p>
           )}
 
@@ -209,7 +251,12 @@ export default function PipelinePage() {
                   </p>
                 ) : (
                   marketLeads.map((lead) => (
-                    <MarketLeadCard key={lead.id} lead={lead} onPromoted={handleLeadPromoted} />
+                    <MarketLeadCard
+                      key={lead.id}
+                      lead={lead}
+                      onPromoted={handleLeadPromoted}
+                      bankerId={viewBankerId === YOU_BANKER_ID ? undefined : viewBankerId}
+                    />
                   ))
                 )}
               </div>

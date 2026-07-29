@@ -56,6 +56,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       | "nextMeetingDate"
       | "isCOI"
       | "outreachStatus"
+      | "bankerId"
     >
   > = {};
   if (typeof body.lastContactedAt === "string") patch.lastContactedAt = body.lastContactedAt;
@@ -87,6 +88,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (typeof body.isCOI === "boolean") patch.isCOI = body.isCOI;
   if (OUTREACH_STATUSES.includes(body.outreachStatus) || body.outreachStatus === null) {
     patch.outreachStatus = body.outreachStatus ?? undefined;
+  }
+  if (typeof body.bankerId === "string" || body.bankerId === null) {
+    patch.bankerId = body.bankerId ?? undefined;
   }
 
   const updated = updateContact(id, patch);

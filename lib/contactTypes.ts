@@ -88,6 +88,10 @@ export interface Contact {
   nextMeetingDate?: string; // ISO date; surfaced in the daily brief so AI Meeting Prep is ready ahead of time
   isCOI?: boolean; // Center of Influence — a referral source, tracked on the COI/Network tab
   outreachStatus?: OutreachStatus; // current outreach attempt in flight, if any — see OutreachStatus above
+  // Which banker's book this contact belongs to (see lib/bankers.ts) — a
+  // simulated view-scope tag, not real per-user ownership/access control.
+  // Undefined means "you" (the default single-banker experience).
+  bankerId?: string;
 }
 
 // "Touchpoints" is simply the number of logged notes — every meaningful

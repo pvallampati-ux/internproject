@@ -92,6 +92,7 @@ export function createContact(input: {
   sourceLeadTitle?: string;
   sourceLeadLink?: string;
   sourceLeadId?: string;
+  bankerId?: string;
 }): Contact {
   const contacts = loadContacts();
   const now = new Date().toISOString();
@@ -122,6 +123,7 @@ export function createContact(input: {
     sourceLeadTitle: input.sourceLeadTitle,
     sourceLeadLink: input.sourceLeadLink,
     sourceLeadId: input.sourceLeadId,
+    bankerId: input.bankerId,
   };
   contacts.push(contact);
   saveContacts(contacts);
@@ -163,6 +165,7 @@ export function updateContact(
       | "nextMeetingDate"
       | "isCOI"
       | "outreachStatus"
+      | "bankerId"
     >
   >
 ): Contact | null {

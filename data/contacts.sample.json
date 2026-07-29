@@ -340,5 +340,36 @@
         "text": "Demo contact with your real name/email so you can safely test Send Email and AI Meeting Prep without emailing a stranger. Has a meeting scheduled today to demo that daily-brief feature too."
       }
     ]
+  },
+  {
+    "id": "contact_demo_10",
+    "name": "Nina Whitmore",
+    "title": "VP Operations",
+    "company": "Whitmore Insurance",
+    "email": "nina.whitmore@example.com",
+    "location": "New Albany, OH",
+    "industry": "Insurance",
+    "existingRelationships": "None",
+    "familyMembers": [
+      {
+        "name": "Tom Whitmore",
+        "relationship": "Father"
+      }
+    ],
+    "tags": [
+      "insurance firm",
+      "new albany"
+    ],
+    "lastContactedAt": "2026-07-15T14:00:00.000Z",
+    "cadenceDays": 30,
+    "stage": "Prospect",
+    "estimatedValue": 600000,
+    "bankerId": "banker_alex_rivera",
+    "noteLog": [
+      {
+        "date": "2026-07-15T14:00:00.000Z",
+        "text": "Demo contact — edit or replace with a real prospect. Owned by a simulated colleague banker (Alex Rivera) to demo Team Overlaps on the Network page: she works at Whitmore Insurance, same company as Tom Whitmore (your client)."
+      }
+    ]
   }
 ]

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import NetworkGraph from "@/components/NetworkGraph";
 import type { Contact } from "@/lib/contactTypes";
 import type { NetworkEdge } from "@/lib/networkGraph";
@@ -8,6 +9,8 @@ import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
 import { INTRO_STATUSES, type IntroRequest, type IntroStatus } from "@/lib/introRequestTypes";
 import { buildIntroRequestMessage } from "@/lib/introMessage";
+import { findTeamOverlaps } from "@/lib/teamOverlaps";
+import { bankerName, YOU_BANKER_ID } from "@/lib/bankers";
 
 const INTRO_STATUS_STYLES: Record<IntroStatus, string> = {
   Suggested: "border-charcoal-700 text-gray-400",
@@ -193,6 +196,7 @@ export default function NetworkPage() {
   }, []);
 
   const introPaths = useMemo(() => buildIntroPaths(warmIntros), [warmIntros]);
+  const teamOverlaps = useMemo(() => findTeamOverlaps(contacts), [contacts]);
   const introStatusByKey = useMemo(() => {
     const map = new Map<string, IntroStatus>();
     for (const r of introRequests) map.set(introKey(r.prospectId, r.connectorId), r.status);
@@ -235,6 +239,46 @@ export default function NetworkPage() {
         <p className="text-sm text-gray-500">Loading...</p>
       ) : (
         <>
+          <section id="team-overlaps" className="mb-10 scroll-mt-6">
+            <h2 className="font-serif text-lg text-gray-100">
+              Team Overlaps ({teamOverlaps.length})
+            </h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Companies with contacts in more than one banker&rsquo;s book — same-company match,
+              verify before acting. Simulated team view, not real accounts —{" "}
+              <Link href="/pipeline" className="text-gold-400 hover:underline">
+                switch books on Pipeline
+              </Link>
+              .
+            </p>
+            {teamOverlaps.length === 0 ? (
+              <p className="mt-3 text-sm text-gray-600">No cross-book overlaps detected right now.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {teamOverlaps.map((overlap) => (
+                  <li key={overlap.company} className="rounded-md border border-charcoal-700 bg-charcoal-800 px-3 py-2.5">
+                    <p className="text-sm font-medium text-gray-100">{overlap.company}</p>
+                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                      {overlap.entries.map(({ contact, bankerId }) => (
+                        <button
+                          key={contact.id}
+                          onClick={() => openDrawer(contact.id)}
+                          className="text-xs text-gray-400 hover:text-gold-400 hover:underline"
+                        >
+                          <span className={bankerId === YOU_BANKER_ID ? "font-medium text-gold-400" : "text-gray-300"}>
+                            {bankerName(bankerId)}
+                          </span>
+                          {": "}
+                          {contact.name}
+                        </button>
+                      ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           <section className="mb-10">
             <h2 className="font-serif text-lg text-gray-100">
               Best Introduction Paths ({introPaths.length})

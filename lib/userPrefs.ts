@@ -6,6 +6,7 @@ const NAME_KEY = "userDisplayName";
 const ROLE_KEY = "userRole";
 const RECENT_KEY = "recentContactIds";
 const RECENT_LIMIT = 5;
+const VIEW_BANKER_KEY = "viewBankerId";
 
 export function getDisplayName(): string {
   if (typeof window === "undefined") return "";
@@ -38,4 +39,16 @@ export function pushRecentContactId(id: string): void {
   const existing = getRecentContactIds().filter((x) => x !== id);
   const next = [id, ...existing].slice(0, RECENT_LIMIT);
   localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+}
+
+// Which banker's book Pipeline is currently showing — a local view-scope
+// switcher for simulating "self view" vs. a colleague's book, not real
+// per-user access control. See lib/bankers.ts.
+export function getViewBankerId(): string {
+  if (typeof window === "undefined") return "you";
+  return localStorage.getItem(VIEW_BANKER_KEY) ?? "you";
+}
+
+export function setViewBankerId(bankerId: string): void {
+  localStorage.setItem(VIEW_BANKER_KEY, bankerId);
 }

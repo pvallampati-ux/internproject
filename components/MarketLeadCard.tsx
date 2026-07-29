@@ -26,12 +26,16 @@ function timeAgo(iso: string): string {
 interface Props {
   lead: Lead;
   onPromoted: (leadId: string, contact: Contact) => void;
+  // Which banker's book to file the new Prospect under — omit/undefined
+  // for "you" (see lib/bankers.ts). Lets promoting from a colleague's
+  // Pipeline view tag the new contact to that book.
+  bankerId?: string;
 }
 
 // A Market Lead is a headline, not a person — it only becomes a Prospect
 // once a banker identifies and types in the actual name behind it. No
 // auto-copying the headline as a fake contact name.
-export default function MarketLeadCard({ lead, onPromoted }: Props) {
+export default function MarketLeadCard({ lead, onPromoted, bankerId }: Props) {
   const mentionedNames = extractLeadNames(lead);
   const [promoting, setPromoting] = useState(false);
   const [name, setName] = useState(mentionedNames[0] ?? "");
@@ -52,6 +56,7 @@ export default function MarketLeadCard({ lead, onPromoted }: Props) {
         sourceLeadTitle: lead.title,
         sourceLeadLink: lead.link,
         sourceLeadId: lead.id,
+        bankerId,
       }),
     });
     const created: Contact = await res.json();
