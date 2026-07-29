@@ -22,5 +22,21 @@
     "location": "Columbus Chamber of Commerce",
     "description": "Demo event — edit or replace. Monthly networking event, good for COI relationship building.",
     "taggedContactIds": ["contact_demo_8"]
+  },
+  {
+    "id": "event_demo_4",
+    "title": "Meeting: David Park — Park Logistics",
+    "date": "2026-07-29T14:00:00.000Z",
+    "location": "Client office — Westerville, OH",
+    "description": "Demo event — edit or replace. Third meeting, bringing his business partner.",
+    "taggedContactIds": ["contact_demo_4"]
+  },
+  {
+    "id": "event_demo_5",
+    "title": "Meeting: Pooja Vallampati",
+    "date": "2026-07-29T19:00:00.000Z",
+    "location": "Office",
+    "description": "Demo event — edit or replace. Demo meeting to test Today's Meetings / AI Meeting Prep against your own name/email.",
+    "taggedContactIds": ["contact_demo_9"]
   }
 ]

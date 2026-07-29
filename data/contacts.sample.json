@@ -33,19 +33,20 @@
     "noteLog": [
       {
         "date": "2026-07-10T14:00:00.000Z",
-        "text": "Demo contact \u2014 edit or replace with a real prospect. Met at a Chamber of Commerce event, runs a growing software firm.",
+        "text": "Demo contact — edit or replace with a real prospect. Met at a Chamber of Commerce event, runs a growing software firm.",
         "type": "meeting"
       },
       {
         "date": "2026-07-16T14:00:00.000Z",
-        "text": "Demo contact. Follow-up call \u2014 mentioned she's preparing for exit and exploring liquidity options in the next couple years.",
+        "text": "Demo contact. Follow-up call — mentioned she's preparing for exit and exploring liquidity options in the next couple years.",
         "type": "call"
       },
       {
         "date": "2026-07-27T14:00:00.000Z",
-        "text": "Tagged to prospecting event: \"Ohio State vs. Michigan \u2014 Tailgate\" \u2014 Nov 28, 2026 at Ohio Stadium, Columbus."
+        "text": "Tagged to prospecting event: \"Ohio State vs. Michigan — Tailgate\" — Nov 28, 2026 at Ohio Stadium, Columbus."
       }
-    ]
+    ],
+    "eci": "89068283"
   },
   {
     "id": "contact_demo_2",
@@ -70,14 +71,15 @@
     "noteLog": [
       {
         "date": "2026-07-25T14:00:00.000Z",
-        "text": "Demo contact \u2014 edit or replace with a real prospect. Intro call, third-generation founder growing the family manufacturing business.",
+        "text": "Demo contact — edit or replace with a real prospect. Intro call, third-generation founder growing the family manufacturing business.",
         "type": "call"
       },
       {
         "date": "2026-07-27T14:00:00.000Z",
-        "text": "Tagged to prospecting event: \"Ohio State vs. Michigan \u2014 Tailgate\" \u2014 Nov 28, 2026 at Ohio Stadium, Columbus."
+        "text": "Tagged to prospecting event: \"Ohio State vs. Michigan — Tailgate\" — Nov 28, 2026 at Ohio Stadium, Columbus."
       }
-    ]
+    ],
+    "eci": "83488280"
   },
   {
     "id": "contact_demo_3",
@@ -108,7 +110,7 @@
     "noteLog": [
       {
         "date": "2026-07-05T14:00:00.000Z",
-        "text": "Demo contact \u2014 edit or replace with a real prospect. Referred by an existing client, owns a multi-location dental practice."
+        "text": "Demo contact — edit or replace with a real prospect. Referred by an existing client, owns a multi-location dental practice."
       },
       {
         "date": "2026-07-18T14:00:00.000Z",
@@ -117,9 +119,10 @@
       },
       {
         "date": "2026-07-27T14:00:00.000Z",
-        "text": "Tagged to prospecting event: \"Ohio State Football \u2014 Season Opener Watch Party\" \u2014 Aug 29, 2026 at Downtown Columbus."
+        "text": "Tagged to prospecting event: \"Ohio State Football — Season Opener Watch Party\" — Aug 29, 2026 at Downtown Columbus."
       }
-    ]
+    ],
+    "eci": "50794470"
   },
   {
     "id": "contact_demo_4",
@@ -140,13 +143,14 @@
     "lastContactedAt": "2026-07-23T14:00:00.000Z",
     "cadenceDays": 30,
     "stage": "Meeting",
+    "nextMeetingDate": "2026-07-29T14:00:00.000Z",
     "estimatedValue": 3000000,
     "currentWalletShare": 500000,
     "isCOI": true,
     "noteLog": [
       {
         "date": "2026-06-20T14:00:00.000Z",
-        "text": "Demo contact \u2014 edit or replace with a real prospect. First meeting, discussed his logistics company's growth.",
+        "text": "Demo contact — edit or replace with a real prospect. First meeting, discussed his logistics company's growth.",
         "type": "meeting"
       },
       {
@@ -159,7 +163,8 @@
         "text": "Demo contact. Third meeting scheduled for next month, bringing his business partner.",
         "type": "meeting"
       }
-    ]
+    ],
+    "eci": "50982757"
   },
   {
     "id": "contact_demo_5",
@@ -193,7 +198,7 @@
     "noteLog": [
       {
         "date": "2026-05-15T14:00:00.000Z",
-        "text": "Demo contact \u2014 edit or replace with a real prospect. Referred by David Park, owns a regional retail chain."
+        "text": "Demo contact — edit or replace with a real prospect. Referred by David Park, owns a regional retail chain."
       },
       {
         "date": "2026-06-10T14:00:00.000Z",
@@ -209,7 +214,8 @@
         "date": "2026-07-26T14:00:00.000Z",
         "text": "Demo contact. She's reviewing the proposal with her family, expects a decision soon."
       }
-    ]
+    ],
+    "eci": "85143950"
   },
   {
     "id": "contact_demo_6",
@@ -220,7 +226,7 @@
     "location": "New Albany, OH",
     "industry": "Insurance",
     "businessOwnership": "Owner",
-    "existingRelationships": "Full relationship \u2014 checking, trust, and investment accounts",
+    "existingRelationships": "Full relationship — checking, trust, and investment accounts",
     "clubs": [
       "New Albany Country Club"
     ],
@@ -236,7 +242,7 @@
     "noteLog": [
       {
         "date": "2026-01-15T14:00:00.000Z",
-        "text": "Demo contact \u2014 edit or replace with a real client. Onboarded as a client."
+        "text": "Demo contact — edit or replace with a real client. Onboarded as a client."
       },
       {
         "date": "2026-04-20T14:00:00.000Z",
@@ -248,7 +254,8 @@
         "text": "Demo contact. Q3 review, discussed adding a trust structure.",
         "type": "meeting"
       }
-    ]
+    ],
+    "eci": "35737017"
   },
   {
     "id": "contact_demo_7",
@@ -267,9 +274,10 @@
     "noteLog": [
       {
         "date": "2026-04-30T14:00:00.000Z",
-        "text": "Demo contact \u2014 edit or replace with a real contact. Went with a competitor's advisor, not interested for now."
+        "text": "Demo contact — edit or replace with a real contact. Went with a competitor's advisor, not interested for now."
       }
-    ]
+    ],
+    "eci": "16527515"
   },
   {
     "id": "contact_demo_8",
@@ -297,7 +305,7 @@
     "noteLog": [
       {
         "date": "2026-01-10T14:00:00.000Z",
-        "text": "Demo contact \u2014 edit or replace with a real Center of Influence. Local CPA, sends referrals a couple times a year."
+        "text": "Demo contact — edit or replace with a real Center of Influence. Local CPA, sends referrals a couple times a year."
       },
       {
         "date": "2026-07-20T14:00:00.000Z",
@@ -306,21 +314,22 @@
       },
       {
         "date": "2026-07-27T14:00:00.000Z",
-        "text": "Tagged to prospecting event: \"Columbus Chamber of Commerce Networking Night\" \u2014 Sep 15, 2026 at Columbus Chamber of Commerce."
+        "text": "Tagged to prospecting event: \"Columbus Chamber of Commerce Networking Night\" — Sep 15, 2026 at Columbus Chamber of Commerce."
       }
-    ]
+    ],
+    "eci": "74200624"
   },
   {
     "id": "contact_demo_9",
     "name": "Pooja Vallampati",
-    "company": "(you \u2014 for testing Send Email / AI Meeting Prep safely)",
+    "company": "(you — for testing Send Email / AI Meeting Prep safely)",
     "email": "pvallampati@gmail.com",
     "location": "Columbus, OH",
     "tags": [],
     "lastContactedAt": "2026-07-20T14:00:00.000Z",
     "cadenceDays": 30,
     "stage": "Prospect",
-    "nextMeetingDate": "2026-07-28T14:00:00.000Z",
+    "nextMeetingDate": "2026-07-29T19:00:00.000Z",
     "noteLog": [
       {
         "date": "2019-03-15T14:00:00.000Z",
@@ -338,7 +347,8 @@
         "date": "2026-07-20T14:00:00.000Z",
         "text": "Demo contact with your real name/email so you can safely test Send Email and AI Meeting Prep without emailing a stranger. Has a meeting scheduled today to demo that daily-brief feature too."
       }
-    ]
+    ],
+    "eci": "92445110"
   },
   {
     "id": "contact_demo_10",
@@ -369,6 +379,7 @@
         "date": "2026-07-15T14:00:00.000Z",
         "text": "Demo contact — edit or replace with a real prospect. Owned by a simulated colleague banker (Jon Kokinchak) to demo Team Overlaps on the Network page: she works at Whitmore Insurance, same company as Tom Whitmore (your client)."
       }
-    ]
+    ],
+    "eci": "84386298"
   }
 ]

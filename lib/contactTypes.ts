@@ -52,6 +52,7 @@ export const OUTREACH_STATUSES: OutreachStatus[] = [
 export interface Contact {
   id: string;
   name: string;
+  eci?: string; // client identification number — locally generated, not a real firm-issued ECI
   title?: string; // job title, e.g. "Founder & CEO"
   company?: string;
   email?: string;

@@ -41,6 +41,18 @@ function makeContactId(): string {
   return `contact_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
+// Locally generated 8-digit client identification number — not a real
+// firm-issued ECI, just a stable-looking id so contacts can be searched and
+// referenced by number as well as by name.
+function makeEci(existing: Contact[]): string {
+  const taken = new Set(existing.map((c) => c.eci).filter(Boolean));
+  let eci: string;
+  do {
+    eci = String(Math.floor(10_000_000 + Math.random() * 90_000_000));
+  } while (taken.has(eci));
+  return eci;
+}
+
 export function getContact(id: string): Contact | null {
   return loadContacts().find((c) => c.id === id) ?? null;
 }
@@ -99,6 +111,7 @@ export function createContact(input: {
   const contact: Contact = {
     id: makeContactId(),
     name: input.name,
+    eci: makeEci(contacts),
     title: input.title,
     company: input.company,
     email: input.email,
@@ -142,6 +155,7 @@ export function updateContact(
     Pick<
       Contact,
       | "name"
+      | "eci"
       | "title"
       | "company"
       | "email"

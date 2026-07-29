@@ -6,7 +6,24 @@ import type { Lead } from "@/lib/store";
 import type { DailyBrief } from "@/lib/dailyBrief";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
+import ContactSearchPicker from "@/components/ContactSearchPicker";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
+
+// "Next meeting" = soonest upcoming nextMeetingDate; if everyone's meetings
+// have already passed today, falls back to the most recently scheduled one
+// instead of an arbitrary first-in-list contact.
+function pickNextMeetingContact(contacts: Contact[]): Contact | null {
+  const withMeeting = contacts.filter((c): c is Contact & { nextMeetingDate: string } => !!c.nextMeetingDate);
+  if (withMeeting.length === 0) return contacts[0] ?? null;
+  const now = Date.now();
+  const upcoming = withMeeting
+    .filter((c) => new Date(c.nextMeetingDate).getTime() >= now)
+    .sort((a, b) => new Date(a.nextMeetingDate).getTime() - new Date(b.nextMeetingDate).getTime());
+  if (upcoming.length > 0) return upcoming[0];
+  return [...withMeeting].sort(
+    (a, b) => new Date(b.nextMeetingDate).getTime() - new Date(a.nextMeetingDate).getTime()
+  )[0];
+}
 
 const OUTREACH_STATUS_STYLES: Record<OutreachStatus, string> = {
   Drafting: "border-gray-500/50 bg-gray-500/10 text-gray-300",
@@ -61,7 +78,8 @@ export default function EngagementPage() {
       setContacts(contactsData.contacts ?? []);
       setLeads(leadsData.leads ?? []);
       setBrief(briefData);
-      if (contactsData.contacts?.length > 0) setSelectedContactId(contactsData.contacts[0].id);
+      const nextMeetingContact = pickNextMeetingContact(contactsData.contacts ?? []);
+      if (nextMeetingContact) setSelectedContactId(nextMeetingContact.id);
       setLoading(false);
     })();
   }, []);
@@ -205,18 +223,7 @@ export default function EngagementPage() {
               </p>
             ) : (
               <>
-                <select
-                  value={selectedContactId}
-                  onChange={(e) => setSelectedContactId(e.target.value)}
-                  className="mt-3 rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
-                >
-                  {contacts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                      {c.company ? ` — ${c.company}` : ""}
-                    </option>
-                  ))}
-                </select>
+                <ContactSearchPicker contacts={contacts} selectedId={selectedContactId} onSelect={setSelectedContactId} />
 
                 {selectedContact && (
                   <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
