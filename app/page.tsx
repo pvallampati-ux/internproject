@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { touchpointCount, type Contact, type PipelineStage } from "@/lib/contactTypes";
 import type { DailyBrief as DailyBriefData, OverdueContact } from "@/lib/dailyBrief";
@@ -10,6 +10,7 @@ import DailyBrief from "@/components/DailyBrief";
 import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
 import { calculateWhyNowScore } from "@/lib/whyNowScore";
+import { buildCopilotInsights } from "@/lib/bankerCopilot";
 import { WEALTH_EVENT_CATEGORIES } from "@/lib/config";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { PeopleIcon } from "@/components/icons";
@@ -155,6 +156,7 @@ export default function HomePage() {
   const totalPipelineValue = activeOpportunities.reduce((sum, c) => sum + (c.estimatedValue ?? 0), 0);
 
   const topWarmIntro = warmIntros[0];
+  const copilotInsights = useMemo(() => buildCopilotInsights(allContacts), [allContacts]);
 
   return (
     <main className="mx-auto max-w-[1800px] px-6 py-6">
@@ -200,6 +202,34 @@ export default function HomePage() {
         <p className="text-sm text-gray-500">Loading...</p>
       ) : (
         <>
+          {copilotInsights.length > 0 && (
+            <section className="mb-4 rounded-lg border border-gold-500/30 bg-gold-500/5 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-lg text-gray-100">Banker Copilot</h2>
+                <p className="text-xs text-gray-500">
+                  Patterns across your book — rule-based, not AI
+                </p>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {copilotInsights.map((insight) => (
+                  <li key={insight.id} className="flex items-start gap-2 text-sm text-gray-200">
+                    <span className="shrink-0">{insight.icon}</span>
+                    {insight.contactId ? (
+                      <button
+                        onClick={() => openDrawer(insight.contactId!)}
+                        className="text-left hover:text-gold-400 hover:underline"
+                      >
+                        {insight.text}
+                      </button>
+                    ) : (
+                      <span>{insight.text}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4 xl:col-span-2">
               <div className="flex items-center justify-between">
