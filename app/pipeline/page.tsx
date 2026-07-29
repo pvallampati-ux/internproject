@@ -11,7 +11,7 @@ import { JOURNEY_STAGES, type Contact, type PipelineStage } from "@/lib/contactT
 import { EMPTY_CONTACT_FILTERS, applyContactFilters, isFiltersActive, type ContactFilters } from "@/lib/contactFilters";
 import { calculateWhyNowScore, type WhyNowResult } from "@/lib/whyNowScore";
 import type { Lead } from "@/lib/store";
-import { BANKERS, YOU_BANKER_ID, contactBankerId } from "@/lib/bankers";
+import { BANKERS, YOU_BANKER_ID, ALL_BANKERS_ID, contactBankerId } from "@/lib/bankers";
 import { getViewBankerId, setViewBankerId } from "@/lib/userPrefs";
 
 function formatCurrency(value: number): string {
@@ -36,6 +36,12 @@ export default function PipelinePage() {
     setViewBankerIdState(bankerId);
     setViewBankerId(bankerId);
   }
+
+  // Which bankerId a newly added/promoted contact should get. undefined
+  // (= "you") when viewing your own book or the combined "All" view —
+  // there's no single selected book to file into in the All view.
+  const newContactBankerId =
+    viewBankerId === YOU_BANKER_ID || viewBankerId === ALL_BANKERS_ID ? undefined : viewBankerId;
 
   function handleDrop(e: React.DragEvent, stage: PipelineStage) {
     e.preventDefault();
@@ -108,10 +114,7 @@ export default function PipelinePage() {
     const res = await fetch("/api/contacts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...input,
-        bankerId: viewBankerId === YOU_BANKER_ID ? undefined : viewBankerId,
-      }),
+      body: JSON.stringify({ ...input, bankerId: newContactBankerId }),
     });
     const created = await res.json();
     setContacts((prev) => [...prev, created]);
@@ -127,7 +130,10 @@ export default function PipelinePage() {
     .sort((a, b) => b.score - a.score || new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     .slice(0, 8);
 
-  const scopedContacts = contacts.filter((c) => contactBankerId(c.bankerId) === viewBankerId);
+  const scopedContacts =
+    viewBankerId === ALL_BANKERS_ID
+      ? contacts
+      : contacts.filter((c) => contactBankerId(c.bankerId) === viewBankerId);
   const filteredContacts = applyContactFilters(scopedContacts, filters);
   const coldContacts = filteredContacts.filter((c) => c.stage === "Cold");
 
@@ -179,8 +185,12 @@ export default function PipelinePage() {
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <label className="text-xs text-gray-500">Viewing</label>
+          <label htmlFor="viewing-banker-select" className="text-xs text-gray-500">
+            Viewing
+          </label>
           <select
+            id="viewing-banker-select"
+            aria-label="Viewing banker"
             value={viewBankerId}
             onChange={(e) => changeViewBanker(e.target.value)}
             className="mt-1 block rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
@@ -190,6 +200,7 @@ export default function PipelinePage() {
                 {b.id === YOU_BANKER_ID ? "My Book (You)" : `${b.name}'s Book`}
               </option>
             ))}
+            <option value={ALL_BANKERS_ID}>All Bankers (Firm-wide)</option>
           </select>
           {viewBankerId !== YOU_BANKER_ID && (
             <p className="mt-1 max-w-[220px] text-[11px] text-gray-600">
@@ -255,7 +266,7 @@ export default function PipelinePage() {
                       key={lead.id}
                       lead={lead}
                       onPromoted={handleLeadPromoted}
-                      bankerId={viewBankerId === YOU_BANKER_ID ? undefined : viewBankerId}
+                      bankerId={newContactBankerId}
                     />
                   ))
                 )}
@@ -292,6 +303,7 @@ export default function PipelinePage() {
                         key={contact.id}
                         contact={contact}
                         whyNow={whyNowByContactId.get(contact.id)}
+                        showBanker={viewBankerId === ALL_BANKERS_ID}
                         onStageChange={handleStageChange}
                         onMarkContacted={handleMarkContacted}
                         onAddNote={handleAddNote}
@@ -332,6 +344,7 @@ export default function PipelinePage() {
                   <ContactCard
                     key={contact.id}
                     contact={contact}
+                    showBanker={viewBankerId === ALL_BANKERS_ID}
                     onStageChange={handleStageChange}
                     onMarkContacted={handleMarkContacted}
                     onAddNote={handleAddNote}

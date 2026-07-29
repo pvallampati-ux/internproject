@@ -13,6 +13,7 @@ import { useContactDrawer } from "@/lib/contactDrawerContext";
 import type { WhyNowResult } from "@/lib/whyNowScore";
 import EmailAction from "@/components/EmailAction";
 import CallAction from "@/components/CallAction";
+import { bankerName } from "@/lib/bankers";
 
 const HEALTH_DOT: Record<string, string> = {
   Strong: "bg-emerald-400",
@@ -31,6 +32,10 @@ const SCORE_BAND_STYLES: Record<string, string> = {
 interface Props {
   contact: Contact;
   whyNow?: WhyNowResult;
+  // Show which banker's book this contact belongs to — only meaningful
+  // when the board is showing more than one banker's contacts at once
+  // (the "All Bankers" Pipeline view).
+  showBanker?: boolean;
   onStageChange: (id: string, stage: PipelineStage) => void;
   onMarkContacted: (id: string) => void;
   onAddNote: (id: string, text: string) => void;
@@ -58,7 +63,14 @@ function formatCurrency(value: number): string {
   );
 }
 
-export default function ContactCard({ contact, whyNow, onStageChange, onMarkContacted, onAddNote }: Props) {
+export default function ContactCard({
+  contact,
+  whyNow,
+  showBanker,
+  onStageChange,
+  onMarkContacted,
+  onAddNote,
+}: Props) {
   const [noteDraft, setNoteDraft] = useState("");
   const [showLog, setShowLog] = useState(false);
   const [emailOverride, setEmailOverride] = useState<string | undefined>(undefined);
@@ -107,6 +119,11 @@ export default function ContactCard({ contact, whyNow, onStageChange, onMarkCont
         )}
       </div>
       {contact.company && <p className="truncate text-sm text-gray-400">{contact.company}</p>}
+      {showBanker && (
+        <span className="mt-1 inline-block rounded-full border border-charcoal-700 bg-charcoal-900 px-1.5 py-0.5 text-[10px] text-gray-500">
+          {bankerName(contact.bankerId)}
+        </span>
+      )}
       {whyNow && whyNow.score > 0 && (
         <div className="mt-1.5 flex items-center gap-1.5">
           <span

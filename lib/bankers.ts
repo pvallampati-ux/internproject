@@ -14,6 +14,10 @@ export interface Banker {
 // cross-book overlap detection — not real accounts.
 export const YOU_BANKER_ID = "you";
 
+// Pseudo-scope for viewing every banker's book combined — not a real
+// banker, never assigned to a contact's bankerId.
+export const ALL_BANKERS_ID = "all";
+
 export const BANKERS: Banker[] = [
   { id: YOU_BANKER_ID, name: "You" },
   { id: "banker_alex_rivera", name: "Alex Rivera" },
