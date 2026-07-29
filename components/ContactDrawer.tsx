@@ -186,7 +186,7 @@ export default function ContactDrawer() {
               )}
               {contact.outreachStatus && (
                 <span className="rounded-full border border-purple-500/50 bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-400">
-                  Outreach: {contact.outreachStatus}
+                  Email: {contact.outreachStatus}
                 </span>
               )}
             </div>
@@ -255,13 +255,13 @@ export default function ContactDrawer() {
             </div>
 
             <div className="mt-2">
-              <label className="text-xs text-gray-500">Active outreach status</label>
+              <label className="text-xs text-gray-500">Email outreach status</label>
               <select
                 value={contact.outreachStatus ?? ""}
                 onChange={(e) => setOutreachStatus(e.target.value as OutreachStatus | "")}
                 className="mt-1 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-xs text-gray-300 focus:border-gold-500 focus:outline-none"
               >
-                <option value="">Not in active outreach</option>
+                <option value="">Not in an email sequence</option>
                 {OUTREACH_STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {s}

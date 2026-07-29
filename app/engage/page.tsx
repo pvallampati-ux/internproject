@@ -159,9 +159,9 @@ export default function EngagementPage() {
           {activeOutreach.length > 0 && (
             <section className="mb-10">
               <h2 className="font-serif text-lg text-gray-100">
-                Active Outreach ({activeOutreach.length})
+                Active Email Outreach ({activeOutreach.length})
               </h2>
-              <p className="mt-1 text-xs text-gray-500">People currently being contacted.</p>
+              <p className="mt-1 text-xs text-gray-500">People currently mid-email-sequence.</p>
               <ul className="mt-2 space-y-2">
                 {activeOutreach.map((contact) => (
                   <li
