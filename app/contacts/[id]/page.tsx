@@ -299,13 +299,13 @@ export default function ContactProfilePage() {
               className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[prospectScore.band]}`}
               title={prospectScore.reasons.join("; ") || "Not enough data to explain the score yet."}
             >
-              Prospect Score: {prospectScore.score} ({prospectScore.band})
+              Prospect Score: {prospectScore.score}/100 ({prospectScore.band})
             </span>
             <span
               className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[influenceScore.band]}`}
               title={influenceScore.reasons.join("; ") || "Not enough data to explain the score yet."}
             >
-              Influence: {influenceScore.score} ({influenceScore.band})
+              Influence: {influenceScore.score}/100 ({influenceScore.band})
             </span>
             <span
               className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SENTIMENT_STYLES[sentiment]}`}

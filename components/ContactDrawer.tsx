@@ -176,7 +176,7 @@ export default function ContactDrawer() {
                   className="rounded-full border border-gray-500/50 bg-gray-500/10 px-2 py-0.5 text-xs font-medium text-gray-300"
                   title={prospectScore.reasons.join("; ")}
                 >
-                  Score: {prospectScore.score}
+                  Score: {prospectScore.score}/100
                 </span>
               )}
               {contact.isCOI && (

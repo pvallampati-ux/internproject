@@ -14,6 +14,8 @@ Ground rules — follow these exactly:
 - If there is a specific piece of relevant recent news, it's fine to use it as a natural conversation opener (e.g. "saw the news about..."), but do not state or imply anything about the recipient's finances, net worth, or personal life that isn't explicitly in the provided notes.
 - End with a simple, low-pressure call to action (e.g. suggesting a call or coffee), not a hard sales pitch.
 - Sign off as "[Your name]" — a placeholder, since you don't know the sender's actual name.
+- Formatting: plain text only. No markdown — no **bold**, no *italics*, no bullet points, no headers, no numbered lists.
+- Capitalization: standard English sentence case. Capitalize the first word of every sentence and the first word of the subject line. Capitalize proper nouns (the recipient's name, company names) exactly as they appear in the recipient info below. Do not write in all lowercase and do not capitalize random words.
 - Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this shape:
 {
   "subject": "string",
@@ -47,6 +49,33 @@ Draft a short outreach email per the JSON schema in your instructions.`;
 
 function stripJsonFences(text: string): string {
   return text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+}
+
+// Safety net over the model's raw output — prompt instructions aren't a
+// reliable enforcement mechanism, so clean up the two failure modes users
+// actually hit: stray markdown and sentence-start capitalization.
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/(?<!\w)\*(.+?)\*(?!\w)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^[ \t]*[-*•]\s+/gm, "")
+    .replace(/`(.+?)`/g, "$1");
+}
+
+function capitalizeSentences(text: string): string {
+  return text.replace(/(^\s*|[.!?]\s+|\n\s*)([a-z])/g, (_m, prefix, letter) => prefix + letter.toUpperCase());
+}
+
+function cleanField(text: string): string {
+  return capitalizeSentences(stripMarkdown(text))
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function cleanTemplate(template: EmailTemplate): EmailTemplate {
+  return { subject: cleanField(template.subject), body: cleanField(template.body) };
 }
 
 export async function generateEmailTemplate(
@@ -85,7 +114,8 @@ export async function generateEmailTemplate(
   const content: string = data.choices?.[0]?.message?.content ?? "";
 
   try {
-    return JSON.parse(stripJsonFences(content));
+    const parsed: EmailTemplate = JSON.parse(stripJsonFences(content));
+    return cleanTemplate(parsed);
   } catch {
     throw new Error(`Could not parse AI response as JSON. Raw response: ${content.slice(0, 500)}`);
   }

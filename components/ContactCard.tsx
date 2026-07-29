@@ -132,9 +132,9 @@ export default function ContactCard({
         <div className="mt-1.5 flex items-center gap-1.5">
           <span
             className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${WHY_NOW_STYLES[whyNowBand(whyNow.score)]}`}
-            title={whyNow.reasoning.join("; ")}
+            title={`Why Now score: ${whyNow.score}/100 — ${whyNow.reasoning.join("; ")}`}
           >
-            {whyNow.score}
+            {whyNow.score}/100
           </span>
           <p className="truncate text-[11px] text-gray-500">{whyNow.recommendedAction}</p>
         </div>
@@ -155,7 +155,7 @@ export default function ContactCard({
             className={`rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[prospectScore.band]}`}
             title={prospectScore.reasons.join("; ") || "Not enough data yet to explain the score."}
           >
-            Score: {prospectScore.score} ({prospectScore.band})
+            Score: {prospectScore.score}/100 ({prospectScore.band})
           </span>
         </div>
 

@@ -276,8 +276,9 @@ export default function HomePage() {
                       </div>
                       <span
                         className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${SCORE_BAND_STYLES[scoreBand(item.score)]}`}
+                        title={`Why Now score: ${item.score}/100, ${scoreBand(item.score)} — based on ${item.reasoning.length} signal${item.reasoning.length === 1 ? "" : "s"} (see list to the left)`}
                       >
-                        {item.score}
+                        Why Now: {item.score}/100
                       </span>
                       <Link
                         href={`/contacts/${item.contact.id}`}
