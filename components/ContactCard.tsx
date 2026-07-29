@@ -8,7 +8,7 @@ import {
 } from "@/lib/contactTypes";
 import { assessRelationshipHealth } from "@/lib/relationshipHealth";
 import { detectLifeStage } from "@/lib/lifeStages";
-import { calculateProspectScore } from "@/lib/prospectScore";
+import { calculateProspectScore, type ProspectScoreWeights } from "@/lib/prospectScore";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
 import type { WhyNowResult } from "@/lib/whyNowScore";
 import EmailAction from "@/components/EmailAction";
@@ -36,6 +36,9 @@ interface Props {
   // when the board is showing more than one banker's contacts at once
   // (the "All Bankers" Pipeline view).
   showBanker?: boolean;
+  // Prospect Score weights (see Settings) — falls back to the built-in
+  // defaults if not passed.
+  prospectScoreWeights?: ProspectScoreWeights;
   onStageChange: (id: string, stage: PipelineStage) => void;
   onMarkContacted: (id: string) => void;
   onAddNote: (id: string, text: string) => void;
@@ -67,6 +70,7 @@ export default function ContactCard({
   contact,
   whyNow,
   showBanker,
+  prospectScoreWeights,
   onStageChange,
   onMarkContacted,
   onAddNote,
@@ -90,7 +94,7 @@ export default function ContactCard({
   const health = assessRelationshipHealth(contact).health;
   const lifeStage = detectLifeStage(contact);
   const wealthGap = estimateWealthGap(contact);
-  const prospectScore = calculateProspectScore(contact);
+  const prospectScore = calculateProspectScore(contact, prospectScoreWeights);
 
   return (
     <div

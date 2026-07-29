@@ -9,12 +9,12 @@ import type { WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { describeSharedTerms } from "@/lib/warmIntroTypes";
 import { matchLeadsToContact } from "@/lib/relevantLeads";
 import { calculateWhyNowScore } from "@/lib/whyNowScore";
-import { calculateProspectScore } from "@/lib/prospectScore";
+import { calculateProspectScore, DEFAULT_PROSPECT_SCORE_WEIGHTS, type ProspectScoreWeights } from "@/lib/prospectScore";
 import { assessRelationshipHealth } from "@/lib/relationshipHealth";
 import EmailAction from "@/components/EmailAction";
 import CallAction from "@/components/CallAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
-import { pushRecentContactId } from "@/lib/userPrefs";
+import { pushRecentContactId, getProspectScoreWeights } from "@/lib/userPrefs";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -45,6 +45,12 @@ export default function ContactDrawer() {
   const [noteDraft, setNoteDraft] = useState("");
   const [emailOverride, setEmailOverride] = useState<string | undefined>(undefined);
   const [phoneOverride, setPhoneOverride] = useState<string | undefined>(undefined);
+  const [prospectScoreWeights, setProspectScoreWeights] =
+    useState<ProspectScoreWeights>(DEFAULT_PROSPECT_SCORE_WEIGHTS);
+
+  useEffect(() => {
+    setProspectScoreWeights(getProspectScoreWeights());
+  }, []);
 
   useEffect(() => {
     if (!openContactId) return;
@@ -112,7 +118,7 @@ export default function ContactDrawer() {
 
   const relevantLeads = contact ? matchLeadsToContact(contact, leads).slice(0, 3) : [];
   const whyNow = contact ? calculateWhyNowScore(contact, allContacts, leads) : null;
-  const prospectScore = contact ? calculateProspectScore(contact) : null;
+  const prospectScore = contact ? calculateProspectScore(contact, prospectScoreWeights) : null;
   const health = contact ? assessRelationshipHealth(contact) : null;
   const sharedConnections = contact
     ? warmIntros.filter((m) => m.contactA.id === contact.id || m.contactB.id === contact.id)

@@ -12,7 +12,8 @@ import { EMPTY_CONTACT_FILTERS, applyContactFilters, isFiltersActive, type Conta
 import { calculateWhyNowScore, type WhyNowResult } from "@/lib/whyNowScore";
 import type { Lead } from "@/lib/store";
 import { BANKERS, YOU_BANKER_ID, ALL_BANKERS_ID, contactBankerId } from "@/lib/bankers";
-import { getViewBankerId, setViewBankerId } from "@/lib/userPrefs";
+import { getViewBankerId, setViewBankerId, getProspectScoreWeights } from "@/lib/userPrefs";
+import { DEFAULT_PROSPECT_SCORE_WEIGHTS, type ProspectScoreWeights } from "@/lib/prospectScore";
 
 function formatCurrency(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
@@ -27,9 +28,12 @@ export default function PipelinePage() {
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
   const [filters, setFilters] = useState<ContactFilters>(EMPTY_CONTACT_FILTERS);
   const [viewBankerId, setViewBankerIdState] = useState(YOU_BANKER_ID);
+  const [prospectScoreWeights, setProspectScoreWeightsState] =
+    useState<ProspectScoreWeights>(DEFAULT_PROSPECT_SCORE_WEIGHTS);
 
   useEffect(() => {
     setViewBankerIdState(getViewBankerId());
+    setProspectScoreWeightsState(getProspectScoreWeights());
   }, []);
 
   function changeViewBanker(bankerId: string) {
@@ -304,6 +308,7 @@ export default function PipelinePage() {
                         contact={contact}
                         whyNow={whyNowByContactId.get(contact.id)}
                         showBanker={viewBankerId === ALL_BANKERS_ID}
+                        prospectScoreWeights={prospectScoreWeights}
                         onStageChange={handleStageChange}
                         onMarkContacted={handleMarkContacted}
                         onAddNote={handleAddNote}
@@ -345,6 +350,7 @@ export default function PipelinePage() {
                     key={contact.id}
                     contact={contact}
                     showBanker={viewBankerId === ALL_BANKERS_ID}
+                    prospectScoreWeights={prospectScoreWeights}
                     onStageChange={handleStageChange}
                     onMarkContacted={handleMarkContacted}
                     onAddNote={handleAddNote}

@@ -1,3 +1,5 @@
+import { DEFAULT_PROSPECT_SCORE_WEIGHTS, type ProspectScoreWeights } from "./prospectScore";
+
 // Single-user, client-only preferences — no auth/server backing, just a
 // display name and role label the user can set on the Settings page, and a
 // running list of recently viewed contacts for the sidebar shortcuts. Not a
@@ -7,6 +9,7 @@ const ROLE_KEY = "userRole";
 const RECENT_KEY = "recentContactIds";
 const RECENT_LIMIT = 5;
 const VIEW_BANKER_KEY = "viewBankerId";
+const PROSPECT_SCORE_WEIGHTS_KEY = "prospectScoreWeights";
 
 const DEFAULT_NAME = "Pooja Vallampati";
 
@@ -53,4 +56,31 @@ export function getViewBankerId(): string {
 
 export function setViewBankerId(bankerId: string): void {
   localStorage.setItem(VIEW_BANKER_KEY, bankerId);
+}
+
+// How the Prospect Score weighs each factor — user-adjustable on Settings
+// (must sum to 100). Falls back to the defaults if unset or malformed.
+export function getProspectScoreWeights(): ProspectScoreWeights {
+  if (typeof window === "undefined") return DEFAULT_PROSPECT_SCORE_WEIGHTS;
+  try {
+    const raw = localStorage.getItem(PROSPECT_SCORE_WEIGHTS_KEY);
+    if (!raw) return DEFAULT_PROSPECT_SCORE_WEIGHTS;
+    const parsed = JSON.parse(raw);
+    const keys: (keyof ProspectScoreWeights)[] = [
+      "wealth",
+      "gap",
+      "lifeStage",
+      "health",
+      "referral",
+      "relationshipGap",
+    ];
+    if (keys.every((k) => typeof parsed[k] === "number")) return parsed;
+    return DEFAULT_PROSPECT_SCORE_WEIGHTS;
+  } catch {
+    return DEFAULT_PROSPECT_SCORE_WEIGHTS;
+  }
+}
+
+export function setProspectScoreWeights(weights: ProspectScoreWeights): void {
+  localStorage.setItem(PROSPECT_SCORE_WEIGHTS_KEY, JSON.stringify(weights));
 }

@@ -22,14 +22,14 @@ import ContactPicker from "@/components/ContactPicker";
 import { assessRelationshipHealth, formatTenure } from "@/lib/relationshipHealth";
 import { detectLifeStage, LIFE_STAGE_TALKING_POINTS } from "@/lib/lifeStages";
 import { findRelationshipMemories, suggestedMemoryPrompt } from "@/lib/relationshipMemory";
-import { calculateProspectScore } from "@/lib/prospectScore";
+import { calculateProspectScore, DEFAULT_PROSPECT_SCORE_WEIGHTS, type ProspectScoreWeights } from "@/lib/prospectScore";
 import { calculateInfluenceScore } from "@/lib/influenceScore";
 import { calculateWhyNowScore } from "@/lib/whyNowScore";
 import { overallSentiment, type Sentiment } from "@/lib/sentiment";
 import { findSimilarProspects } from "@/lib/similarProspects";
 import { buildTimeline, type TimelineItemKind } from "@/lib/timeline";
 import { buildRelationshipDNA } from "@/lib/relationshipDNA";
-import { pushRecentContactId } from "@/lib/userPrefs";
+import { pushRecentContactId, getProspectScoreWeights } from "@/lib/userPrefs";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -98,6 +98,8 @@ export default function ContactProfilePage() {
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
+  const [prospectScoreWeights, setProspectScoreWeights] =
+    useState<ProspectScoreWeights>(DEFAULT_PROSPECT_SCORE_WEIGHTS);
   const [relevantLeads, setRelevantLeads] = useState<Lead[]>([]);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -173,6 +175,10 @@ export default function ContactProfilePage() {
     loadContact();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactId]);
+
+  useEffect(() => {
+    setProspectScoreWeights(getProspectScoreWeights());
+  }, []);
 
   async function patch(body: Record<string, unknown>) {
     const res = await fetch(`/api/contacts/${contactId}`, {
@@ -253,7 +259,7 @@ export default function ContactProfilePage() {
   const lifeStage = detectLifeStage(contact);
   const memories = findRelationshipMemories(contact);
   const memoryPrompt = suggestedMemoryPrompt(memories);
-  const prospectScore = calculateProspectScore(contact);
+  const prospectScore = calculateProspectScore(contact, prospectScoreWeights);
   const influenceScore = calculateInfluenceScore(contact, allContacts);
   const sentiment = overallSentiment(contact.noteLog);
   const similar = findSimilarProspects(contact, allContacts);
