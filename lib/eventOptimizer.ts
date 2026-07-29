@@ -2,6 +2,7 @@ import type { Contact } from "./contactTypes";
 import type { CalendarEvent } from "./eventsStore";
 import { detectLifeStage } from "./lifeStages";
 import { assessRelationshipHealth } from "./relationshipHealth";
+import { YOU_BANKER_ID, contactBankerId, bankerName } from "./bankers";
 
 // Minimum substring length before two strings count as "the same
 // organization" — short strings (e.g. "gala", "club") would otherwise match
@@ -19,7 +20,7 @@ function textMentions(haystack: string, needle: string): boolean {
 // on its own, so it can be matched against a contact's notes even when the
 // full title also contains generic event-type words. Falls back to the
 // whole title when there's no dash.
-function coreEventSubject(event: Pick<CalendarEvent, "title" | "description">): string {
+export function coreEventSubject(event: Pick<CalendarEvent, "title" | "description">): string {
   const beforeDash = event.title.split(/[-–—]/)[0]?.trim() ?? "";
   return beforeDash.length >= MIN_ORG_MATCH_LENGTH ? beforeDash : event.title.trim();
 }
@@ -27,6 +28,10 @@ function coreEventSubject(event: Pick<CalendarEvent, "title" | "description">): 
 export interface AttendeeMatch {
   contact: Contact;
   reasons: string[];
+  // Set whenever the matched contact belongs to a colleague's book, not
+  // yours — regardless of which banker's calendar you're currently
+  // viewing, so a colleague's overlapping prospect is never hidden.
+  bankerLabel?: string;
 }
 
 // Finds contacts who are plausibly connected to whatever's hosting this
@@ -35,6 +40,9 @@ export interface AttendeeMatch {
 // up in a contact's board memberships, clubs, or their own note history?
 // Keyword-matched, same honesty standard as the rest of the app's
 // relationship matching — surfaced as "worth checking," not a fact.
+// Deliberately searches every contact regardless of whose book it's in
+// (the caller passes the full contact list, unscoped), so a colleague's
+// prospect connected to the same event surfaces too.
 export function findLikelyAttendees(
   event: Pick<CalendarEvent, "title" | "description">,
   contacts: Contact[],
@@ -66,9 +74,38 @@ export function findLikelyAttendees(
         }
       }
 
-      return { contact: c, reasons };
+      const ownerBankerId = contactBankerId(c.bankerId);
+      const bankerLabel = ownerBankerId !== YOU_BANKER_ID ? bankerName(c.bankerId) : undefined;
+
+      return { contact: c, reasons, bankerLabel };
     })
     .filter((x) => x.reasons.length > 0);
+}
+
+export interface ColleagueCalendarOverlap {
+  event: CalendarEvent;
+  bankerLabel: string;
+}
+
+// Separate from findLikelyAttendees: this checks whether a *different*
+// banker has their own, separately-added event for the same org/subject —
+// e.g. two bankers both put a "Healthcare Leaders Summit" on their own
+// calendars independently. Worth knowing before either of you shows up,
+// since it means you're both circling the same room.
+export function findColleagueCalendarOverlap(
+  event: CalendarEvent,
+  allEvents: CalendarEvent[]
+): ColleagueCalendarOverlap[] {
+  const subject = coreEventSubject(event);
+  const ownerBankerId = contactBankerId(event.bankerId);
+
+  return allEvents
+    .filter((e) => e.id !== event.id && contactBankerId(e.bankerId) !== ownerBankerId)
+    .filter((e) => {
+      const otherSubject = coreEventSubject(e);
+      return textMentions(subject, otherSubject) || textMentions(otherSubject, subject);
+    })
+    .map((e) => ({ event: e, bankerLabel: bankerName(e.bankerId) }));
 }
 
 // Rule-based invite suggestions for a calendar event — not an AI

@@ -9,6 +9,7 @@ export interface CalendarEvent {
   location?: string;
   description?: string;
   taggedContactIds: string[];
+  bankerId?: string; // whose calendar this is on — undefined = YOU_BANKER_ID, same convention as Contact.bankerId
 }
 
 const DATA_FILE = path.join(DATA_DIR, "events.json");
@@ -52,6 +53,7 @@ export function createEvent(input: {
   location?: string;
   description?: string;
   taggedContactIds?: string[];
+  bankerId?: string;
 }): CalendarEvent {
   const events = loadEvents();
   const event: CalendarEvent = {
@@ -61,6 +63,7 @@ export function createEvent(input: {
     location: input.location,
     description: input.description,
     taggedContactIds: input.taggedContactIds ?? [],
+    bankerId: input.bankerId,
   };
   events.push(event);
   saveEvents(events);
@@ -69,7 +72,7 @@ export function createEvent(input: {
 
 export function updateEvent(
   id: string,
-  patch: Partial<Pick<CalendarEvent, "title" | "date" | "location" | "description" | "taggedContactIds">>
+  patch: Partial<Pick<CalendarEvent, "title" | "date" | "location" | "description" | "taggedContactIds" | "bankerId">>
 ): CalendarEvent | null {
   const events = loadEvents();
   const idx = events.findIndex((e) => e.id === id);

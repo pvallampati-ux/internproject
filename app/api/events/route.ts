@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     location: typeof body.location === "string" ? body.location : undefined,
     description: typeof body.description === "string" ? body.description : undefined,
     taggedContactIds,
+    bankerId: typeof body.bankerId === "string" ? body.bankerId : undefined,
   });
 
   const noteText = describeEventForNote(event);

@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { CalendarEvent } from "@/lib/eventsStore";
 import type { Contact } from "@/lib/contactTypes";
-import { suggestInvitees, findLikelyAttendees } from "@/lib/eventOptimizer";
+import { suggestInvitees, findLikelyAttendees, findColleagueCalendarOverlap } from "@/lib/eventOptimizer";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
+import { BANKERS, YOU_BANKER_ID, ALL_BANKERS_ID, contactBankerId, bankerName } from "@/lib/bankers";
+import { getViewBankerId, setViewBankerId } from "@/lib/userPrefs";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -31,6 +33,7 @@ export default function CalendarPage() {
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [view, setView] = useState<"list" | "month">("month");
+  const [viewBankerId, setViewBankerIdState] = useState(YOU_BANKER_ID);
   const today = new Date();
   const [monthCursor, setMonthCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(dateKey(today));
@@ -60,12 +63,24 @@ export default function CalendarPage() {
       const contactsData = await contactsRes.json();
       setContacts(contactsData.contacts ?? []);
     })();
+    setViewBankerIdState(getViewBankerId());
   }, []);
 
   useEffect(() => {
     loadEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  function changeViewBanker(bankerId: string) {
+    setViewBankerIdState(bankerId);
+    setViewBankerId(bankerId);
+  }
+
+  // Which bankerId a newly added event should get. undefined (= "you") when
+  // viewing your own calendar or the combined "All" view — there's no
+  // single selected calendar to file into in the All view.
+  const newEventBankerId =
+    viewBankerId === YOU_BANKER_ID || viewBankerId === ALL_BANKERS_ID ? undefined : viewBankerId;
 
   async function submitEvent() {
     if (!title.trim() || !date) return;
@@ -78,6 +93,7 @@ export default function CalendarPage() {
         location: location.trim() || undefined,
         description: description.trim() || undefined,
         taggedContactIds: taggedIds,
+        bankerId: newEventBankerId,
       }),
     });
     setTitle("");
@@ -129,8 +145,13 @@ export default function CalendarPage() {
     return contacts.find((c) => c.id === id)?.name ?? "Unknown";
   }
 
+  const scopedEvents =
+    viewBankerId === ALL_BANKERS_ID
+      ? events
+      : events.filter((e) => contactBankerId(e.bankerId) === viewBankerId);
+
   const eventsByDate = new Map<string, CalendarEvent[]>();
-  for (const event of events) {
+  for (const event of scopedEvents) {
     const key = dateKey(new Date(event.date));
     const list = eventsByDate.get(key) ?? [];
     list.push(event);
@@ -155,7 +176,14 @@ export default function CalendarPage() {
       <div key={event.id} className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="font-serif text-base font-semibold text-gray-100">{event.title}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-serif text-base font-semibold text-gray-100">{event.title}</h3>
+              {viewBankerId === ALL_BANKERS_ID && (
+                <span className="rounded-full border border-charcoal-700 bg-charcoal-900 px-1.5 py-0.5 text-[10px] text-gray-500">
+                  {bankerName(event.bankerId)}
+                </span>
+              )}
+            </div>
             <p className="mt-1 text-xs text-gray-500">
               {formatDate(event.date)}
               {event.location ? ` · ${event.location}` : ""}
@@ -163,6 +191,24 @@ export default function CalendarPage() {
             {event.description && <p className="mt-1 text-sm text-gray-400">{event.description}</p>}
           </div>
         </div>
+
+        {(() => {
+          const overlaps = findColleagueCalendarOverlap(event, events);
+          if (overlaps.length === 0) return null;
+          return (
+            <div className="mt-2 rounded-md border border-sky-500/30 bg-sky-500/5 p-2">
+              <p className="text-xs font-medium text-sky-400">Also on a colleague&apos;s calendar</p>
+              <ul className="mt-1 space-y-0.5">
+                {overlaps.map(({ event: e, bankerLabel }) => (
+                  <li key={e.id} className="text-xs text-gray-300">
+                    <span className="font-medium">{bankerLabel}</span>
+                    <span className="text-gray-500"> — &ldquo;{e.title}&rdquo; ({formatDate(e.date)})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
 
         {event.taggedContactIds.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
@@ -209,7 +255,7 @@ export default function CalendarPage() {
                 <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
                   <p className="text-xs font-medium text-amber-400">May already be connected here — have a pitch ready</p>
                   <ul className="mt-1 space-y-1">
-                    {attendeeMatches.map(({ contact, reasons }) => (
+                    {attendeeMatches.map(({ contact, reasons, bankerLabel }) => (
                       <li key={contact.id} className="text-xs text-gray-300">
                         <button
                           onClick={() => openDrawer(contact.id)}
@@ -217,6 +263,11 @@ export default function CalendarPage() {
                         >
                           {contact.name}
                         </button>
+                        {bankerLabel && (
+                          <span className="ml-1 rounded-full border border-charcoal-700 bg-charcoal-900 px-1.5 py-0.5 text-[10px] text-gray-500">
+                            {bankerLabel}&apos;s client
+                          </span>
+                        )}
                         <span className="text-gray-500"> — {reasons[0]}</span>
                       </li>
                     ))}
@@ -258,15 +309,41 @@ export default function CalendarPage() {
 
   return (
     <main className="mx-auto max-w-[1600px] px-6 py-8">
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gold-500">Calendar</p>
-        <h1 className="font-serif text-3xl font-semibold text-gray-100">
-          What is happening, and when?
-        </h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Social/sporting events for prospecting — tailgates, fundraisers, networking
-          nights — with prospects tagged to each one.
-        </p>
+      <header className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-gold-500">Calendar</p>
+          <h1 className="font-serif text-3xl font-semibold text-gray-100">
+            What is happening, and when?
+          </h1>
+          <p className="mt-1 text-sm text-gray-400">
+            Social/sporting events for prospecting — tailgates, fundraisers, networking
+            nights — with prospects tagged to each one.
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <label htmlFor="viewing-banker-select-calendar" className="text-xs text-gray-500">
+            Viewing
+          </label>
+          <select
+            id="viewing-banker-select-calendar"
+            aria-label="Viewing banker"
+            value={viewBankerId}
+            onChange={(e) => changeViewBanker(e.target.value)}
+            className="mt-1 block rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 focus:border-gold-500 focus:outline-none"
+          >
+            {BANKERS.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.id === YOU_BANKER_ID ? "My Calendar (You)" : `${b.name}'s Calendar`}
+              </option>
+            ))}
+            <option value={ALL_BANKERS_ID}>All Bankers (Firm-wide)</option>
+          </select>
+          {viewBankerId !== YOU_BANKER_ID && (
+            <p className="mt-1 max-w-[220px] text-[11px] text-gray-600">
+              Simulated view, not a real login — no per-user access control.
+            </p>
+          )}
+        </div>
       </header>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
@@ -396,10 +473,10 @@ export default function CalendarPage() {
       {loading ? (
         <p className="text-sm text-gray-500">Loading...</p>
       ) : view === "list" ? (
-        events.length === 0 ? (
+        scopedEvents.length === 0 ? (
           <p className="text-sm text-gray-500">No events yet.</p>
         ) : (
-          <div className="space-y-3">{events.map((event) => renderEventCard(event))}</div>
+          <div className="space-y-3">{scopedEvents.map((event) => renderEventCard(event))}</div>
         )
       ) : (
         <div>
