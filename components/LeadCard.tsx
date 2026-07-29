@@ -36,14 +36,16 @@ interface Props {
   lead: Lead;
   onToggleSave: (id: string, saved: boolean) => void;
   onSaveNote: (id: string, note: string) => void;
+  onSetReminder: (id: string, reminderDate: string | undefined) => void;
   // "card" (default) is the boxed grid tile used on Research. "row" is a
   // dense, editorial list layout — headline-led, minimal chrome — used on
   // Discover's news feed.
   variant?: "card" | "row";
 }
 
-export default function LeadCard({ lead, onToggleSave, onSaveNote, variant = "card" }: Props) {
+export default function LeadCard({ lead, onToggleSave, onSaveNote, onSetReminder, variant = "card" }: Props) {
   const [noteDraft, setNoteDraft] = useState(lead.note ?? "");
+  const [reminderDraft, setReminderDraft] = useState(lead.reminderDate?.slice(0, 10) ?? "");
   const [added, setAdded] = useState(!!lead.promotedToContactId);
   const [addingContact, setAddingContact] = useState(false);
   const mentionedNames = extractLeadNames(lead);
@@ -146,16 +148,30 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote, variant = "ca
         </div>
 
         {lead.saved && (
-          <input
-            type="text"
-            value={noteDraft}
-            onChange={(e) => setNoteDraft(e.target.value)}
-            onBlur={() => {
-              if (noteDraft !== (lead.note ?? "")) onSaveNote(lead.id, noteDraft);
-            }}
-            placeholder="Add a note (e.g. reached out 7/29)..."
-            className="mt-2 w-full max-w-md rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-          />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              onBlur={() => {
+                if (noteDraft !== (lead.note ?? "")) onSaveNote(lead.id, noteDraft);
+              }}
+              placeholder="Add a note (e.g. check quarterly earnings)..."
+              className="w-full max-w-md rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+            />
+            <label className="flex items-center gap-1.5 text-xs text-gray-500">
+              Remind me
+              <input
+                type="date"
+                value={reminderDraft}
+                onChange={(e) => {
+                  setReminderDraft(e.target.value);
+                  onSetReminder(lead.id, e.target.value ? new Date(e.target.value).toISOString() : undefined);
+                }}
+                className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 focus:border-gold-500 focus:outline-none"
+              />
+            </label>
+          </div>
         )}
       </div>
     );
@@ -229,16 +245,30 @@ export default function LeadCard({ lead, onToggleSave, onSaveNote, variant = "ca
       <div className="mt-2">{addContactControl}</div>
 
       {lead.saved && (
-        <input
-          type="text"
-          value={noteDraft}
-          onChange={(e) => setNoteDraft(e.target.value)}
-          onBlur={() => {
-            if (noteDraft !== (lead.note ?? "")) onSaveNote(lead.id, noteDraft);
-          }}
-          placeholder="Add a note (e.g. reached out 7/29)..."
-          className="mt-3 w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-        />
+        <div className="mt-3 space-y-1.5">
+          <input
+            type="text"
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            onBlur={() => {
+              if (noteDraft !== (lead.note ?? "")) onSaveNote(lead.id, noteDraft);
+            }}
+            placeholder="Add a note (e.g. check quarterly earnings)..."
+            className="w-full rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-gold-500 focus:outline-none"
+          />
+          <label className="flex items-center gap-1.5 text-xs text-gray-500">
+            Remind me
+            <input
+              type="date"
+              value={reminderDraft}
+              onChange={(e) => {
+                setReminderDraft(e.target.value);
+                onSetReminder(lead.id, e.target.value ? new Date(e.target.value).toISOString() : undefined);
+              }}
+              className="rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-200 focus:border-gold-500 focus:outline-none"
+            />
+          </label>
+        </div>
       )}
     </div>
   );

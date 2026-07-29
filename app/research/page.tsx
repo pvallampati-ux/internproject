@@ -112,6 +112,15 @@ export default function ResearchPage() {
     });
   }
 
+  async function handleSetReminder(id: string, reminderDate: string | undefined) {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, reminderDate } : l)));
+    await fetch(`/api/leads/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reminderDate: reminderDate ?? null }),
+    });
+  }
+
   async function handleAddIndustry(input: {
     name: string;
     topics: { label: string; keywords: string[]; regionScoped: boolean }[];
@@ -381,6 +390,7 @@ export default function ResearchPage() {
                       lead={lead}
                       onToggleSave={handleToggleSave}
                       onSaveNote={handleSaveNote}
+                      onSetReminder={handleSetReminder}
                     />
                   ))}
                 </div>

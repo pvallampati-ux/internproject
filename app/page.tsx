@@ -11,7 +11,6 @@ import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
 import { calculateWhyNowScore } from "@/lib/whyNowScore";
 import { buildCopilotInsights } from "@/lib/bankerCopilot";
-import { WEALTH_EVENT_CATEGORIES } from "@/lib/config";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { PeopleIcon } from "@/components/icons";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
@@ -36,6 +35,23 @@ function formatCurrency(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
   if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
   return `$${value}`;
+}
+
+function endOfToday(): number {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+}
+
+function formatReminderStatus(iso: string): string {
+  const dueDate = new Date(iso);
+  dueDate.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysDiff = Math.round((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysDiff <= 0) return "Due today";
+  if (daysDiff === 1) return "1d overdue";
+  return `${daysDiff}d overdue`;
 }
 
 const BRIEF_SHOWN_KEY = "dailyBriefShownDate";
@@ -131,7 +147,13 @@ export default function HomePage() {
   const overdueContacts: OverdueContact[] = brief?.overdueContacts ?? [];
   const memoryByContactId = new Map((brief?.memoryReminders ?? []).map((m) => [m.contact.id, m.prompt]));
   const meetingPrepContact = meetingsToday.find((c) => c.id === meetingPrepContactId);
-  const marketEvents = brief?.marketEvents ?? [];
+
+  // Starred stories with a reminder date due today or earlier — the manual
+  // "bring this back to my attention" mechanism. Sorted oldest-due first so
+  // anything overdue surfaces above what's merely due today.
+  const dueReminders = leads
+    .filter((l) => l.saved && l.reminderDate && new Date(l.reminderDate).getTime() <= endOfToday())
+    .sort((a, b) => new Date(a.reminderDate!).getTime() - new Date(b.reminderDate!).getTime());
 
   // Contacts scored by Why Now, most urgent first — the single prospecting
   // priority list for the day.
@@ -369,99 +391,36 @@ export default function HomePage() {
           <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
             <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-serif text-lg text-gray-100">New Opportunities</h2>
+                <h2 className="font-serif text-lg text-gray-100">Reminders</h2>
                 <Link href="/discover" className="text-xs text-gold-400 hover:underline">
                   View all →
                 </Link>
               </div>
-              <p className="text-xs text-gray-500">Matched signals from the last 90 days</p>
-              {marketEvents.length === 0 ? (
-                leads.length > 0 ? (
-                  <>
-                    <p className="mt-3 text-xs text-gray-600">
-                      Nothing tied to a tracked contact yet — here&apos;s what&apos;s trending regionally.
-                    </p>
-                    <ul className="mt-2 space-y-2">
-                      {[...leads]
-                        .sort(
-                          (a, b) =>
-                            b.score - a.score ||
-                            new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-                        )
-                        .slice(0, 4)
-                        .map((lead) => {
-                          const highImpact = lead.categories.some((c) => WEALTH_EVENT_CATEGORIES.includes(c));
-                          return (
-                            <li key={lead.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
-                              <div className="flex items-start justify-between gap-2">
-                                <a
-                                  href={lead.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm font-medium text-gray-100 hover:underline"
-                                >
-                                  {lead.title}
-                                </a>
-                                <span
-                                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                                    highImpact
-                                      ? "border-red-500/50 bg-red-500/10 text-red-400"
-                                      : "border-amber-500/50 bg-amber-500/10 text-amber-400"
-                                  }`}
-                                >
-                                  {highImpact ? "High Impact" : "Medium Impact"}
-                                </span>
-                              </div>
-                              <p className="mt-1 text-xs text-gray-500">{lead.source} — no tracked contact matched yet</p>
-                            </li>
-                          );
-                        })}
-                    </ul>
-                  </>
-                ) : (
-                  <p className="mt-3 text-sm text-gray-600">
-                    Nothing matched to your contacts recently — click &ldquo;Refresh feeds&rdquo; on Discover to pull real news.
-                  </p>
-                )
+              <p className="text-xs text-gray-500">Starred stories due today or overdue</p>
+              {dueReminders.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">
+                  Nothing due. Star a story on Discover and set &ldquo;Remind me&rdquo; on a date to bring it back here.
+                </p>
               ) : (
                 <ul className="mt-3 space-y-2">
-                  {marketEvents.slice(0, 4).map(({ lead, affectedContacts }) => {
-                    const highImpact = lead.categories.some((c) => WEALTH_EVENT_CATEGORIES.includes(c));
-                    return (
-                      <li key={lead.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <a
-                            href={lead.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium text-gray-100 hover:underline"
-                          >
-                            {lead.title}
-                          </a>
-                          <span
-                            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-                              highImpact
-                                ? "border-red-500/50 bg-red-500/10 text-red-400"
-                                : "border-amber-500/50 bg-amber-500/10 text-amber-400"
-                            }`}
-                          >
-                            {highImpact ? "High Impact" : "Medium Impact"}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Affects:{" "}
-                          {affectedContacts.map((c, i) => (
-                            <span key={c.id}>
-                              {i > 0 && ", "}
-                              <button onClick={() => openDrawer(c.id)} className="text-gray-300 hover:text-gold-400 hover:underline">
-                                {c.name}
-                              </button>
-                            </span>
-                          ))}
-                        </p>
-                      </li>
-                    );
-                  })}
+                  {dueReminders.map((lead) => (
+                    <li key={lead.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <a
+                          href={lead.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-gray-100 hover:underline"
+                        >
+                          {lead.title}
+                        </a>
+                        <span className="shrink-0 rounded-full border border-amber-500/50 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                          {formatReminderStatus(lead.reminderDate!)}
+                        </span>
+                      </div>
+                      {lead.note && <p className="mt-1 text-xs text-gray-400">{lead.note}</p>}
+                    </li>
+                  ))}
                 </ul>
               )}
             </section>

@@ -5,10 +5,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const { id } = await context.params;
   const body = await request.json();
 
-  const patch: { saved?: boolean; note?: string; promotedToContactId?: string } = {};
+  const patch: { saved?: boolean; note?: string; promotedToContactId?: string; reminderDate?: string | undefined } = {};
   if (typeof body.saved === "boolean") patch.saved = body.saved;
   if (typeof body.note === "string") patch.note = body.note;
   if (typeof body.promotedToContactId === "string") patch.promotedToContactId = body.promotedToContactId;
+  if ("reminderDate" in body) patch.reminderDate = typeof body.reminderDate === "string" ? body.reminderDate : undefined;
 
   const updated = updateLead(id, patch);
   if (!updated) {

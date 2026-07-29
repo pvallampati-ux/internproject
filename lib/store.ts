@@ -25,6 +25,10 @@ export interface Lead {
   saved?: boolean;
   note?: string;
   noteUpdatedAt?: string;
+  // A specific date/time you want this lead surfaced on Home again — set
+  // alongside the note (e.g. "check quarterly earnings" + tomorrow
+  // morning), distinct from noteUpdatedAt which just tracks edit recency.
+  reminderDate?: string;
   relatedArticles?: RelatedArticle[];
   // Set once a banker turns this headline into a named Contact (stage
   // "Prospect") — the lead then drops out of the Market Lead lane instead
@@ -90,7 +94,7 @@ export function upsertLeads(newLeads: Lead[]): { added: number; updated: number;
 // the note stamps noteUpdatedAt, which the "cooling leads" check relies on.
 export function updateLead(
   id: string,
-  patch: Partial<Pick<Lead, "saved" | "note" | "promotedToContactId">>
+  patch: Partial<Pick<Lead, "saved" | "note" | "promotedToContactId" | "reminderDate">>
 ): Lead | null {
   const leads = loadLeads();
   const idx = leads.findIndex((l) => l.id === id);

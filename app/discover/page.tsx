@@ -63,6 +63,15 @@ export default function DiscoveryPage() {
     });
   }
 
+  async function handleSetReminder(id: string, reminderDate: string | undefined) {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, reminderDate } : l)));
+    await fetch(`/api/leads/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reminderDate: reminderDate ?? null }),
+    });
+  }
+
   async function handleRefresh() {
     setRefreshing(true);
     setRefreshMessage(null);
@@ -178,6 +187,7 @@ export default function DiscoveryPage() {
                     variant="row"
                     onToggleSave={handleToggleSave}
                     onSaveNote={handleSaveNote}
+                    onSetReminder={handleSetReminder}
                   />
                 ))
               )}
@@ -194,6 +204,7 @@ export default function DiscoveryPage() {
                   variant="row"
                   onToggleSave={handleToggleSave}
                   onSaveNote={handleSaveNote}
+                  onSetReminder={handleSetReminder}
                 />
               ))}
             </div>
