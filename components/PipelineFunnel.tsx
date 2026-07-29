@@ -17,7 +17,13 @@ function formatCompactCurrency(value: number): string {
 
 export default function PipelineFunnel({ counts, values }: Props) {
   const total = JOURNEY_STAGES.reduce((sum, s) => sum + counts[s], 0);
-  const totalValue = JOURNEY_STAGES.reduce((sum, s) => sum + values[s], 0);
+  // "Active pipeline value" excludes Client — a converted client isn't
+  // pipeline anymore. Matches the definition the stat tile above this
+  // funnel already uses (activeContacts filters out Client/Cold); this used
+  // to sum every JOURNEY_STAGES bucket including Client, so it showed a
+  // different, larger number under the same label.
+  const activeStages = JOURNEY_STAGES.filter((s) => s !== "Client");
+  const totalValue = activeStages.reduce((sum, s) => sum + values[s], 0);
 
   return (
     <div>
