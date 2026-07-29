@@ -5,7 +5,17 @@ import { loadLeads, upsertLeads, type Lead, type RelatedArticle } from "./store"
 import { FEED_REFRESH_LOOKBACK_DAYS } from "./config";
 import { looksLikeLeakedQuery, stableId } from "./feedUtils";
 
-const parser = new Parser();
+// Google News 403s requests that don't look like a browser — rss-parser
+// sends no User-Agent by default, which reads as a bot. A realistic one
+// doesn't guarantee access (Google's blocking is reputation/pattern-based
+// and can vary by IP, especially on shared cloud hosting), but it removes
+// the most common, easiest-to-fix reason for a block.
+const parser = new Parser({
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  },
+});
 
 // Cap on how many leads get a related-articles lookup per refresh run, so a
 // large batch of brand-new leads doesn't turn one refresh into dozens of
