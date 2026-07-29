@@ -219,10 +219,10 @@
   },
   {
     "id": "contact_demo_6",
-    "name": "Tom Whitmore",
+    "name": "Tom Smith",
     "title": "President",
     "company": "Whitmore Insurance",
-    "email": "tom.whitmore@example.com",
+    "email": "tom.smith@example.com",
     "location": "New Albany, OH",
     "industry": "Insurance",
     "businessOwnership": "Owner",
@@ -361,7 +361,7 @@
     "existingRelationships": "None",
     "familyMembers": [
       {
-        "name": "Tom Whitmore",
+        "name": "Tom Smith",
         "relationship": "Father"
       }
     ],
@@ -377,7 +377,7 @@
     "noteLog": [
       {
         "date": "2026-07-15T14:00:00.000Z",
-        "text": "Demo contact — edit or replace with a real prospect. Owned by a simulated colleague banker (Jon Kokinchak) to demo Team Overlaps on the Network page: she works at Whitmore Insurance, same company as Tom Whitmore (your client)."
+        "text": "Demo contact — edit or replace with a real prospect. Owned by a simulated colleague banker (Jon Kokinchak) to demo Team Overlaps on the Network page: she works at Whitmore Insurance, same company as Tom Smith (your client)."
       },
       {
         "date": "2026-07-22T14:00:00.000Z",
