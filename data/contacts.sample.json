@@ -378,6 +378,10 @@
       {
         "date": "2026-07-15T14:00:00.000Z",
         "text": "Demo contact — edit or replace with a real prospect. Owned by a simulated colleague banker (Jon Kokinchak) to demo Team Overlaps on the Network page: she works at Whitmore Insurance, same company as Tom Whitmore (your client)."
+      },
+      {
+        "date": "2026-07-22T14:00:00.000Z",
+        "text": "Demo note — also demonstrates cross-banker event matching on Calendar. Nina mentioned she's a member of the Columbus Chamber of Commerce and usually attends their networking nights."
       }
     ],
     "eci": "84386298"

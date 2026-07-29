@@ -14,15 +14,41 @@ function textMentions(haystack: string, needle: string): boolean {
   return haystack.toLowerCase().includes(needle.toLowerCase().trim());
 }
 
-// Event titles in this app follow a "Subject — Event Type" convention (e.g.
-// "Columbus Chamber of Commerce — Networking Night"), same as the seeded
-// sample events. Splitting on the dash gets the organization/subject name
-// on its own, so it can be matched against a contact's notes even when the
-// full title also contains generic event-type words. Falls back to the
-// whole title when there's no dash.
+// Common trailing event-type words/phrases — stripped off so what's left is
+// just the organization/subject name, which is what a natural note is
+// actually likely to mention ("she's a member of the Columbus Chamber of
+// Commerce," not the full event title verbatim).
+const EVENT_TYPE_SUFFIXES = [
+  "networking night", "watch party", "open house", "tailgate", "gala",
+  "summit", "conference", "fundraiser", "reception", "luncheon",
+  "breakfast", "dinner", "mixer", "celebration", "ceremony", "meeting",
+];
+
+function stripEventTypeSuffix(text: string): string {
+  const lower = text.toLowerCase();
+  for (const suffix of EVENT_TYPE_SUFFIXES) {
+    if (lower.endsWith(suffix)) {
+      const stripped = text.slice(0, text.length - suffix.length).trim();
+      if (stripped.length >= MIN_ORG_MATCH_LENGTH) return stripped;
+    }
+  }
+  return text;
+}
+
+// Event titles in this app often follow a "Subject — Event Type" convention
+// (e.g. "Columbus Chamber of Commerce — Networking Night"), same as most of
+// the seeded sample events. Splitting on the dash gets the organization/
+// subject name on its own, so it can be matched against a contact's notes
+// even when the full title also contains generic event-type words. When
+// there's no dash, strip a trailing event-type phrase directly instead
+// (handles "Columbus Chamber of Commerce Networking Night" the same way),
+// falling back to the whole title only if neither approach shortens it.
 export function coreEventSubject(event: Pick<CalendarEvent, "title" | "description">): string {
   const beforeDash = event.title.split(/[-–—]/)[0]?.trim() ?? "";
-  return beforeDash.length >= MIN_ORG_MATCH_LENGTH ? beforeDash : event.title.trim();
+  if (beforeDash.length >= MIN_ORG_MATCH_LENGTH && beforeDash !== event.title.trim()) {
+    return beforeDash;
+  }
+  return stripEventTypeSuffix(event.title.trim());
 }
 
 export interface AttendeeMatch {

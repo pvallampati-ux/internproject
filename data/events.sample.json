@@ -38,5 +38,14 @@
     "location": "Office",
     "description": "Demo event — edit or replace. Demo meeting to test Today's Meetings / AI Meeting Prep against your own name/email.",
     "taggedContactIds": ["contact_demo_9"]
+  },
+  {
+    "id": "event_demo_6",
+    "title": "Columbus Chamber of Commerce — Regional Sponsor Breakfast",
+    "date": "2026-09-15T13:00:00.000Z",
+    "location": "Columbus Chamber of Commerce",
+    "description": "Demo event — edit or replace. Owned by simulated colleague Jon Kokinchak, separately added to the same organization as event_demo_3 — demonstrates the 'Also on a colleague's calendar' cross-banker flag.",
+    "taggedContactIds": [],
+    "bankerId": "banker_jon_kokinchak"
   }
 ]
