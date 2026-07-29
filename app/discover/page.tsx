@@ -72,9 +72,16 @@ export default function DiscoveryPage() {
       if (summary.error) {
         setRefreshMessage(`Refresh failed: ${summary.error}`);
       } else {
-        setRefreshMessage(
-          `Checked ${summary.sourcesChecked} sources, found ${summary.itemsKept} relevant items (${summary.added} new).`
-        );
+        const base = `Checked ${summary.sourcesChecked} sources, found ${summary.itemsKept} relevant items (${summary.added} new).`;
+        if (summary.errors?.length > 0) {
+          const failedCount = summary.errors.length;
+          const firstReason = summary.errors[0].message;
+          setRefreshMessage(
+            `${base} ${failedCount} of ${summary.sourcesChecked} source(s) failed to load (e.g. "${firstReason}") — that's why little or nothing came through.`
+          );
+        } else {
+          setRefreshMessage(base);
+        }
         await loadLeads();
       }
     } catch (err) {
