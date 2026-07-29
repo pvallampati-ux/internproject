@@ -89,6 +89,9 @@ export function createContact(input: {
   currentWalletShare?: number;
   referredBy?: string;
   referredByContactId?: string;
+  sourceLeadTitle?: string;
+  sourceLeadLink?: string;
+  sourceLeadId?: string;
 }): Contact {
   const contacts = loadContacts();
   const now = new Date().toISOString();
@@ -116,6 +119,9 @@ export function createContact(input: {
     currentWalletShare: input.currentWalletShare,
     referredBy: input.referredBy,
     referredByContactId: input.referredByContactId,
+    sourceLeadTitle: input.sourceLeadTitle,
+    sourceLeadLink: input.sourceLeadLink,
+    sourceLeadId: input.sourceLeadId,
   };
   contacts.push(contact);
   saveContacts(contacts);

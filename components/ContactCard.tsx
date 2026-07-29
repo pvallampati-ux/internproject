@@ -190,6 +190,19 @@ export default function ContactCard({ contact, whyNow, onStageChange, onMarkCont
           </div>
         )}
 
+        {contact.sourceLeadTitle && contact.stage !== "Client" && (
+          <a
+            href={contact.sourceLeadLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="block truncate rounded-md border border-charcoal-700 bg-charcoal-900 px-2 py-1 text-xs text-gray-500 hover:border-gold-500/50 hover:text-gold-400"
+            title={contact.sourceLeadTitle}
+          >
+            📰 {contact.sourceLeadTitle}
+          </a>
+        )}
+
         <div className="text-xs">
           <p className={overdue ? "text-amber-400" : "text-gray-500"}>
             Last contact {formatDate(contact.lastContactedAt)} · every {contact.cadenceDays}d

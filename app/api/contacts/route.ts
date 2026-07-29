@@ -49,6 +49,9 @@ export async function POST(request: Request) {
     currentWalletShare: typeof body.currentWalletShare === "number" ? body.currentWalletShare : undefined,
     referredBy: typeof body.referredBy === "string" ? body.referredBy : undefined,
     referredByContactId: typeof body.referredByContactId === "string" ? body.referredByContactId : undefined,
+    sourceLeadTitle: typeof body.sourceLeadTitle === "string" ? body.sourceLeadTitle : undefined,
+    sourceLeadLink: typeof body.sourceLeadLink === "string" ? body.sourceLeadLink : undefined,
+    sourceLeadId: typeof body.sourceLeadId === "string" ? body.sourceLeadId : undefined,
   });
 
   return NextResponse.json(contact, { status: 201 });

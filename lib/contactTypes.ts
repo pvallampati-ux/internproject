@@ -77,6 +77,14 @@ export interface Contact {
   // name you haven't added yet) — set referredByContactId to override it.
   referredBy?: string;
   referredByContactId?: string;
+  // Set when this contact was promoted from a Market Lead (Discover or
+  // Pipeline's Market Lead lane). Denormalized (title/link snapshotted at
+  // promotion time) rather than just an id, so the tag keeps rendering even
+  // if the underlying lead is later pruned from the feed. sourceLeadId is
+  // kept for potential future lookups but isn't required to render it.
+  sourceLeadTitle?: string;
+  sourceLeadLink?: string;
+  sourceLeadId?: string;
   nextMeetingDate?: string; // ISO date; surfaced in the daily brief so AI Meeting Prep is ready ahead of time
   isCOI?: boolean; // Center of Influence — a referral source, tracked on the COI/Network tab
   outreachStatus?: OutreachStatus; // current outreach attempt in flight, if any — see OutreachStatus above

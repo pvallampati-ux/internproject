@@ -49,6 +49,9 @@ export default function MarketLeadCard({ lead, onPromoted }: Props) {
         cadenceDays: 10,
         stage: "Prospect",
         initialNote: `Sourced from lead: ${lead.title} (${lead.link})`,
+        sourceLeadTitle: lead.title,
+        sourceLeadLink: lead.link,
+        sourceLeadId: lead.id,
       }),
     });
     const created: Contact = await res.json();

@@ -181,6 +181,17 @@ export default function ContactDrawer() {
               )}
             </div>
 
+            {contact.sourceLeadTitle && contact.stage !== "Client" && (
+              <a
+                href={contact.sourceLeadLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 block rounded-md border border-charcoal-700 bg-charcoal-800 px-2.5 py-1.5 text-xs text-gray-400 hover:border-gold-500/50 hover:text-gold-400"
+              >
+                📰 Sourced from: <span className="text-gray-300">{contact.sourceLeadTitle}</span>
+              </a>
+            )}
+
             {whyNow && (
               <div className="mt-4 rounded-md border border-gold-500/30 bg-gold-500/5 p-3">
                 <div className="flex items-center justify-between">
