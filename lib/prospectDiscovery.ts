@@ -37,6 +37,9 @@ const STOPWORDS = new Set([
   "the", "this", "that", "columbus", "ohio", "central", "llc", "inc",
   "corp", "co", "group", "holdings", "partners", "capital", "ventures",
   "chamber", "commerce", "google", "news", "first", "second", "third",
+  "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+  "january", "february", "march", "april", "may", "june", "july", "august",
+  "september", "october", "november", "december",
 ]);
 
 // Crude proper-noun extraction — no real NLP, no way to tell a person's
@@ -50,7 +53,14 @@ export function extractCandidateNames(text: string): string[] {
     .filter((m) => {
       const words = m.split(/\s+/);
       if (words.length < 2) return false;
-      return !words.some((w) => STOPWORDS.has(w.toLowerCase()));
+      if (words.some((w) => STOPWORDS.has(w.toLowerCase()))) return false;
+      // All-caps "words" (WSYX, LLC-style acronyms not already in the
+      // stopword list, station call signs) are never how a person's name
+      // is written in prose — real names have lowercase letters after the
+      // first. Reject the whole candidate rather than guess which word was
+      // the real name.
+      if (words.some((w) => w.length >= 2 && w === w.toUpperCase())) return false;
+      return true;
     });
 }
 

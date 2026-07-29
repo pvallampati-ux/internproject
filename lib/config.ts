@@ -129,6 +129,36 @@ export const OTHER_COLUMBUS_SIGNALS: string[] = [
   "columbus, nc.",
 ];
 
+// "Founder Exit" used to include bare "resigns"/"steps down"/"retires as" —
+// these match ANY resignation story (a police officer, a mayor, a coach),
+// not just a business leader's exit, and surfaced a domestic-violence court
+// story as a wealth-event lead. Every phrase here pairs the departure verb
+// with an adjacent leadership-role word so an unrelated resignation can't
+// match. Shared with lib/sources.ts so the Google News query itself is
+// scoped the same way as the classifier, instead of drifting apart.
+export const FOUNDER_EXIT_TERMS: string[] = [
+  "steps down as ceo",
+  "steps down as founder",
+  "steps down as president",
+  "steps down as chairman",
+  "steps down as chief executive",
+  "resigns as ceo",
+  "resigns as founder",
+  "resigns as president",
+  "resigns as chairman",
+  "resigns as chief executive",
+  "retires as ceo",
+  "retires as founder",
+  "retires as president",
+  "retires as chairman",
+  "sold his stake",
+  "sold her stake",
+  "sells stake",
+  "cashes out",
+  "cash out",
+  "founder departs",
+];
+
 // Keyword sets used for naive classification. A story can match more than
 // one category (e.g. an owner sells a company AND names a new CEO).
 export const CATEGORY_KEYWORDS: Record<Category, string[]> = {
@@ -169,22 +199,7 @@ export const CATEGORY_KEYWORDS: Record<Category, string[]> = {
     "minority investment",
     "growth investment",
   ],
-  "Founder Exit": [
-    "steps down",
-    "stepping down",
-    "resigns",
-    "resignation",
-    "retires as",
-    "retiring as",
-    "sold his stake",
-    "sold her stake",
-    "sells stake",
-    "cashes out",
-    "cash out",
-    "exits company",
-    "founder departs",
-    "steps back",
-  ],
+  "Founder Exit": FOUNDER_EXIT_TERMS,
   "Executive Hiring": [
     "names ceo",
     "named ceo",
