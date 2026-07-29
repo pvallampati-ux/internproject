@@ -136,9 +136,16 @@ export default function ResearchPage() {
       if (summary.error) {
         setRefreshMessage(`Refresh failed: ${summary.error}`);
       } else {
-        setRefreshMessage(
-          `Checked ${summary.topicsChecked} topics, found ${summary.itemsKept} relevant items (${summary.added} new).`
-        );
+        const base = `Checked ${summary.topicsChecked} topics, found ${summary.itemsKept} relevant items (${summary.added} new).`;
+        if (summary.errors?.length > 0) {
+          const failedCount = summary.errors.length;
+          const firstReason = summary.errors[0].message;
+          setRefreshMessage(
+            `${base} ${failedCount} of ${summary.topicsChecked} topic(s) failed to load (e.g. "${firstReason}") — that's why little or nothing came through.`
+          );
+        } else {
+          setRefreshMessage(base);
+        }
         if (focus !== "All") await loadInsightsFor(focus);
       }
     } catch (err) {

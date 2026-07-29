@@ -376,7 +376,53 @@ export default function HomePage() {
               </div>
               <p className="text-xs text-gray-500">Matched signals from the last 90 days</p>
               {marketEvents.length === 0 ? (
-                <p className="mt-3 text-sm text-gray-600">Nothing matched to your contacts recently.</p>
+                leads.length > 0 ? (
+                  <>
+                    <p className="mt-3 text-xs text-gray-600">
+                      Nothing tied to a tracked contact yet — here&apos;s what&apos;s trending regionally.
+                    </p>
+                    <ul className="mt-2 space-y-2">
+                      {[...leads]
+                        .sort(
+                          (a, b) =>
+                            b.score - a.score ||
+                            new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+                        )
+                        .slice(0, 4)
+                        .map((lead) => {
+                          const highImpact = lead.categories.some((c) => WEALTH_EVENT_CATEGORIES.includes(c));
+                          return (
+                            <li key={lead.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <a
+                                  href={lead.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-gray-100 hover:underline"
+                                >
+                                  {lead.title}
+                                </a>
+                                <span
+                                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                                    highImpact
+                                      ? "border-red-500/50 bg-red-500/10 text-red-400"
+                                      : "border-amber-500/50 bg-amber-500/10 text-amber-400"
+                                  }`}
+                                >
+                                  {highImpact ? "High Impact" : "Medium Impact"}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">{lead.source} — no tracked contact matched yet</p>
+                            </li>
+                          );
+                        })}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm text-gray-600">
+                    Nothing matched to your contacts recently — click &ldquo;Refresh feeds&rdquo; on Discover to pull real news.
+                  </p>
+                )
               ) : (
                 <ul className="mt-3 space-y-2">
                   {marketEvents.slice(0, 4).map(({ lead, affectedContacts }) => {

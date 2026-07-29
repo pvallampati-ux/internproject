@@ -1,4 +1,4 @@
-import { REGION_TERMS } from "./config";
+import { REGION_TERMS, FOUNDER_EXIT_TERMS } from "./config";
 
 export interface FeedSource {
   id: string;
@@ -6,6 +6,14 @@ export interface FeedSource {
   url: string;
   kind: "rss" | "edgar";
 }
+
+// Google News 403s requests with no User-Agent — rss-parser sends none by
+// default, which reads as a bot. Shared by every RSS parser instance that
+// queries Google News so the fix only has to live in one place.
+export const NEWS_REQUEST_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+};
 
 // Google News RSS needs no API key and is free to query. We build one query
 // per wealth-event theme, scoped to the primary region term, to keep result
@@ -50,7 +58,7 @@ const THEMES: { id: string; label: string; query: string }[] = [
   {
     id: "founder-exit",
     label: "Founder exits",
-    query: `("${PRIMARY_REGION}" OR "${SECONDARY_REGION}") ("steps down" OR resigns OR "sold his stake" OR "sold her stake" OR "cashes out")`,
+    query: `("${PRIMARY_REGION}" OR "${SECONDARY_REGION}") (${FOUNDER_EXIT_TERMS.map((t) => `"${t}"`).join(" OR ")})`,
   },
   {
     id: "exec-hiring",

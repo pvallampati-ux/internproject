@@ -1,12 +1,12 @@
 import Parser from "rss-parser";
-import { googleNewsRss } from "./sources";
+import { googleNewsRss, NEWS_REQUEST_HEADERS } from "./sources";
 import { INDUSTRIES, INDUSTRY_TOPICS, buildQueryFromKeywords } from "./industries";
 import { loadCustomIndustries } from "./customIndustriesStore";
 import { upsertMarketInsights, type MarketInsight } from "./marketInsightsStore";
 import { looksLikeLeakedQuery, stableId } from "./feedUtils";
 import { FEED_REFRESH_LOOKBACK_DAYS } from "./config";
 
-const parser = new Parser();
+const parser = new Parser({ headers: NEWS_REQUEST_HEADERS });
 
 interface QueryTarget {
   industryName: string;
