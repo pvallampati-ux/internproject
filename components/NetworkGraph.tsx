@@ -83,7 +83,10 @@ export default function NetworkGraph({ contacts, edges }: Props) {
         </span>
       </div>
 
-      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="mt-3 w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
+      <svg
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        className="mx-auto mt-3 block w-full max-w-xl rounded-lg border border-charcoal-700 bg-charcoal-800"
+      >
         {edges.map((edge, i) => {
           const from = pos.get(edge.fromId);
           const to = pos.get(edge.toId);
