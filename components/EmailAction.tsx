@@ -140,7 +140,7 @@ export default function EmailAction({ contactId, email, onEmailSaved, compact }:
             onClick={() => setOutreachStatus("Sent")}
             className="inline-block rounded-md bg-gold-500 px-3 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
           >
-            Open in email client to send
+            Open in email client
           </a>
         </div>
       )}

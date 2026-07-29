@@ -121,7 +121,7 @@ function IntroPathRow({ connector, prospect, match, status, onStatusChange, onOp
               onClick={markRequested}
               className="mt-2 inline-block rounded-md bg-gold-500 px-3 py-1.5 text-xs font-medium text-charcoal-950 hover:bg-gold-400"
             >
-              Open in email client to send
+              Open in email client
             </a>
           ) : (
             <p className="mt-2 text-xs text-gray-600">
