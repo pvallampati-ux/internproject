@@ -128,52 +128,73 @@ function LeadDiamonds({ clusters, onSelect }: { clusters: LeadCluster[]; onSelec
   );
 }
 
-function SelectedList({ cluster, onClose }: { cluster: Cluster; onClose: () => void }) {
-  return (
-    <div className="mt-3 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-100">{cluster.contacts.length} contact(s) here</p>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
-          &times;
-        </button>
+// Lives in the fixed-width side panel next to the map (not below it) so
+// clicking a cluster never pushes the page taller / forces scrolling.
+function SidePanel({
+  selected,
+  selectedLeads,
+  onCloseContacts,
+  onCloseLeads,
+}: {
+  selected: Cluster | null;
+  selectedLeads: LeadCluster | null;
+  onCloseContacts: () => void;
+  onCloseLeads: () => void;
+}) {
+  if (!selected && !selectedLeads) {
+    return (
+      <div className="flex h-full min-h-[200px] items-center justify-center rounded-lg border border-dashed border-charcoal-700 p-4 text-center text-xs text-gray-600">
+        Click a cluster on the map to see who's there.
       </div>
-      <ul className="mt-2 space-y-1">
-        {cluster.contacts.map((contact) => (
-          <li key={contact.id}>
-            <Link href={`/contacts/${contact.id}`} className="text-sm text-gray-300 hover:text-gold-400 hover:underline">
-              {contact.name}
-              {contact.company && <span className="text-gray-500"> — {contact.company}</span>}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+    );
+  }
 
-function SelectedLeadList({ cluster, onClose }: { cluster: LeadCluster; onClose: () => void }) {
   return (
-    <div className="mt-3 rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-100">{cluster.leads.length} lead(s) here</p>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
-          &times;
-        </button>
-      </div>
-      <ul className="mt-2 space-y-1">
-        {cluster.leads.map((lead) => (
-          <li key={lead.id}>
-            <a
-              href={lead.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-gray-300 hover:text-gold-400 hover:underline"
-            >
-              {lead.title}
-            </a>
-          </li>
-        ))}
-      </ul>
+    <div className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+      {selected && (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-100">{selected.contacts.length} contact(s) here</p>
+            <button onClick={onCloseContacts} className="text-gray-500 hover:text-gray-300">
+              &times;
+            </button>
+          </div>
+          <ul className="mt-2 space-y-1">
+            {selected.contacts.map((contact) => (
+              <li key={contact.id}>
+                <Link href={`/contacts/${contact.id}`} className="text-sm text-gray-300 hover:text-gold-400 hover:underline">
+                  {contact.name}
+                  {contact.company && <span className="text-gray-500"> — {contact.company}</span>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {selectedLeads && (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-100">{selectedLeads.leads.length} lead(s) here</p>
+            <button onClick={onCloseLeads} className="text-gray-500 hover:text-gray-300">
+              &times;
+            </button>
+          </div>
+          <ul className="mt-2 space-y-1">
+            {selectedLeads.leads.map((lead) => (
+              <li key={lead.id}>
+                <a
+                  href={lead.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-300 hover:text-gold-400 hover:underline"
+                >
+                  {lead.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
@@ -245,101 +266,103 @@ export default function RelationshipMap({ prospects, clients, leads = [] }: Prop
         </div>
       </div>
 
-      {mode === "side" ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <p className="mb-1 text-xs text-gray-500">Prospects ({prospects.length})</p>
+      <div className="flex flex-col gap-4 lg:flex-row">
+        <div className="min-w-0 flex-1">
+          {mode === "side" ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <p className="mb-1 text-xs text-gray-500">Prospects ({prospects.length})</p>
+                <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
+                  <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#1e1e1e" />
+                  {townDots()}
+                  {showLeads && <LeadDiamonds clusters={leadClusters} onSelect={selectLeadCluster} />}
+                  {prospectClusters.map((cluster) => {
+                    const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
+                    return (
+                      <g key={cluster.key} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
+                        <circle cx={cluster.x} cy={cluster.y} r={r} fill={PROSPECT_COLOR} fillOpacity={0.28} stroke={PROSPECT_COLOR} />
+                        <text x={cluster.x} y={cluster.y + 4} fontSize={12} fill="#f4f1ea" textAnchor="middle" fontWeight={600}>
+                          {cluster.contacts.length}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div>
+                <p className="mb-1 text-xs text-gray-500">Clients ({clients.length})</p>
+                <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
+                  <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#1e1e1e" />
+                  {townDots()}
+                  {showLeads && <LeadDiamonds clusters={leadClusters} onSelect={selectLeadCluster} />}
+                  {clientClusters.map((cluster) => {
+                    const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
+                    return (
+                      <g key={cluster.key} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
+                        <circle cx={cluster.x} cy={cluster.y} r={r} fill={CLIENT_COLOR} fillOpacity={0.28} stroke={CLIENT_COLOR} />
+                        <text x={cluster.x} y={cluster.y + 4} fontSize={12} fill="#f4f1ea" textAnchor="middle" fontWeight={600}>
+                          {cluster.contacts.length}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+            </div>
+          ) : (
             <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
               <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#1e1e1e" />
               {townDots()}
               {showLeads && <LeadDiamonds clusters={leadClusters} onSelect={selectLeadCluster} />}
-              {prospectClusters.map((cluster) => {
-                const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
-                return (
-                  <g key={cluster.key} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
-                    <circle cx={cluster.x} cy={cluster.y} r={r} fill={PROSPECT_COLOR} fillOpacity={0.28} stroke={PROSPECT_COLOR} />
-                    <text x={cluster.x} y={cluster.y + 4} fontSize={12} fill="#f4f1ea" textAnchor="middle" fontWeight={600}>
-                      {cluster.contacts.length}
-                    </text>
-                  </g>
-                );
-              })}
+              {/* Overlay mode: fixed small radius (not scaled by count) and
+                  offset left/right of the shared location, instead of full
+                  concentric overlap — a town with both prospects and clients
+                  reads as two small adjacent badges, not a stacked blob. */}
+              {prospectClusters.map((cluster) => (
+                <g key={`p-${cluster.key}`} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
+                  <circle cx={cluster.x - 9} cy={cluster.y} r={11} fill={PROSPECT_COLOR} fillOpacity={0.3} stroke={PROSPECT_COLOR} />
+                  <text
+                    x={cluster.x - 9}
+                    y={cluster.y + 4}
+                    fontSize={11}
+                    fill="#f4f1ea"
+                    textAnchor="middle"
+                    fontWeight={600}
+                    className="pointer-events-none"
+                  >
+                    {cluster.contacts.length}
+                  </text>
+                </g>
+              ))}
+              {clientClusters.map((cluster) => (
+                <g key={`c-${cluster.key}`} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
+                  <circle cx={cluster.x + 9} cy={cluster.y} r={11} fill={CLIENT_COLOR} fillOpacity={0.3} stroke={CLIENT_COLOR} />
+                  <text
+                    x={cluster.x + 9}
+                    y={cluster.y + 4}
+                    fontSize={11}
+                    fill="#f4f1ea"
+                    textAnchor="middle"
+                    fontWeight={600}
+                    className="pointer-events-none"
+                  >
+                    {cluster.contacts.length}
+                  </text>
+                </g>
+              ))}
             </svg>
-          </div>
-          <div>
-            <p className="mb-1 text-xs text-gray-500">Clients ({clients.length})</p>
-            <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
-              <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#1e1e1e" />
-              {townDots()}
-              {showLeads && <LeadDiamonds clusters={leadClusters} onSelect={selectLeadCluster} />}
-              {clientClusters.map((cluster) => {
-                const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
-                return (
-                  <g key={cluster.key} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
-                    <circle cx={cluster.x} cy={cluster.y} r={r} fill={CLIENT_COLOR} fillOpacity={0.28} stroke={CLIENT_COLOR} />
-                    <text x={cluster.x} y={cluster.y + 4} fontSize={12} fill="#f4f1ea" textAnchor="middle" fontWeight={600}>
-                      {cluster.contacts.length}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
+          )}
         </div>
-      ) : (
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full rounded-lg border border-charcoal-700 bg-charcoal-800">
-          <rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#1e1e1e" />
-          {townDots()}
-          {showLeads && <LeadDiamonds clusters={leadClusters} onSelect={selectLeadCluster} />}
-          {prospectClusters.map((cluster) => {
-            const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
-            return (
-              <g key={`p-${cluster.key}`} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
-                <circle cx={cluster.x} cy={cluster.y} r={r} fill={PROSPECT_COLOR} fillOpacity={0.22} stroke={PROSPECT_COLOR} />
-              </g>
-            );
-          })}
-          {clientClusters.map((cluster) => {
-            const r = Math.min(10 + Math.sqrt(cluster.contacts.length) * 4, 28);
-            return (
-              <g key={`c-${cluster.key}`} onClick={() => selectContactCluster(cluster)} className="cursor-pointer">
-                <circle cx={cluster.x} cy={cluster.y} r={r} fill={CLIENT_COLOR} fillOpacity={0.22} stroke={CLIENT_COLOR} />
-              </g>
-            );
-          })}
-          {prospectClusters.map((cluster) => (
-            <text
-              key={`tp-${cluster.key}`}
-              x={cluster.x}
-              y={cluster.y - 2}
-              fontSize={11}
-              fill={PROSPECT_COLOR}
-              textAnchor="middle"
-              fontWeight={600}
-              className="pointer-events-none"
-            >
-              {cluster.contacts.length}
-            </text>
-          ))}
-          {clientClusters.map((cluster) => (
-            <text
-              key={`tc-${cluster.key}`}
-              x={cluster.x}
-              y={cluster.y + 12}
-              fontSize={11}
-              fill={CLIENT_COLOR}
-              textAnchor="middle"
-              fontWeight={600}
-              className="pointer-events-none"
-            >
-              {cluster.contacts.length}
-            </text>
-          ))}
-        </svg>
-      )}
 
-      {selected && <SelectedList cluster={selected} onClose={() => setSelected(null)} />}
-      {selectedLeads && <SelectedLeadList cluster={selectedLeads} onClose={() => setSelectedLeads(null)} />}
+        <div className="w-full shrink-0 lg:w-64">
+          <SidePanel
+            selected={selected}
+            selectedLeads={selectedLeads}
+            onCloseContacts={() => setSelected(null)}
+            onCloseLeads={() => setSelectedLeads(null)}
+          />
+        </div>
+      </div>
     </div>
   );
 }

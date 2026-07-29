@@ -188,7 +188,6 @@
     "cadenceDays": 30,
     "stage": "Proposal",
     "estimatedValue": 5000000,
-    "currentWalletShare": 750000,
     "referredBy": "David Park",
     "referredByContactId": "contact_demo_4",
     "noteLog": [
