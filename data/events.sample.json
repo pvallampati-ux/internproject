@@ -47,5 +47,22 @@
     "description": "Demo event — edit or replace. Owned by simulated colleague Jon Kokinchak, separately added to the same organization as event_demo_3 — demonstrates the 'Also on a colleague's calendar' cross-banker flag.",
     "taggedContactIds": [],
     "bankerId": "banker_jon_kokinchak"
+  },
+  {
+    "id": "event_demo_7",
+    "title": "Columbus Chamber of Commerce — Quarterly Meetup",
+    "date": "2026-07-30T17:30:00.000Z",
+    "location": "Columbus Chamber of Commerce",
+    "description": "Demo event — edit or replace. Same demo scenario as event_demo_3/event_demo_6 but dated tomorrow, so the cross-banker/connected-prospect flags are visible on Home and Calendar without paging forward to September.",
+    "taggedContactIds": []
+  },
+  {
+    "id": "event_demo_8",
+    "title": "Columbus Chamber of Commerce — Member Mixer",
+    "date": "2026-07-30T18:00:00.000Z",
+    "location": "Columbus Chamber of Commerce",
+    "description": "Demo event — edit or replace. Owned by simulated colleague Jon Kokinchak, same day as event_demo_7 — demonstrates the 'Also on a colleague's calendar' flag near-term instead of only in September.",
+    "taggedContactIds": [],
+    "bankerId": "banker_jon_kokinchak"
   }
 ]
