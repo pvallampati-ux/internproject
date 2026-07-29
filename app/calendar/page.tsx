@@ -2,11 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CalendarEvent } from "@/lib/eventsStore";
-import type { Contact } from "@/lib/contactTypes";
+import type { Contact, PipelineStage } from "@/lib/contactTypes";
 import { suggestInvitees, findLikelyAttendees, findColleagueCalendarOverlap } from "@/lib/eventOptimizer";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
 import { BANKERS, YOU_BANKER_ID, ALL_BANKERS_ID, contactBankerId, bankerName } from "@/lib/bankers";
 import { getViewBankerId, setViewBankerId } from "@/lib/userPrefs";
+
+// Same stage-color convention used on Home/Drawer (green = Client, blue =
+// still in the pipeline, gray = Cold).
+const STAGE_BADGE: Record<PipelineStage, string> = {
+  Client: "border-emerald-500/50 bg-emerald-500/10 text-emerald-400",
+  Prospect: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Contacted: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Meeting: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Proposal: "border-sky-500/50 bg-sky-500/10 text-sky-400",
+  Cold: "border-gray-500/50 bg-gray-500/10 text-gray-400",
+};
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -263,6 +274,11 @@ export default function CalendarPage() {
                         >
                           {contact.name}
                         </button>
+                        <span
+                          className={`ml-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${STAGE_BADGE[contact.stage]}`}
+                        >
+                          {contact.stage}
+                        </span>
                         {bankerLabel && (
                           <span className="ml-1 rounded-full border border-charcoal-700 bg-charcoal-900 px-1.5 py-0.5 text-[10px] text-gray-500">
                             {bankerLabel}&apos;s client
@@ -521,6 +537,14 @@ export default function CalendarPage() {
               const dayEvents = eventsByDate.get(key) ?? [];
               const isToday = key === dateKey(today);
               const isSelected = key === selectedDate;
+              // Flags this day even before it's clicked open, so the
+              // colleague-overlap / connected-prospect signals aren't only
+              // discoverable via List view or by clicking into every day.
+              const hasFlag = dayEvents.some(
+                (e) =>
+                  findLikelyAttendees(e, contacts, e.taggedContactIds).length > 0 ||
+                  findColleagueCalendarOverlap(e, events).length > 0
+              );
               return (
                 <button
                   key={i}
@@ -531,8 +555,16 @@ export default function CalendarPage() {
                       : "border-charcoal-800 bg-charcoal-900/60 hover:border-charcoal-600"
                   }`}
                 >
-                  <span className={`text-xs ${isToday ? "font-semibold text-gold-400" : "text-gray-400"}`}>
-                    {day.getDate()}
+                  <span className="flex items-center gap-1">
+                    <span className={`text-xs ${isToday ? "font-semibold text-gold-400" : "text-gray-400"}`}>
+                      {day.getDate()}
+                    </span>
+                    {hasFlag && (
+                      <span
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"
+                        title="Has a colleague overlap or connected-prospect match"
+                      />
+                    )}
                   </span>
                   <div className="mt-1 space-y-0.5">
                     {dayEvents.slice(0, 2).map((e) => (

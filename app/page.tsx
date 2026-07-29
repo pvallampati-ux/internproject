@@ -6,11 +6,13 @@ import { touchpointCount, type Contact, type PipelineStage } from "@/lib/contact
 import type { DailyBrief as DailyBriefData, OverdueContact } from "@/lib/dailyBrief";
 import type { MeetingPrep } from "@/lib/meetingPrep";
 import type { Lead } from "@/lib/store";
+import type { CalendarEvent } from "@/lib/eventsStore";
 import DailyBrief from "@/components/DailyBrief";
 import EmailAction from "@/components/EmailAction";
 import AiMeetingPrep from "@/components/AiMeetingPrep";
 import { calculateWhyNowScore } from "@/lib/whyNowScore";
 import { buildCopilotInsights } from "@/lib/bankerCopilot";
+import { findLikelyAttendees, findColleagueCalendarOverlap } from "@/lib/eventOptimizer";
 import { describeSharedTerms, type WarmIntroMatch } from "@/lib/warmIntroTypes";
 import { PeopleIcon } from "@/components/icons";
 import { useContactDrawer } from "@/lib/contactDrawerContext";
@@ -41,6 +43,14 @@ function endOfToday(): number {
   const d = new Date();
   d.setHours(23, 59, 59, 999);
   return d.getTime();
+}
+
+function formatEventDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function possessive(bankerLabel: string): string {
+  return bankerLabel === "You" ? "your" : `${bankerLabel}’s`;
 }
 
 function formatReminderStatus(iso: string): string {
@@ -89,6 +99,7 @@ export default function HomePage() {
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [warmIntros, setWarmIntros] = useState<WarmIntroMatch[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const { openDrawer } = useContactDrawer();
 
   async function loadContacts() {
@@ -107,6 +118,12 @@ export default function HomePage() {
     const res = await fetch("/api/warm-intros");
     const data = await res.json();
     setWarmIntros(data.matches ?? []);
+  }
+
+  async function loadEvents() {
+    const res = await fetch("/api/events");
+    const data = await res.json();
+    setEvents(data.events ?? []);
   }
 
   async function fetchBrief(): Promise<DailyBriefData> {
@@ -130,6 +147,7 @@ export default function HomePage() {
     loadContacts();
     loadLeads();
     loadWarmIntros();
+    loadEvents();
   }, []);
 
   async function handleMarkContacted(contactId: string) {
@@ -154,6 +172,23 @@ export default function HomePage() {
   const dueReminders = leads
     .filter((l) => l.saved && l.reminderDate && new Date(l.reminderDate).getTime() <= endOfToday())
     .sort((a, b) => new Date(a.reminderDate!).getTime() - new Date(b.reminderDate!).getTime());
+
+  // Upcoming calendar events where a tracked contact (yours or a
+  // colleague's) is plausibly connected via notes/board/club data, or a
+  // colleague independently added their own event for the same
+  // organization — the Calendar page's cross-reference signals, surfaced
+  // here so an upcoming event with a heads-up doesn't only get noticed if
+  // you happen to open Calendar first.
+  const upcomingEventConnections = events
+    .filter((e) => new Date(e.date).getTime() >= Date.now())
+    .map((event) => ({
+      event,
+      attendeeMatches: findLikelyAttendees(event, allContacts, event.taggedContactIds),
+      colleagueOverlaps: findColleagueCalendarOverlap(event, events),
+    }))
+    .filter((x) => x.attendeeMatches.length > 0 || x.colleagueOverlaps.length > 0)
+    .sort((a, b) => new Date(a.event.date).getTime() - new Date(b.event.date).getTime())
+    .slice(0, 4);
 
   // Contacts scored by Why Now, most urgent first — the single prospecting
   // priority list for the day.
@@ -536,6 +571,56 @@ export default function HomePage() {
                 </div>
               </section>
             </div>
+          </div>
+
+          <div className="mt-4">
+            <section className="rounded-lg border border-charcoal-700 bg-charcoal-800 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-lg text-gray-100">Event Connections</h2>
+                <Link href="/calendar" className="text-xs text-gold-400 hover:underline">
+                  View calendar →
+                </Link>
+              </div>
+              <p className="text-xs text-gray-500">
+                Upcoming events tied to a tracked contact&rsquo;s notes/board/club data, or shared with a colleague&rsquo;s calendar
+              </p>
+              {upcomingEventConnections.length === 0 ? (
+                <p className="mt-3 text-sm text-gray-600">Nothing upcoming with a connection flagged.</p>
+              ) : (
+                <ul className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  {upcomingEventConnections.map(({ event, attendeeMatches, colleagueOverlaps }) => (
+                    <li key={event.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-gray-100">{event.title}</p>
+                        <span className="shrink-0 text-xs text-gray-500">{formatEventDate(event.date)}</span>
+                      </div>
+                      {colleagueOverlaps.length > 0 && (
+                        <p className="mt-1 text-xs text-sky-400">
+                          Also on {colleagueOverlaps.map((o) => possessive(o.bankerLabel)).join(", ")} calendar
+                        </p>
+                      )}
+                      {attendeeMatches.length > 0 && (
+                        <p className="mt-1 text-xs text-gray-400">
+                          May be there:{" "}
+                          {attendeeMatches.map((m, i) => (
+                            <span key={m.contact.id}>
+                              {i > 0 && ", "}
+                              <button
+                                onClick={() => openDrawer(m.contact.id)}
+                                className="text-gray-300 hover:text-gold-400 hover:underline"
+                              >
+                                {m.contact.name}
+                              </button>
+                              {m.bankerLabel && <span className="text-gray-600"> ({m.bankerLabel})</span>}
+                            </span>
+                          ))}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         </>
       )}

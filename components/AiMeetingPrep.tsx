@@ -49,7 +49,6 @@ export default function AiMeetingPrep({ contact, initialPrep, onGenerated, onCom
   }
 
   const wealthGap = estimateWealthGap(contact);
-  const recentNotes = [...contact.noteLog].reverse().slice(0, 3);
   const openCommitments = contact.noteLog.filter((n) => n.commitment && !n.commitmentResolved);
 
   return (
@@ -109,19 +108,6 @@ export default function AiMeetingPrep({ contact, initialPrep, onGenerated, onCom
           </div>
         )}
 
-        {recentNotes.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Recent Notes</h4>
-            <div className="mt-1 space-y-1">
-              {recentNotes.map((n, i) => (
-                <p key={n.id ?? i} className="text-sm text-gray-300">
-                  <span className="text-xs text-gray-500">{formatDate(n.date)} — </span>
-                  {n.text}
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {error && (
